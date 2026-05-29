@@ -1,0 +1,2048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0F0F0E">
+<title>PPL Training</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --push: #C4732A;
+  --push-bg: #2A1A08;
+  --push-mid: #3D2210;
+  --push-text: #F5C989;
+  --pull: #1B9E76;
+  --pull-bg: #071A14;
+  --pull-mid: #0D2B20;
+  --pull-text: #7FD9BB;
+  --legs: #6B5FD4;
+  --legs-bg: #100D2A;
+  --legs-mid: #1A1640;
+  --legs-text: #B5AFFE;
+  --core: #888780;
+  --core-bg: #161614;
+  --core-text: #D4D2CC;
+  --bg: #0A0A09;
+  --surface: #141412;
+  --surface2: #1C1C1A;
+  --border: #2A2A27;
+  --text: #F0EDE6;
+  --text-muted: #888780;
+  --text-dim: #504E4A;
+  --accent: #C4732A;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+/* ── SCREENS ── */
+.screen { display: none; flex-direction: column; height: 100dvh; overflow: hidden; }
+.screen.active { display: flex; }
+
+/* ── TOP BAR ── */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: calc(var(--safe-top) + 14px) 18px 14px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0; z-index: 10;
+}
+.topbar-title { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+.back-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: none; border: none; color: var(--text-muted);
+  font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer; padding: 4px 0;
+}
+.back-btn svg { width: 18px; height: 18px; }
+
+/* ── SCROLLABLE CONTENT ── */
+.scroll-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(var(--safe-bot) + 20px); }
+
+/* ── HOME SCREEN ── */
+.home-header {
+  padding: calc(var(--safe-top) + 20px) 18px 0;
+}
+.home-logo { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; letter-spacing: -1px; color: var(--text); }
+.home-logo span { color: var(--accent); }
+.home-date { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-dim); margin-top: 2px; letter-spacing: 0.5px; text-transform: uppercase; }
+
+.suggestion-bar {
+  margin: 18px 18px 0;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.suggestion-label { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-dim); margin-bottom: 4px; }
+.suggestion-name { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; }
+.suggestion-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+.suggestion-go {
+  background: var(--accent); color: #fff;
+  border: none; border-radius: var(--radius-sm);
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700;
+  padding: 10px 16px; cursor: pointer; white-space: nowrap; flex-shrink: 0; margin-left: 12px;
+}
+
+.section-label {
+  font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--text-dim); margin: 22px 18px 10px;
+}
+
+/* ── NAV GRID ── */
+.nav-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px; padding: 0 18px;
+}
+.nav-cell {
+  border-radius: var(--radius); padding: 14px 10px 12px;
+  cursor: pointer; border: 1.5px solid transparent;
+  transition: transform 0.12s, border-color 0.12s;
+  position: relative; overflow: hidden;
+  -webkit-user-select: none; user-select: none;
+}
+.nav-cell:active { transform: scale(0.95); }
+.nav-cell.suggested { border-color: #fff3; }
+.nav-cell.suggested::after {
+  content: ''; position: absolute; top: 6px; right: 6px;
+  width: 6px; height: 6px; border-radius: 50%; background: #fff;
+  box-shadow: 0 0 6px 2px #fff8;
+}
+.nav-cell.push { background: var(--push-bg); }
+.nav-cell.pull { background: var(--pull-bg); }
+.nav-cell.legs { background: var(--legs-bg); }
+
+.nav-cell-tag {
+  font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; opacity: 0.7;
+}
+.nav-cell.push .nav-cell-tag { color: var(--push-text); }
+.nav-cell.pull .nav-cell-tag { color: var(--pull-text); }
+.nav-cell.legs .nav-cell-tag { color: var(--legs-text); }
+
+.nav-cell-name {
+  font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; line-height: 1.2;
+}
+.nav-cell.push .nav-cell-name { color: var(--push-text); }
+.nav-cell.pull .nav-cell-name { color: var(--pull-text); }
+.nav-cell.legs .nav-cell-name { color: var(--legs-text); }
+
+.nav-cell-sub { font-size: 10px; margin-top: 4px; opacity: 0.6; line-height: 1.3; }
+.nav-cell.push .nav-cell-sub { color: var(--push-text); }
+.nav-cell.pull .nav-cell-sub { color: var(--pull-text); }
+.nav-cell.legs .nav-cell-sub { color: var(--legs-text); }
+
+.nav-cell-done {
+  font-family: 'DM Mono', monospace; font-size: 9px; margin-top: 8px; opacity: 0.5;
+}
+.nav-cell.push .nav-cell-done { color: var(--push-text); }
+.nav-cell.pull .nav-cell-done { color: var(--pull-text); }
+.nav-cell.legs .nav-cell-done { color: var(--legs-text); }
+
+/* ── CALENDAR ── */
+.calendar-wrap { padding: 0 18px; margin-top: 4px; }
+.cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.cal-month { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; }
+.cal-nav { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; padding: 4px 8px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; }
+.cal-dow { font-size: 10px; font-weight: 500; text-align: center; color: var(--text-dim);
+  padding: 4px 0; font-family: 'DM Mono', monospace; text-transform: uppercase; }
+.cal-day {
+  aspect-ratio: 1; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: var(--text-muted); position: relative; cursor: pointer;
+}
+.cal-day.today { color: var(--text); background: var(--surface2); font-weight: 600; }
+.cal-day.empty { pointer-events: none; }
+.cal-day .dot {
+  position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+  width: 4px; height: 4px; border-radius: 50%;
+}
+.cal-day.has-push .dot { background: var(--push); }
+.cal-day.has-pull .dot { background: var(--pull); }
+.cal-day.has-legs .dot { background: var(--legs); }
+
+.cal-day-tooltip {
+  font-size: 10px; color: var(--text-muted); text-align: center;
+  margin-top: 6px; min-height: 16px; font-family: 'DM Mono', monospace;
+}
+.cal-day.past-empty { cursor: pointer; }
+.cal-day.past-empty:hover, .cal-day.past-empty:active { background: var(--surface2); }
+.cal-day.future { color: var(--text-dim); opacity: 0.4; pointer-events: none; }
+
+/* ── BACKFILL SCREEN ── */
+.backfill-date-banner {
+  margin: 0 18px 0;
+  padding: 14px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex; align-items: center; gap: 12px;
+}
+.backfill-missed-badge {
+  font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 1px;
+  padding: 4px 10px; border-radius: 20px;
+  background: #2a1a08; color: #e09a40; border: 1px solid #5a3010;
+  white-space: nowrap; flex-shrink: 0;
+}
+.backfill-date-text {
+  font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; color: var(--text);
+}
+.backfill-date-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+
+.backfill-pick-label {
+  font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--text-dim); margin: 18px 18px 10px;
+}
+.backfill-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px; padding: 0 18px;
+}
+.backfill-cell {
+  border-radius: var(--radius); padding: 12px 10px 10px;
+  cursor: pointer; border: 1.5px solid transparent;
+  transition: transform 0.12s, border-color 0.12s;
+  -webkit-user-select: none; user-select: none;
+}
+.backfill-cell:active { transform: scale(0.95); }
+.backfill-cell.selected { border-color: #fff5 !important; }
+.backfill-cell.push { background: var(--push-bg); }
+.backfill-cell.pull { background: var(--pull-bg); }
+.backfill-cell.legs { background: var(--legs-bg); }
+.backfill-cell-tag {
+  font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; opacity: 0.7;
+}
+.backfill-cell.push .backfill-cell-tag { color: var(--push-text); }
+.backfill-cell.pull .backfill-cell-tag { color: var(--pull-text); }
+.backfill-cell.legs .backfill-cell-tag { color: var(--legs-text); }
+.backfill-cell-name {
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; line-height: 1.2;
+}
+.backfill-cell.push .backfill-cell-name { color: var(--push-text); }
+.backfill-cell.pull .backfill-cell-name { color: var(--pull-text); }
+.backfill-cell.legs .backfill-cell-name { color: var(--legs-text); }
+
+.backfill-log-toggle {
+  margin: 16px 18px 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  cursor: pointer;
+}
+.backfill-log-toggle-left { font-size: 13px; font-weight: 500; color: var(--text); }
+.backfill-log-toggle-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.toggle-switch {
+  width: 42px; height: 24px; border-radius: 12px;
+  background: var(--border); position: relative; transition: background 0.2s; flex-shrink: 0;
+}
+.toggle-switch.on { background: var(--accent); }
+.toggle-switch::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: left 0.2s;
+}
+.toggle-switch.on::after { left: 21px; }
+
+.backfill-confirm-btn {
+  width: 100%; padding: 15px; border-radius: var(--radius);
+  font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700;
+  border: none; cursor: pointer; color: #fff; letter-spacing: 0.3px;
+  background: var(--accent); margin-top: 14px;
+  opacity: 0.4; pointer-events: none; transition: opacity 0.2s;
+}
+.backfill-confirm-btn.ready { opacity: 1; pointer-events: auto; }
+
+.backfill-existing-item {
+  padding: 12px 14px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.backfill-del-btn {
+  background: none; border: 1px solid var(--border); color: var(--text-dim);
+  font-size: 11px; padding: 4px 10px; border-radius: 6px; cursor: pointer;
+}
+
+/* ── WORKOUT SCREEN ── */
+.workout-header {
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.workout-badge {
+  display: inline-block;
+  font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 1px;
+  padding: 4px 10px; border-radius: 20px; margin-bottom: 8px;
+}
+.workout-title { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.1; }
+.workout-focus { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+.workout-tabs {
+  display: flex; gap: 6px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.workout-tab {
+  flex: 1; padding: 8px; border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border); background: none;
+  font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
+  color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+}
+.workout-tab.active { border-color: currentColor; }
+
+/* ── EXERCISE CARD ── */
+.ex-card {
+  margin: 12px 18px 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.ex-card-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 14px 14px 10px; cursor: pointer; gap: 10px;
+}
+.ex-card-left { flex: 1; }
+.ex-name { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; }
+.ex-sets-badge {
+  display: inline-block; margin-top: 4px;
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  color: var(--text-dim); background: var(--surface2);
+  padding: 2px 7px; border-radius: 4px;
+}
+.ex-chevron { color: var(--text-dim); font-size: 18px; flex-shrink: 0; margin-top: 2px; transition: transform 0.2s; }
+.ex-card.open .ex-chevron { transform: rotate(180deg); }
+
+.ex-desc {
+  padding: 0 14px 14px;
+  font-size: 13px; color: var(--text-muted); line-height: 1.6;
+  border-top: 1px solid var(--border); padding-top: 12px;
+  display: none;
+}
+.ex-card.open .ex-desc { display: block; }
+
+/* ── SET LOGGER ── */
+.set-logger { padding: 0 14px 14px; border-top: 1px solid var(--border); }
+.set-logger-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0 8px;
+}
+.set-logger-title { font-size: 11px; font-weight: 500; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+.add-set-btn {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text-muted); font-size: 11px; font-weight: 500;
+  padding: 4px 10px; border-radius: 6px; cursor: pointer;
+}
+.set-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.set-num { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-dim); width: 20px; flex-shrink: 0; text-align: right; }
+.set-input {
+  flex: 1; background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); font-family: 'DM Mono', monospace; font-size: 13px;
+  padding: 6px 10px; border-radius: 6px; outline: none; text-align: center;
+  -webkit-appearance: none;
+}
+.set-input:focus { border-color: var(--text-dim); }
+.set-input::placeholder { color: var(--text-dim); }
+.set-unit { font-size: 11px; color: var(--text-dim); width: 28px; text-align: center; }
+.del-set-btn { background: none; border: none; color: var(--text-dim); font-size: 16px; cursor: pointer; padding: 2px 4px; flex-shrink: 0; }
+
+/* ── TIMER ── */
+.timer-bar {
+  position: fixed; bottom: calc(var(--safe-bot) + 0px); left: 0; right: 0;
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 10px 18px calc(var(--safe-bot) + 10px);
+  display: none; align-items: center; justify-content: space-between;
+  z-index: 100;
+}
+.timer-bar.visible { display: flex; }
+.timer-display {
+  font-family: 'DM Mono', monospace; font-size: 28px; font-weight: 500;
+  color: var(--text); letter-spacing: 2px; min-width: 90px;
+}
+.timer-display.warning { color: #e05b5b; }
+.timer-presets { display: flex; gap: 6px; }
+.timer-preset {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text-muted); font-family: 'DM Mono', monospace; font-size: 12px;
+  padding: 6px 10px; border-radius: var(--radius-sm); cursor: pointer;
+}
+.timer-preset.active { border-color: var(--accent); color: var(--accent); }
+.timer-controls { display: flex; gap: 8px; }
+.timer-btn {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); font-size: 20px;
+  width: 38px; height: 38px; border-radius: 50%; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.timer-btn.primary { background: var(--accent); border-color: var(--accent); }
+
+.start-session-wrap { padding: 18px 18px 0; }
+.start-session-btn {
+  width: 100%; padding: 15px; border-radius: var(--radius);
+  font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700;
+  border: none; cursor: pointer; letter-spacing: 0.3px;
+}
+
+.finish-btn-wrap { padding: 14px 18px 0; }
+.finish-btn {
+  width: 100%; padding: 15px; border-radius: var(--radius);
+  font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700;
+  border: none; cursor: pointer; color: #fff; letter-spacing: 0.3px;
+}
+
+/* ── HISTORY SCREEN ── */
+.history-list { padding: 0 18px; }
+.history-empty { text-align: center; color: var(--text-dim); font-size: 14px; padding: 60px 0; }
+
+/* ── date group header ── */
+.history-date-group { margin-top: 20px; }
+.history-date-group:first-child { margin-top: 0; }
+.history-day-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0 6px;
+}
+.history-day-label {
+  font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-dim);
+  white-space: nowrap;
+}
+.history-day-line { flex: 1; height: 1px; background: var(--border); }
+
+/* ── session card ── */
+.history-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.history-item-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 14px;
+  gap: 10px;
+}
+.history-item-left { flex: 1; min-width: 0; }
+.history-item-name {
+  font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.history-item-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+.history-item-chevron {
+  color: var(--text-dim); font-size: 18px; flex-shrink: 0;
+  transition: transform 0.2s; line-height: 1;
+}
+.history-item.open .history-item-chevron { transform: rotate(180deg); }
+
+/* ── session detail panel ── */
+.history-detail {
+  display: none;
+  border-top: 1px solid var(--border);
+  padding: 10px 14px 14px;
+}
+.history-item.open .history-detail { display: block; }
+
+.history-ex-block { margin-bottom: 12px; }
+.history-ex-block:last-child { margin-bottom: 0; }
+.history-ex-name {
+  font-size: 12px; font-weight: 500; color: var(--text);
+  margin-bottom: 6px; padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.history-set-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 3px 0; font-family: 'DM Mono', monospace; font-size: 12px;
+}
+.history-set-num { color: var(--text-dim); width: 18px; text-align: right; flex-shrink: 0; }
+.history-set-val { color: var(--text); }
+.history-set-sep { color: var(--text-dim); }
+.history-no-sets { font-size: 12px; color: var(--text-dim); font-style: italic; }
+.history-missed-badge {
+  display: inline-block; font-family: 'DM Mono', monospace; font-size: 9px;
+  font-weight: 500; text-transform: uppercase; letter-spacing: 0.8px;
+  padding: 3px 8px; border-radius: 20px;
+  background: #2a1a08; color: #e09a40; border: 1px solid #5a3010;
+  margin-bottom: 8px;
+}
+
+.bottom-nav {
+  display: flex; border-top: 1px solid var(--border);
+  background: var(--bg);
+  padding-bottom: var(--safe-bot);
+  flex-shrink: 0;
+}
+.bnav-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  padding: 10px 8px; background: none; border: none; cursor: pointer;
+  color: var(--text-dim); gap: 3px;
+}
+.bnav-btn.active { color: var(--accent); }
+.bnav-btn svg { width: 22px; height: 22px; }
+.bnav-btn span { font-size: 10px; font-weight: 500; }
+
+.core-section-head {
+  margin: 20px 18px 10px;
+  display: flex; align-items: center; gap: 10px;
+}
+.core-badge {
+  font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 1px;
+  padding: 4px 10px; border-radius: 20px;
+  background: var(--core-bg); color: var(--core-text);
+  border: 1px solid var(--border);
+}
+.core-focus-txt { font-size: 12px; color: var(--text-muted); flex: 1; line-height: 1.4; }
+
+.session-toast {
+  position: fixed; top: calc(var(--safe-top) + 20px); left: 50%; transform: translateX(-50%) translateY(-20px);
+  background: var(--surface); border: 1px solid var(--border); color: var(--text);
+  padding: 10px 20px; border-radius: 30px; font-size: 13px; font-weight: 500;
+  opacity: 0; transition: all 0.3s; pointer-events: none; z-index: 200; white-space: nowrap;
+}
+.session-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+.timer-display.running { animation: pulse 1s infinite; }
+
+/* ── DATA SCREEN ── */
+.data-section-card {
+  margin: 12px 18px 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.data-section-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-bottom: 1px solid var(--border);
+}
+.data-section-row:last-child { border-bottom: none; }
+.data-row-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'DM Mono', monospace; margin-bottom: 3px; }
+.data-row-value { font-size: 14px; font-weight: 500; color: var(--text); }
+.data-action-btn {
+  width: 100%; padding: 15px; border-radius: var(--radius);
+  font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
+  border: none; cursor: pointer; letter-spacing: 0.3px; margin-top: 12px;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.data-action-btn.export { background: var(--pull-bg); color: var(--pull-text); border: 1px solid var(--pull); }
+.data-action-btn.import { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.data-action-btn.danger { background: #1a0808; color: #e05b5b; border: 1px solid #5a1010; }
+.data-info-box {
+  margin: 12px 18px 0; padding: 12px 14px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); font-size: 12px; color: var(--text-muted); line-height: 1.6;
+}
+.data-info-box strong { color: var(--text); }
+#import-file-input { display: none; }
+
+/* ── PERSONAL BESTS SCREEN ── */
+.pb-exercise-card {
+  margin: 0 18px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.pb-ex-header {
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.pb-ex-name { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--text); }
+.pb-ex-tag { font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px; }
+.pb-records { display: flex; }
+.pb-record {
+  flex: 1; padding: 12px 14px; border-right: 1px solid var(--border);
+}
+.pb-record:last-child { border-right: none; }
+.pb-record-label { font-size: 10px; color: var(--text-dim); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.pb-record-value { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; line-height: 1; }
+.pb-record-unit { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+.pb-record-date { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--text-dim); margin-top: 5px; }
+.pb-empty { text-align: center; color: var(--text-dim); font-size: 13px; padding: 40px 18px; }
+
+/* ── PB NOTIFICATION ── */
+.pb-toast {
+  position: fixed; bottom: calc(var(--safe-bot) + 80px); left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: linear-gradient(135deg, #2a1a08, #1a1408);
+  border: 1px solid var(--accent);
+  color: var(--text); padding: 12px 20px; border-radius: 30px;
+  font-size: 13px; font-weight: 500; opacity: 0;
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none; z-index: 300; white-space: nowrap;
+  display: flex; align-items: center; gap: 8px; max-width: 90vw;
+  box-shadow: 0 4px 24px rgba(196,115,42,0.3);
+}
+.pb-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.pb-toast-star { font-size: 16px; }
+</style>
+</head>
+<body>
+
+<!-- ── HOME SCREEN ── -->
+<div id="screen-home" class="screen active">
+  <div style="flex-shrink:0" id="home-header">
+    <div class="home-header">
+      <div class="home-logo">PPL<span>.</span></div>
+      <div class="home-date" id="home-date"></div>
+    </div>
+    <div id="suggestion-container"></div>
+    <div class="section-label">Workouts</div>
+    <div class="nav-grid" id="nav-grid"></div>
+  </div>
+  <div class="scroll-body" style="padding-top:0">
+    <div class="section-label" style="margin-top:18px">This Month</div>
+    <div class="calendar-wrap">
+      <div class="cal-header">
+        <button class="cal-nav" id="cal-prev">‹</button>
+        <div class="cal-month" id="cal-month-label"></div>
+        <button class="cal-nav" id="cal-next">›</button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div class="cal-day-tooltip" id="cal-tooltip"></div>
+    </div>
+
+    <div class="section-label" style="margin-top:8px">Recent Sessions</div>
+    <div id="recent-sessions" style="padding:0 18px"></div>
+  </div>
+  <div class="bottom-nav">
+    <button class="bnav-btn active" onclick="showHome()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="bnav-btn" onclick="showHistory()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+      <span>History</span>
+    </button>
+    <button class="bnav-btn" onclick="showData()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span>Data</span>
+    </button>
+    <button class="bnav-btn" onclick="showBests()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+      <span>Bests</span>
+    </button>
+  </div>
+</div>
+<div id="screen-workout" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="showHome()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg>
+      Home
+    </button>
+    <div class="topbar-title" id="workout-topbar-title"></div>
+    <div style="width:60px;text-align:right">
+      <button id="finish-session-top" onclick="finishSession()" style="background:none;border:none;color:var(--accent);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:none">Done</button>
+    </div>
+  </div>
+  <div class="workout-header" id="workout-header"></div>
+  <div class="workout-tabs" id="workout-tabs"></div>
+  <div class="scroll-body" id="workout-body" style="padding-bottom:120px"></div>
+  <div class="timer-bar" id="timer-bar">
+    <div>
+      <div style="font-size:10px;color:var(--text-dim);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Rest</div>
+      <div class="timer-display" id="timer-display">1:30</div>
+    </div>
+    <div class="timer-presets">
+      <button class="timer-preset" onclick="setTimerPreset(60)">1m</button>
+      <button class="timer-preset active" onclick="setTimerPreset(90)">90s</button>
+      <button class="timer-preset" onclick="setTimerPreset(120)">2m</button>
+    </div>
+    <div class="timer-controls">
+      <button class="timer-btn" onclick="resetTimer()">↺</button>
+      <button class="timer-btn primary" id="timer-play-btn" onclick="toggleTimer()">▶</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── HISTORY SCREEN ── -->
+<div id="screen-history" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="showHome()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg>
+      Home
+    </button>
+    <div class="topbar-title">History</div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="scroll-body">
+    <div class="section-label" style="margin-top:16px">All Sessions</div>
+    <div class="history-list" id="history-list"></div>
+  </div>
+  <div class="bottom-nav">
+    <button class="bnav-btn" onclick="showHome()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="bnav-btn active" onclick="showHistory()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+      <span>History</span>
+    </button>
+    <button class="bnav-btn" onclick="showData()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span>Data</span>
+    </button>
+    <button class="bnav-btn" onclick="showBests()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+      <span>Bests</span>
+    </button>
+  </div>
+</div>
+
+<!-- ── BACKFILL SCREEN ── -->
+<div id="screen-backfill" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="closeBackfill()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg>
+      Back
+    </button>
+    <div class="topbar-title">Log Missed Workout</div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="scroll-body" id="backfill-body" style="padding-bottom:30px"></div>
+</div>
+
+<!-- ── DATA SCREEN ── -->
+<div id="screen-data" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="showHome()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg>
+      Home
+    </button>
+    <div class="topbar-title">Data & Backup</div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="scroll-body" id="data-body" style="padding-bottom:30px"></div>
+  <div class="bottom-nav">
+    <button class="bnav-btn" onclick="showHome()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="bnav-btn" onclick="showHistory()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+      <span>History</span>
+    </button>
+    <button class="bnav-btn active" onclick="showData()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span>Data</span>
+    </button>
+    <button class="bnav-btn" onclick="showBests()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+      <span>Bests</span>
+    </button>
+  </div>
+</div>
+
+<!-- ── PERSONAL BESTS SCREEN ── -->
+<div id="screen-bests" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="showHome()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg>
+      Home
+    </button>
+    <div class="topbar-title">Personal Bests</div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="scroll-body" id="bests-body" style="padding-bottom:30px"></div>
+  <div class="bottom-nav">
+    <button class="bnav-btn" onclick="showHome()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="bnav-btn" onclick="showHistory()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+      <span>History</span>
+    </button>
+    <button class="bnav-btn" onclick="showData()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span>Data</span>
+    </button>
+    <button class="bnav-btn active" onclick="showBests()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+      <span>Bests</span>
+    </button>
+  </div>
+</div>
+
+<input type="file" id="import-file-input" accept=".json" onchange="handleImportFile(event)">
+<div class="pb-toast" id="pb-toast"><span class="pb-toast-star">★</span><span id="pb-toast-msg"></span></div>
+<div class="session-toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+// DATA
+// ════════════════════════════════════════════════════════════════════════════
+const VARIATIONS = {
+  push_a: {
+    key:'push_a', type:'push', label:'Push A', name:'Classic Chest Focus',
+    focus:'Flat pressing as the anchor, with shoulder and tricep isolation to finish.',
+    coreFocus:'Anti-extension work pairs naturally after pressing, away from fatigued chest and shoulders.',
+    exercises:[
+      {name:'Dumbbell bench press',sets:'3 × 8–10',desc:'Lie flat on the bench, dumbbells at chest height with elbows at roughly 45 degrees. Press straight up until arms are extended, then lower under control.'},
+      {name:'Dumbbell shoulder press',sets:'3 × 8–10',desc:'Seated on the bench, hold dumbbells at shoulder height with palms facing forward. Press overhead until arms are nearly locked, then lower back to the start. Keep your core braced to avoid arching your lower back.'},
+      {name:'Dumbbell flyes',sets:'3 × 12',desc:'Lie flat on the bench, dumbbells above your chest, palms facing each other with a slight bend in the elbows. Lower the weights in a wide arc until you feel a chest stretch, then squeeze them back up. Keep the elbows soft throughout.'},
+      {name:'Lateral raises',sets:'3 × 12–15',desc:'Stand with dumbbells at your sides. Raise both arms out to the sides until parallel to the floor, leading with the elbows. Lower slowly — the eccentric phase does most of the work. Use lighter weight than you think you need.'},
+      {name:'Tricep overhead extension',sets:'3 × 10–12',desc:'Seated on the bench, hold one dumbbell with both hands overhead, arms straight. Bend at the elbows to lower it behind your head, keeping upper arms vertical and still. Extend back up.'},
+      {name:'Push-ups (finisher)',sets:'2 × max',desc:'Standard push-up, hands shoulder-width apart. Keep a rigid plank from head to heels and lower your chest to the floor. Go to or near failure. Elevate hands on bench to reduce difficulty.'},
+    ],
+    core:[
+      {name:'Plank',sets:'3 × 30–45 sec',desc:'Forearms on the floor, body in a straight line from head to heels. Squeeze your glutes and brace your abs hard — don\'t let your hips sag or pike.'},
+      {name:'Ab wheel rollout (or bench walkout)',sets:'3 × 8–10',desc:'Kneel and grip an ab wheel, or place hands on the bench edge and walk them forward. Roll or walk out slowly until nearly parallel to the floor, then pull back in using your abs.'},
+      {name:'Dead bug',sets:'3 × 8/side',desc:'Lie on your back, arms up, knees at 90 degrees. Lower one arm overhead and the opposite leg toward the floor simultaneously, keeping lower back pressed into the ground. Return and alternate.'},
+    ]
+  },
+  push_b: {
+    key:'push_b', type:'push', label:'Push B', name:'Upper Chest + Tricep',
+    focus:'Incline angle to hit upper chest, Arnold press for full delt sweep, heavy tricep finish.',
+    coreFocus:'Elevated feet on bench variations increase the lever arm — harder than flat equivalents.',
+    exercises:[
+      {name:'DB incline press',sets:'3 × 8–10',desc:'Set the bench to 30–45 degree incline. Press dumbbells from chest height shifting emphasis to upper chest and front deltoid. Keep elbows at roughly 45 degrees and lower with full control.'},
+      {name:'Arnold press',sets:'3 × 10',desc:'Seated on bench, dumbbells at shoulder height palms facing you. As you press overhead, rotate palms outward so they face forward at the top. Reverse on the way down. Recruits more deltoid across its full range.'},
+      {name:'DB flyes (incline)',sets:'3 × 12',desc:'Set bench to 30–45 degree incline. Hold dumbbells above chest, palms facing each other with slight elbow bend. Lower in a wide arc until you feel an upper chest stretch, then squeeze back up.'},
+      {name:'Lateral raises',sets:'3 × 12–15',desc:'Stand with dumbbells at your sides. Raise both arms out to the sides until parallel to the floor, leading with the elbows. Lower slowly — the eccentric phase does most of the work.'},
+      {name:'Tricep kickbacks',sets:'3 × 12',desc:'Hinge forward until torso is nearly parallel to the floor, upper arm pinned parallel to the floor. Extend forearm back until arm is straight, pause, then lower. Upper arm stays completely still.'},
+      {name:'Diamond push-ups',sets:'2 × max',desc:'Hands close together in a diamond shape under your chest. Lower and press back up with narrow elbows. The close grip shifts load heavily onto the triceps. Go to or near failure.'},
+    ],
+    core:[
+      {name:'Decline plank',sets:'3 × 30–45 sec',desc:'Feet on the bench, forearms on the floor, body in a straight line. The decline angle increases the abs load compared to a flat plank. Squeeze glutes, brace hard, keep hips level.'},
+      {name:'Bench-elevated pike rollout',sets:'3 × 8–10',desc:'Push-up position with feet on bench, hands on floor. Walk hands back toward bench piking hips up into an inverted V, then walk back out. Elevated feet challenge abs through a longer range.'},
+      {name:'Dead bug',sets:'3 × 8/side',desc:'Lie on your back, arms up, knees at 90 degrees. Lower one arm overhead and the opposite leg toward the floor simultaneously, keeping lower back pressed into the ground. Return and alternate.'},
+    ]
+  },
+  push_c: {
+    key:'push_c', type:'push', label:'Push C', name:'Shoulder Dominant',
+    focus:'Front and side delt emphasis, light chest work, bodyweight tricep burnout.',
+    coreFocus:'Shoulder-dominant sessions leave the anterior core relatively fresh — use the most demanding anti-extension variations.',
+    exercises:[
+      {name:'Dumbbell shoulder press',sets:'4 × 8–10',desc:'Seated on bench, dumbbells at shoulder height palms forward. Press overhead until nearly locked, lower back to start. Core braced throughout. Primary lift here — take 90 sec between sets.'},
+      {name:'DB front raise',sets:'3 × 12',desc:'Stand with dumbbells at thighs, palms facing down. Raise both arms straight forward to shoulder height, then lower under control. Slight elbow bend throughout. Avoid swinging — use lighter weight than expected.'},
+      {name:'Lateral raises',sets:'3 × 12–15',desc:'Stand with dumbbells at your sides. Raise both arms out to the sides until parallel to the floor, leading with the elbows. Front raises and lateral raises back-to-back hits all three delt heads.'},
+      {name:'DB floor press',sets:'3 × 10',desc:'Lie on the floor with dumbbells at chest height. Press up until arms extend, then lower until triceps contact the floor — that is the bottom of the rep. Floor limits range, reducing shoulder stress.'},
+      {name:'Tricep dips (bench)',sets:'3 × 10–12',desc:'Hands on bench edge behind you, legs extended or slightly bent. Lower body bending elbows until upper arms are roughly parallel to floor, then press back up. Keep hips close to bench.'},
+      {name:'Pike push-ups (feet elevated)',sets:'2 × max',desc:'Feet on bench, walk hands out until hips are high forming an inverted V. Bend elbows to lower head toward floor, then press back up. Elevated feet significantly increases shoulder load.'},
+    ],
+    core:[
+      {name:'Plank with shoulder taps',sets:'3 × 10/side',desc:'High plank, hands under shoulders. Lift one hand to tap opposite shoulder, return before switching. Resist any hip rotation throughout. Wider feet makes stabilizing easier.'},
+      {name:'Hollow body hold',sets:'3 × 20–30 sec',desc:'Lie on back, arms overhead, legs straight a few inches off floor. Press lower back firmly into ground and hold. If back arches, raise legs higher. The foundational anti-extension position in gymnastics.'},
+      {name:'Ab wheel rollout (or bench walkout)',sets:'3 × 8–10',desc:'Kneel and grip an ab wheel, or place hands on the bench edge and walk them forward. Roll or walk out slowly until nearly parallel to the floor, then pull back in using your abs.'},
+    ]
+  },
+  pull_a: {
+    key:'pull_a', type:'pull', label:'Pull A', name:'Classic Back + Bicep',
+    focus:'Row-based back thickness, full bicep sweep, lower back finisher.',
+    coreFocus:'After rows and deadlifts the lower back is already engaged — flexion core work complements without adding extension load.',
+    exercises:[
+      {name:'Dumbbell rows',sets:'3 × 8–10',desc:'One hand and knee on bench for support, dumbbell in other hand. Pull toward your hip, elbow back and close to body. Lower slowly. Think of pulling your elbow to the ceiling rather than lifting the dumbbell.'},
+      {name:'Dumbbell deadlifts',sets:'3 × 8–10',desc:'Dumbbells in front of thighs, feet hip-width. Hinge at hips pushing them back, flat back, soft knee bend. Lower along legs until hamstring stretch, then drive through heels to stand. Full posterior chain.'},
+      {name:'Rear delt fly',sets:'3 × 12',desc:'Hinge forward until torso is near parallel to floor, dumbbells hanging down. Raise both arms in a wide arc squeezing shoulder blades at top. Lower under control. Targets rear delt and mid-trap.'},
+      {name:'Dumbbell curl',sets:'3 × 10–12',desc:'Dumbbells at sides, palms forward. Curl to shoulder height, elbows pinned to sides. Lower under full control. Can be done alternating or both arms simultaneously.'},
+      {name:'Hammer curl',sets:'3 × 10–12',desc:'Dumbbells at sides, palms facing each other — neutral grip maintained throughout. Curl to shoulder height and lower under control. Shifts emphasis to brachialis and brachioradialis.'},
+      {name:'Superman holds',sets:'3 × 10',desc:'Face down on floor, arms extended overhead. Lift arms, chest, and legs simultaneously squeezing glutes and back. Hold 2–3 seconds at top, then lower. No-equipment posterior chain finisher.'},
+    ],
+    core:[
+      {name:'Bench-assisted leg raises',sets:'3 × 12–15',desc:'Lie flat on bench, hands gripping sides above head. Raise straight legs from hanging to perpendicular, then lower slowly. Bench allows greater range than floor raises with a full hip flexor stretch at bottom.'},
+      {name:'Crunches',sets:'3 × 15–20',desc:'On back, knees bent, feet flat. Hands lightly behind head. Curl upper back off floor contracting abs, hold briefly, then lower. Short-range movement — focus on the contraction.'},
+      {name:'Reverse crunch',sets:'3 × 12–15',desc:'On back, legs raised to 90 degrees. Curl hips off floor toward chest using abs. Pause at top, then lower slowly. Shifts emphasis to lower abs compared to a standard crunch.'},
+    ]
+  },
+  pull_b: {
+    key:'pull_b', type:'pull', label:'Pull B', name:'Width + Upper Back',
+    focus:'Pullover for lat width, face pulls for upper back health, varied curl angles.',
+    coreFocus:'Chest-supported and incline work keeps lower back relatively fresh — good session for more demanding flexion variations.',
+    exercises:[
+      {name:'DB pullover',sets:'3 × 10–12',desc:'Lie perpendicular across bench, upper back supported, hips low. One dumbbell with both hands above chest. Lower back over head in wide arc until deep lat stretch, then pull back up. Trains lat width without cable or bar.'},
+      {name:'Incline DB rows',sets:'3 × 10',desc:'Bench at low incline (30 degrees), lie chest-down with a dumbbell in each hand. Row both up simultaneously, elbows back, squeeze shoulder blades at top. Chest-supported position removes lower back involvement entirely.'},
+      {name:'DB face pull',sets:'3 × 15',desc:'Hinge forward slightly, light dumbbells in front palms down. Pull toward face while externally rotating shoulders so elbows flare high and wide at the top. Key shoulder health movement targeting rear delt and external rotators.'},
+      {name:'Rear delt fly',sets:'3 × 12',desc:'Hinge forward until torso is near parallel to floor, dumbbells hanging down. Raise both arms in a wide arc squeezing shoulder blades at top. Lower under control. Targets rear delt and mid-trap.'},
+      {name:'Incline curl',sets:'3 × 10–12',desc:'Bench at 45–60 degree incline, sit back with arms hanging straight down behind body. Curl to shoulder height from fully stretched position. Incline forces longer range and more load on the long head of the bicep.'},
+      {name:'Concentration curl',sets:'3 × 10/side',desc:'Seated on bench, elbow braced against inner thigh. Curl dumbbell toward shoulder with strict, controlled motion. Upper arm is fixed — pure isolation for the bicep peak. Complete all reps on one side first.'},
+    ],
+    core:[
+      {name:'Decline crunches',sets:'3 × 15–20',desc:'Bench set to decline, feet hooked at elevated end. Crunch from declined position — the angle increases the abs load compared to flat by increasing range of motion against gravity.'},
+      {name:'Bench-assisted leg raises',sets:'3 × 12–15',desc:'Lie flat on bench, hands gripping sides above head. Raise straight legs from hanging to perpendicular, then lower slowly. Bench allows greater range than floor raises with a full hip flexor stretch at bottom.'},
+      {name:'Seated knee tucks',sets:'3 × 12–15',desc:'Sit on bench edge, hands gripping sides, legs extended in front, feet off floor. Draw knees toward chest contracting abs, then extend back out without feet touching floor. Constant tension throughout.'},
+    ]
+  },
+  pull_c: {
+    key:'pull_c', type:'pull', label:'Pull C', name:'Hinge Heavy',
+    focus:'Deadlift variation as the cornerstone, reinforcing the posterior chain with added row work.',
+    coreFocus:'After a hinge-heavy session the lower back is taxed — flexion core keeps the stimulus on abs without further spinal demand.',
+    exercises:[
+      {name:'DB Romanian DL',sets:'4 × 10',desc:'Dumbbells in front, feet hip-width. Nearly straight legs, soft knee bend. Hinge at hips pushing them back, lower along legs feeling hamstring stretch to mid-shin. Drive hips forward to return. Primary lift here — 90 sec rest.'},
+      {name:'DB renegade row',sets:'3 × 8/side',desc:'Push-up position, each hand on a dumbbell, feet slightly wider than hip-width. Row one dumbbell to your hip while the rest of your body holds stable — resist any rotation. Lower it, then row the other side.'},
+      {name:'Dumbbell rows',sets:'3 × 8–10',desc:'One hand and knee on bench for support, dumbbell in other hand. Pull toward your hip, elbow back and close to body. Lower slowly. Follows renegade row as a heavier, more stable row to finish back work.'},
+      {name:'Rear delt fly',sets:'3 × 12',desc:'Hinge forward until torso is near parallel to floor, dumbbells hanging down. Raise both arms in a wide arc squeezing shoulder blades at top. Lower under control. Targets rear delt and mid-trap.'},
+      {name:'Zottman curl',sets:'3 × 10–12',desc:'Curl up with supinated grip (palms up). At top, rotate palms to face down then lower in that pronated position. Rotate back to supinated at bottom. Lowering phase trains brachioradialis — two variations in one rep. Go lighter than your usual curl weight.'},
+      {name:'Superman holds',sets:'3 × 10',desc:'Face down on floor, arms extended overhead. Lift arms, chest, and legs simultaneously squeezing glutes and back. Hold 2–3 seconds at top, then lower. Natural fit after hinge-heavy session — finishes lower back and glutes.'},
+    ],
+    core:[
+      {name:'Crunches',sets:'3 × 15–20',desc:'On back, knees bent, feet flat. Hands lightly behind head. Curl upper back off floor contracting abs, hold briefly, then lower. Short-range movement — focus on the contraction.'},
+      {name:'Reverse crunch',sets:'3 × 12–15',desc:'On back, legs raised to 90 degrees. Curl hips off floor toward chest using abs. Pause at top, then lower slowly. Shifts emphasis to lower abs and complements the upper-ab focus of standard crunches.'},
+      {name:'Bench-assisted leg raises',sets:'3 × 12–15',desc:'Lie flat on bench, hands gripping sides above head. Raise straight legs from hanging to perpendicular, then lower slowly. Bench allows greater range than floor raises with a full hip flexor stretch at bottom.'},
+    ]
+  },
+  legs_a: {
+    key:'legs_a', type:'legs', label:'Legs A', name:'Balanced Quad + Glute',
+    focus:'Squat and hinge balanced evenly, single-leg stability, glute finisher.',
+    coreFocus:'Squats and hinges load the core in the sagittal plane — lateral and rotational work fills in the patterns leg training doesn\'t touch.',
+    exercises:[
+      {name:'DB goblet squat',sets:'3 × 10–12',desc:'One dumbbell vertically at chest height, both hands cupped around top. Feet shoulder-width, toes slightly out. Squat until thighs parallel, chest tall, knees tracking over toes. Drive through heels. Counterbalance makes it easier to sit deep.'},
+      {name:'DB Romanian DL',sets:'3 × 10',desc:'Dumbbells in front, feet hip-width, legs nearly straight with soft knee bend. Hinge at hips pushing them back, lower along legs feeling hamstring stretch to mid-shin. Drive hips forward to return. Pure hip hinge targeting hamstrings and glutes.'},
+      {name:'DB reverse lunge',sets:'3 × 10/side',desc:'Dumbbells at sides. Step one foot back and lower rear knee toward floor, front shin vertical. Front knee should not pass toes. Push through front heel to return. Easier on the knee than a forward lunge.'},
+      {name:'DB step-up',sets:'3 × 10/side',desc:'Face the bench, dumbbells at sides. Step one foot onto bench and drive through that foot to stand fully on top. Step back down with control. Complete all reps on one side before switching.'},
+      {name:'Glute bridge',sets:'3 × 15',desc:'On back, knees bent, feet flat, hip-width apart. Drive hips straight up squeezing glutes forming a straight line from knees to shoulders. Hold at top for a full second. Add a dumbbell across hips for extra resistance.'},
+      {name:'Calf raises',sets:'3 × 15–20',desc:'Dumbbells at sides, balls of feet on bench or step edge. Rise onto toes as high as possible, hold briefly, then lower all the way down past the step for a full stretch. Calves respond well to higher reps and slow lowering.'},
+    ],
+    core:[
+      {name:'Side plank',sets:'3 × 25–35 sec/side',desc:'On your side, forearm on floor, elbow under shoulder. Lift hips so only forearm and side of foot contact floor, forming a straight line head to feet. Keep hips stacked — resist letting them drop.'},
+      {name:'Dead bug with rotation',sets:'3 × 8/side',desc:'On back, arms up, knees at 90 degrees. As you lower one arm and opposite leg, add a slight torso rotation toward the working side. Keep lower back pressed into ground. Adds anti-rotation to the standard dead bug.'},
+      {name:'Pallof press (band or DB hold)',sets:'3 × 10/side',desc:'Stand sideways to a band anchor or hold a light dumbbell with both hands at chest. Press straight out and hold for a beat, then return. Resistance pulls you into rotation — your job is to resist. Complete all reps on one side before switching.'},
+    ]
+  },
+  legs_b: {
+    key:'legs_b', type:'legs', label:'Legs B', name:'Quad Dominant',
+    focus:'Deeper squat patterns and lunge variations to emphasize the quads and VMO.',
+    coreFocus:'A quad-heavy session leaves hips and adductors fatigued — rotational core challenges the obliques without overlapping with leg work.',
+    exercises:[
+      {name:'DB sumo squat',sets:'3 × 10–12',desc:'One dumbbell vertically between both hands. Feet wider than shoulder-width, toes at 45 degrees. Squat deep, chest tall, knees tracking over toes. Drive through heels. Wide stance hits inner quad (VMO) and adductors.'},
+      {name:'DB Bulgarian split squat',sets:'3 × 8/side',desc:'Face away from bench, rear foot elevated on it. Walk front foot forward until shin stays vertical at bottom. Dumbbells at sides, lower rear knee toward floor under control. Drive through front heel to return. Demanding single-leg movement — expect to go lighter than you think.'},
+      {name:'DB forward lunge',sets:'3 × 10/side',desc:'Dumbbells at sides. Step one foot forward, lower rear knee toward floor, push off front foot to return. Forward step creates longer shin angle loading the quad more than a reverse lunge. More knee stress than reverse — substitute if you have knee sensitivity.'},
+      {name:'DB sissy squat',sets:'3 × 10–12',desc:'Light dumbbell at chest for counterbalance, or hold wall for balance. Rise onto toes and lean torso back as you bend knees forward, lowering in a diagonal line. Isolates quad and VMO directly. Build up slowly — significant patellar tendon stress.'},
+      {name:'Glute bridge',sets:'3 × 15',desc:'On back, knees bent, feet flat, hip-width apart. Drive hips straight up squeezing glutes, straight line from knees to shoulders. Hold at top for a full second. Posterior balance to the quad-heavy session — keeps things balanced after split squats and sissy squats.'},
+      {name:'Calf raises',sets:'3 × 15–20',desc:'Dumbbells at sides, balls of feet on bench or step edge. Rise onto toes as high as possible, hold briefly, then lower all the way down past the step for a full stretch.'},
+    ],
+    core:[
+      {name:'Side plank with hip dip',sets:'3 × 10/side',desc:'Hold a side plank, then lower your hip toward floor in a controlled descent and raise it back up past neutral as high as you can. Adds dynamic demand on obliques. Control both directions — don\'t let gravity do the work.'},
+      {name:'Seated Russian twist',sets:'3 × 12–15/side',desc:'Sit on floor or bench edge leaning back at 45 degrees. Feet slightly raised or lightly touching. Hold one dumbbell with both hands and rotate torso to one side tapping dumbbell to floor, then rotate to other side. Keep movement controlled.'},
+      {name:'Pallof press (band or DB hold)',sets:'3 × 10/side',desc:'Stand sideways to a band anchor or hold a light dumbbell with both hands at chest. Press straight out and hold for a beat, then return. Resistance pulls you into rotation — your job is to resist. Complete all reps on one side before switching.'},
+    ]
+  },
+  legs_c: {
+    key:'legs_c', type:'legs', label:'Legs C', name:'Posterior Chain',
+    focus:'Hamstring and glute focus with hinge and hip thrust patterns, less quad loading.',
+    coreFocus:'After heavy posterior chain work the lower back is loaded — lateral stability and rotation finishers keep core stimulus on obliques.',
+    exercises:[
+      {name:'DB deadlift',sets:'3 × 8–10',desc:'Both dumbbells from the floor, feet hip-width. Hinge at hips, grip dumbbells, flat back, lats engaged. Drive through heels to stand finishing with hips fully extended and glutes squeezed. Trains full posterior chain with most total load.'},
+      {name:'DB single-leg RDL',sets:'3 × 10/side',desc:'Stand on one foot, dumbbells in both hands. Hinge forward at hip, opposite leg extending back as counterbalance, lower dumbbells toward standing foot. Keep hips square to floor — resist raised hip rotating open. Drive standing hip forward to return.'},
+      {name:'DB hip thrust',sets:'3 × 12–15',desc:'Upper back against bench side, knees bent, feet flat. Dumbbell across hip crease. Drive hips up squeezing glutes until torso is parallel to floor and shins are vertical. Hold at top for a full second. Greater range than floor bridge.'},
+      {name:'Nordic curl',sets:'3 × 5–8',desc:'Kneel, feet anchored under a heavy dumbbell or bench base. Lower toward floor as slowly as possible by resisting with hamstrings. Catch yourself with hands, do a small push-up to bottom, then pull back up with hamstrings. One of the most effective hamstring exercises available.'},
+      {name:'Lateral lunge',sets:'3 × 10/side',desc:'One dumbbell at chest with both hands. Step wide to one side and sit into that hip, opposite leg straight, foot flat. Working leg takes deep knee bend. Push through bent leg to return. Trains adductors and glutes in the frontal plane.'},
+      {name:'Calf raises',sets:'3 × 15–20',desc:'Dumbbells at sides, balls of feet on bench or step edge. Rise onto toes as high as possible, hold briefly, then lower all the way down past the step for a full stretch.'},
+    ],
+    core:[
+      {name:'Side plank',sets:'3 × 25–35 sec/side',desc:'On your side, forearm on floor, elbow under shoulder. Lift hips so only forearm and side of foot contact floor, forming a straight line head to feet. Keep hips stacked. After heavy posterior chain work, lateral stability targets obliques without further spinal extension.'},
+      {name:'Dead bug',sets:'3 × 8/side',desc:'On back, arms up, knees at 90 degrees. Lower one arm overhead and opposite leg toward floor simultaneously, keeping lower back pressed into ground. Return and alternate. Low-impact anti-extension work — ideal after a hinge-heavy session.'},
+      {name:'Seated Russian twist',sets:'3 × 12–15/side',desc:'Sit on floor or bench edge leaning back at 45 degrees. Feet slightly raised or lightly touching. Hold one dumbbell with both hands and rotate torso to one side tapping dumbbell to floor, then rotate to other side. Keep movement controlled.'},
+    ]
+  }
+};
+
+const ORDER = ['push_a','pull_a','legs_a','push_b','pull_b','legs_b','push_c','pull_c','legs_c'];
+const TYPE_COLOR = { push:'var(--push)', pull:'var(--pull)', legs:'var(--legs)' };
+const TYPE_BG    = { push:'var(--push-bg)', pull:'var(--pull-bg)', legs:'var(--legs-bg)' };
+const TYPE_TEXT  = { push:'var(--push-text)', pull:'var(--pull-text)', legs:'var(--legs-text)' };
+const TYPE_MID   = { push:'var(--push-mid)', pull:'var(--pull-mid)', legs:'var(--legs-mid)' };
+
+// ════════════════════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════════════════════
+let sessions = JSON.parse(localStorage.getItem('ppl_sessions') || '[]');
+let activeSession = null;
+let currentVariation = null;
+let currentTab = 'main'; // 'main' | 'core'
+let timerSeconds = 90;
+let timerMax = 90;
+let timerRunning = false;
+let timerInterval = null;
+let calViewDate = new Date();
+
+function saveSessions() {
+  localStorage.setItem('ppl_sessions', JSON.stringify(sessions));
+  checkAndAutoSyncPBs();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SUGGESTION LOGIC
+// ════════════════════════════════════════════════════════════════════════════
+function getSuggested() {
+  if (!sessions.length) return 'push_a';
+  const last = sessions[sessions.length - 1].variationKey;
+  const idx = ORDER.indexOf(last);
+  return ORDER[(idx + 1) % ORDER.length];
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// HOME SCREEN
+// ════════════════════════════════════════════════════════════════════════════
+function showHome() {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-home').classList.add('active');
+  renderHome();
+}
+
+function renderHome() {
+  const now = new Date();
+  document.getElementById('home-date').textContent =
+    now.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'}).toUpperCase();
+
+  const suggested = getSuggested();
+  const sv = VARIATIONS[suggested];
+  const container = document.getElementById('suggestion-container');
+  container.innerHTML = `
+    <div class="suggestion-bar">
+      <div>
+        <div class="suggestion-label">Up next</div>
+        <div class="suggestion-name" style="color:${TYPE_COLOR[sv.type]}">${sv.label} — ${sv.name}</div>
+        <div class="suggestion-sub">${sv.focus.substring(0,60)}…</div>
+      </div>
+      <button class="suggestion-go" style="background:${TYPE_COLOR[sv.type]}" onclick="openVariation('${suggested}')">Start</button>
+    </div>`;
+
+  const grid = document.getElementById('nav-grid');
+  grid.innerHTML = '';
+  ORDER.forEach(key => {
+    const v = VARIATIONS[key];
+    const isSuggested = key === suggested;
+    const lastDone = sessions.filter(s => s.variationKey === key).slice(-1)[0];
+    const doneText = lastDone
+      ? `Last: ${new Date(lastDone.date).toLocaleDateString('en-US',{month:'short',day:'numeric'})}`
+      : '';
+    grid.innerHTML += `
+      <div class="nav-cell ${v.type}${isSuggested?' suggested':''}" onclick="openVariation('${key}')">
+        <div class="nav-cell-tag">${v.label}</div>
+        <div class="nav-cell-name">${v.name}</div>
+        <div class="nav-cell-sub">${v.focus.split(',')[0]}</div>
+        ${doneText ? `<div class="nav-cell-done">${doneText}</div>` : ''}
+      </div>`;
+  });
+
+  renderCalendar();
+  renderRecent();
+}
+
+function renderRecent() {
+  const container = document.getElementById('recent-sessions');
+  const recent = [...sessions].reverse().slice(0, 3);
+  if (!recent.length) {
+    container.innerHTML = '<div style="color:var(--text-dim);font-size:13px;padding:4px 0 16px">No sessions yet — start your first workout above.</div>';
+    return;
+  }
+  container.innerHTML = recent.map(s => renderHistorySessionCard(s)).join('');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// CALENDAR
+// ════════════════════════════════════════════════════════════════════════════
+function renderCalendar() {
+  const y = calViewDate.getFullYear(), m = calViewDate.getMonth();
+  document.getElementById('cal-month-label').textContent =
+    new Date(y, m, 1).toLocaleDateString('en-US', {month:'long', year:'numeric'});
+
+  const firstDay = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const today = new Date();
+  const todayY = today.getFullYear(), todayM = today.getMonth(), todayD = today.getDate();
+
+  const sessionsByDate = {};
+  sessions.forEach(s => {
+    const sd = new Date(s.date);
+    if (sd.getFullYear() === y && sd.getMonth() === m) {
+      const key = sd.getDate();
+      if (!sessionsByDate[key]) sessionsByDate[key] = [];
+      sessionsByDate[key].push(VARIATIONS[s.variationKey].type);
+    }
+  });
+
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = ['S','M','T','W','T','F','S'].map(d =>
+    `<div class="cal-dow">${d}</div>`).join('');
+
+  for (let i = 0; i < firstDay; i++)
+    grid.innerHTML += `<div class="cal-day empty"></div>`;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const isToday = todayY===y && todayM===m && todayD===d;
+    const cellDate = new Date(y, m, d);
+    const todayDate = new Date(todayY, todayM, todayD);
+    const isFuture = cellDate > todayDate;
+    const types = sessionsByDate[d] || [];
+    const typeClass = types.length ? `has-${types[types.length-1]}` : '';
+    const isPastEmpty = !types.length && !isToday && !isFuture;
+    const extraClass = isFuture ? 'future' : (isPastEmpty ? 'past-empty' : '');
+    grid.innerHTML += `<div class="cal-day ${isToday?'today':''} ${typeClass} ${extraClass}"
+      onclick="calDayClick(${d},${y},${m},${isFuture},${types.length>0})">
+      ${d}${types.length ? '<div class="dot"></div>' : ''}
+      ${isPastEmpty ? '<div style="position:absolute;top:3px;right:4px;font-size:8px;color:var(--text-dim);opacity:0.5">+</div>' : ''}
+    </div>`;
+  }
+}
+
+function calDayClick(d, y, m, isFuture, hasSessions) {
+  const tooltip = document.getElementById('cal-tooltip');
+  if (isFuture) return;
+
+  const daySessions = sessions.filter(s => {
+    const sd = new Date(s.date);
+    return sd.getFullYear()===y && sd.getMonth()===m && sd.getDate()===d;
+  });
+
+  if (daySessions.length) {
+    tooltip.textContent = daySessions.map(s =>
+      VARIATIONS[s.variationKey].label + ' — ' + VARIATIONS[s.variationKey].name
+    ).join(' · ');
+    // Open backfill screen showing existing sessions for that day with option to add more
+    openBackfill(d, y, m, daySessions);
+  } else {
+    tooltip.textContent = '';
+    openBackfill(d, y, m, []);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// BACKFILL SCREEN
+// ════════════════════════════════════════════════════════════════════════════
+let backfillDate = null;   // { d, y, m }
+let backfillSelectedKey = null;
+let backfillLogSets = false;
+let backfillExercises = [];  // set log data if logging
+
+function openBackfill(d, y, m, existingSessions) {
+  backfillDate = { d, y, m };
+  backfillSelectedKey = null;
+  backfillLogSets = false;
+  backfillExercises = [];
+  renderBackfillScreen(existingSessions);
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-backfill').classList.add('active');
+}
+
+function closeBackfill() {
+  backfillDate = null;
+  backfillSelectedKey = null;
+  backfillLogSets = false;
+  backfillExercises = [];
+  showHome();
+}
+
+function renderBackfillScreen(existingSessions) {
+  const { d, y, m } = backfillDate;
+  const dateObj = new Date(y, m, d);
+  const dateStr = dateObj.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'});
+  const existing = existingSessions || sessions.filter(s => {
+    const sd = new Date(s.date);
+    return sd.getFullYear()===y && sd.getMonth()===m && sd.getDate()===d;
+  });
+
+  let html = `
+    <div style="height:16px"></div>
+    <div class="backfill-date-banner">
+      <div>
+        <div class="backfill-missed-badge">Missed Workout</div>
+        <div class="backfill-date-text" style="margin-top:6px">${dateStr}</div>
+        <div class="backfill-date-sub">Log a workout for this day</div>
+      </div>
+    </div>`;
+
+  // Show existing sessions for this day if any
+  if (existing.length) {
+    html += `<div class="backfill-pick-label">Already logged this day</div>`;
+    existing.forEach(s => {
+      const v = VARIATIONS[s.variationKey];
+      const sets = s.exercises.reduce((a, e) => a + e.sets.filter(st => st.reps).length, 0);
+      html += `<div style="padding:0 18px">
+        <div class="backfill-existing-item" style="background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:6px">
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:${TYPE_COLOR[v.type]}">${v.label} — ${v.name}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${sets} sets logged</div>
+          </div>
+          <button class="backfill-del-btn" onclick="deleteBackfillSession('${s.id}')">Remove</button>
+        </div>
+      </div>`;
+    });
+    html += `<div class="backfill-pick-label">Add another workout</div>`;
+  } else {
+    html += `<div class="backfill-pick-label">Which workout did you do?</div>`;
+  }
+
+  // Variation picker grid
+  html += `<div class="backfill-grid">`;
+  ORDER.forEach(key => {
+    const v = VARIATIONS[key];
+    const isSelected = backfillSelectedKey === key;
+    html += `<div class="backfill-cell ${v.type}${isSelected?' selected':''}"
+      onclick="selectBackfillVariation('${key}')">
+      <div class="backfill-cell-tag">${v.label}</div>
+      <div class="backfill-cell-name">${v.name}</div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  // Log sets toggle
+  html += `<div class="backfill-log-toggle" onclick="toggleBackfillLog()">
+    <div>
+      <div class="backfill-log-toggle-left">Log sets & weights</div>
+      <div class="backfill-log-toggle-sub">Optional — add your numbers for this session</div>
+    </div>
+    <div class="toggle-switch${backfillLogSets?' on':''}" id="backfill-toggle-sw"></div>
+  </div>`;
+
+  // Set logging area (if toggled on and variation selected)
+  if (backfillLogSets && backfillSelectedKey) {
+    const v = VARIATIONS[backfillSelectedKey];
+    const allEx = [...v.exercises, ...v.core];
+    html += `<div style="margin-top:4px">`;
+    allEx.forEach((ex, i) => {
+      const bfEx = backfillExercises.find(e => e.idx === i) || null;
+      const sets = bfEx ? bfEx.sets : [{reps:'',weight:''}];
+      html += `<div class="ex-card" id="bf-ex-${i}" style="margin:10px 18px 0">
+        <div class="ex-card-header" onclick="toggleEx('bf-ex-${i}')">
+          <div class="ex-card-left">
+            <div class="ex-name">${ex.name}</div>
+            <div class="ex-sets-badge">${ex.sets}</div>
+          </div>
+          <div class="ex-chevron">⌄</div>
+        </div>
+        <div class="ex-desc">${ex.desc}</div>
+        <div class="set-logger">
+          <div class="set-logger-head">
+            <div class="set-logger-title">Sets</div>
+            <button class="add-set-btn" onclick="bfAddSet(${i})">+ Set</button>
+          </div>
+          ${sets.map((s, si) => `
+            <div class="set-row">
+              <div class="set-num">${si+1}</div>
+              <input class="set-input" type="number" inputmode="decimal" placeholder="reps"
+                value="${s.reps}" onchange="bfUpdateSet(${i},${si},'reps',this.value)" style="max-width:70px">
+              <div class="set-unit">×</div>
+              <input class="set-input" type="number" inputmode="decimal" placeholder="lbs"
+                value="${s.weight}" onchange="bfUpdateSet(${i},${si},'weight',this.value)">
+              <div class="set-unit">lbs</div>
+              <button class="del-set-btn" onclick="bfDelSet(${i},${si})">×</button>
+            </div>`).join('')}
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // Confirm button
+  const isReady = !!backfillSelectedKey;
+  html += `<div style="padding:0 18px">
+    <button class="backfill-confirm-btn${isReady?' ready':''}" onclick="saveBackfillSession()">
+      ${backfillLogSets ? 'Save Session with Sets' : 'Save Session'}
+    </button>
+  </div>`;
+
+  document.getElementById('backfill-body').innerHTML = html;
+}
+
+function selectBackfillVariation(key) {
+  backfillSelectedKey = key;
+  backfillExercises = [];
+  renderBackfillScreen();
+}
+
+function toggleBackfillLog() {
+  backfillLogSets = !backfillLogSets;
+  backfillExercises = [];
+  renderBackfillScreen();
+}
+
+function bfGetOrCreateEx(idx) {
+  let ex = backfillExercises.find(e => e.idx === idx);
+  if (!ex) { ex = {idx, sets:[{reps:'',weight:''}]}; backfillExercises.push(ex); }
+  return ex;
+}
+
+function bfUpdateSet(exIdx, setIdx, field, value) {
+  const ex = bfGetOrCreateEx(exIdx);
+  if (!ex.sets[setIdx]) ex.sets[setIdx] = {reps:'',weight:''};
+  ex.sets[setIdx][field] = value;
+}
+
+function bfAddSet(exIdx) {
+  const ex = bfGetOrCreateEx(exIdx);
+  ex.sets.push({reps:'',weight:''});
+  renderBackfillScreen();
+  setTimeout(() => {
+    const card = document.getElementById('bf-ex-' + exIdx);
+    if (card) card.classList.add('open');
+  }, 10);
+}
+
+function bfDelSet(exIdx, setIdx) {
+  const ex = bfGetOrCreateEx(exIdx);
+  if (ex.sets.length > 1) {
+    ex.sets.splice(setIdx, 1);
+    renderBackfillScreen();
+    setTimeout(() => {
+      const card = document.getElementById('bf-ex-' + exIdx);
+      if (card) card.classList.add('open');
+    }, 10);
+  }
+}
+
+function deleteBackfillSession(sessionId) {
+  const idx = sessions.findIndex(s => String(s.id) === String(sessionId));
+  if (idx !== -1) {
+    sessions.splice(idx, 1);
+    saveSessions();
+    showToast('Session removed');
+    renderBackfillScreen();
+  }
+}
+
+function saveBackfillSession() {
+  if (!backfillSelectedKey) return;
+  const { d, y, m } = backfillDate;
+  const v = VARIATIONS[backfillSelectedKey];
+
+  // Build exercises array
+  let exercises;
+  if (backfillLogSets && backfillExercises.length) {
+    exercises = backfillExercises.map(e => {
+      const allEx = [...v.exercises, ...v.core];
+      return {
+        key: 'main_' + e.idx,
+        name: allEx[e.idx] ? allEx[e.idx].name : '',
+        sets: e.sets
+      };
+    });
+  } else {
+    exercises = [];
+  }
+
+  // Set time to noon on that date to avoid timezone edge cases
+  const sessionDate = new Date(y, m, d, 12, 0, 0);
+
+  const session = {
+    id: Date.now(),
+    date: sessionDate.toISOString(),
+    variationKey: backfillSelectedKey,
+    tab: 'main',
+    missed: true,
+    exercises
+  };
+
+  sessions.push(session);
+  // Sort sessions by date so history renders correctly
+  sessions.sort((a, b) => new Date(a.date) - new Date(b.date));
+  saveSessions();
+  showToast('Missed workout saved ✓');
+  setTimeout(() => { closeBackfill(); }, 1000);
+}
+
+document.getElementById('cal-prev').onclick = () => {
+  calViewDate = new Date(calViewDate.getFullYear(), calViewDate.getMonth() - 1, 1);
+  renderCalendar();
+};
+document.getElementById('cal-next').onclick = () => {
+  calViewDate = new Date(calViewDate.getFullYear(), calViewDate.getMonth() + 1, 1);
+  renderCalendar();
+};
+
+// ════════════════════════════════════════════════════════════════════════════
+// WORKOUT SCREEN
+// ════════════════════════════════════════════════════════════════════════════
+function openVariation(key) {
+  currentVariation = VARIATIONS[key];
+  currentTab = 'main';
+  activeSession = null;
+  renderWorkoutScreen();
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-workout').classList.add('active');
+  document.getElementById('workout-body').scrollTop = 0;
+  document.getElementById('timer-bar').classList.remove('visible');
+  stopTimer();
+}
+
+function renderWorkoutScreen() {
+  const v = currentVariation;
+  const tc = TYPE_COLOR[v.type], bg = TYPE_BG[v.type], tt = TYPE_TEXT[v.type];
+
+  document.getElementById('workout-topbar-title').textContent = v.label;
+
+  document.getElementById('workout-header').innerHTML = `
+    <div class="workout-badge" style="background:${bg};color:${tt}">${v.label} — ${v.type.toUpperCase()}</div>
+    <div class="workout-title">${v.name}</div>
+    <div class="workout-focus">${v.focus}</div>`;
+
+  // Tabs
+  document.getElementById('workout-tabs').innerHTML = `
+    <button class="workout-tab ${currentTab==='main'?'active':''}" 
+      style="${currentTab==='main'?`color:${tc};border-color:${tc}`:'color:var(--text-muted)'}"
+      onclick="switchTab('main')">Main Lifts</button>
+    <button class="workout-tab ${currentTab==='core'?'active':''}"
+      style="${currentTab==='core'?'color:var(--core-text);border-color:var(--core)':''}"
+      onclick="switchTab('core')">Core Finisher</button>`;
+
+  renderExercises();
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  renderWorkoutScreen();
+  document.getElementById('workout-body').scrollTop = 0;
+}
+
+function renderExercises() {
+  const v = currentVariation;
+  const body = document.getElementById('workout-body');
+  const exercises = currentTab === 'main' ? v.exercises : v.core;
+  const isLogging = !!activeSession;
+  const tc = TYPE_COLOR[v.type];
+
+  let html = '';
+
+  if (currentTab === 'core') {
+    html += `<div class="core-section-head">
+      <div class="core-badge">Core Finisher</div>
+      <div class="core-focus-txt">${v.coreFocus}</div>
+    </div>`;
+  }
+
+  if (!isLogging) {
+    html += `<div class="start-session-wrap">
+      <button class="start-session-btn" 
+        style="background:${currentTab==='main'?tc:'var(--core)'};color:#fff"
+        onclick="startSession()">
+        Start ${currentTab==='main'?'Workout':'Core Finisher'}
+      </button>
+    </div>`;
+  } else {
+    document.getElementById('finish-session-top').style.display = 'block';
+    document.getElementById('timer-bar').classList.add('visible');
+  }
+
+  exercises.forEach((ex, i) => {
+    const exKey = (currentTab === 'main' ? 'main_' : 'core_') + i;
+    const sessionEx = isLogging
+      ? (activeSession.exercises.find(e => e.key === exKey) || null)
+      : null;
+
+    html += `<div class="ex-card" id="ex-card-${exKey}">
+      <div class="ex-card-header" onclick="toggleEx('${exKey}')">
+        <div class="ex-card-left">
+          <div class="ex-name">${ex.name}</div>
+          <div class="ex-sets-badge">${ex.sets}</div>
+        </div>
+        <div class="ex-chevron">⌄</div>
+      </div>
+      <div class="ex-desc">${ex.desc}</div>`;
+
+    if (isLogging) {
+      const sets = sessionEx ? sessionEx.sets : [{reps:'',weight:''}];
+      html += `<div class="set-logger">
+        <div class="set-logger-head">
+          <div class="set-logger-title">Sets logged</div>
+          <button class="add-set-btn" onclick="addSet('${exKey}')">+ Set</button>
+        </div>
+        ${sets.map((s, si) => `
+          <div class="set-row" id="set-row-${exKey}-${si}">
+            <div class="set-num">${si+1}</div>
+            <input class="set-input" type="number" inputmode="decimal" placeholder="reps"
+              value="${s.reps}" onchange="updateSet('${exKey}',${si},'reps',this.value)" style="max-width:70px">
+            <div class="set-unit">×</div>
+            <input class="set-input" type="number" inputmode="decimal" placeholder="lbs"
+              value="${s.weight}" onchange="updateSet('${exKey}',${si},'weight',this.value)">
+            <div class="set-unit">lbs</div>
+            <button class="del-set-btn" onclick="deleteSet('${exKey}',${si})">×</button>
+          </div>`).join('')}
+      </div>`;
+    }
+
+    html += `</div>`; // end ex-card
+  });
+
+  if (isLogging) {
+    html += `<div class="finish-btn-wrap">
+      <button class="finish-btn"
+        style="background:${currentTab==='main'?tc:'var(--core)'}"
+        onclick="finishSession()">
+        Finish & Save
+      </button>
+    </div>`;
+  }
+
+  body.innerHTML = html;
+}
+
+function toggleEx(key) {
+  const card = document.getElementById('ex-card-' + key);
+  card.classList.toggle('open');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SESSION LOGGING
+// ════════════════════════════════════════════════════════════════════════════
+function startSession() {
+  const exercises = (currentTab === 'main' ? currentVariation.exercises : currentVariation.core)
+    .map((ex, i) => ({
+      key: (currentTab==='main'?'main_':'core_') + i,
+      name: ex.name,
+      sets: [{reps:'', weight:''}]
+    }));
+  activeSession = {
+    id: Date.now(),
+    date: new Date().toISOString(),
+    variationKey: currentVariation.key,
+    tab: currentTab,
+    exercises
+  };
+  renderExercises();
+}
+
+function updateSet(exKey, setIdx, field, value) {
+  if (!activeSession) return;
+  let ex = activeSession.exercises.find(e => e.key === exKey);
+  if (!ex) { ex = {key:exKey, name:'', sets:[]}; activeSession.exercises.push(ex); }
+  if (!ex.sets[setIdx]) ex.sets[setIdx] = {reps:'',weight:''};
+  ex.sets[setIdx][field] = value;
+}
+
+function addSet(exKey) {
+  if (!activeSession) return;
+  let ex = activeSession.exercises.find(e => e.key === exKey);
+  if (!ex) { ex = {key:exKey, name:'', sets:[]}; activeSession.exercises.push(ex); }
+  ex.sets.push({reps:'', weight:''});
+  renderExercises();
+  // Re-open the card
+  setTimeout(() => {
+    const card = document.getElementById('ex-card-' + exKey);
+    if (card) card.classList.add('open');
+  }, 10);
+}
+
+function deleteSet(exKey, setIdx) {
+  if (!activeSession) return;
+  const ex = activeSession.exercises.find(e => e.key === exKey);
+  if (ex && ex.sets.length > 1) {
+    ex.sets.splice(setIdx, 1);
+    renderExercises();
+    setTimeout(() => {
+      const card = document.getElementById('ex-card-' + exKey);
+      if (card) card.classList.add('open');
+    }, 10);
+  }
+}
+
+function finishSession() {
+  if (!activeSession) return;
+  sessions.push(activeSession);
+  saveSessions();
+  activeSession = null;
+  document.getElementById('finish-session-top').style.display = 'none';
+  document.getElementById('timer-bar').classList.remove('visible');
+  stopTimer();
+  showToast('Session saved ✓');
+  setTimeout(() => showHome(), 1200);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TIMER
+// ════════════════════════════════════════════════════════════════════════════
+function updateTimerDisplay() {
+  const m = Math.floor(timerSeconds / 60);
+  const s = timerSeconds % 60;
+  const el = document.getElementById('timer-display');
+  el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  el.classList.toggle('warning', timerSeconds <= 10 && timerSeconds > 0);
+  el.classList.toggle('running', timerRunning);
+}
+
+function toggleTimer() {
+  if (timerRunning) {
+    stopTimer();
+  } else {
+    timerRunning = true;
+    document.getElementById('timer-play-btn').textContent = '⏸';
+    timerInterval = setInterval(() => {
+      if (timerSeconds > 0) {
+        timerSeconds--;
+        updateTimerDisplay();
+      } else {
+        stopTimer();
+        if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
+        showToast('Rest time up!');
+      }
+    }, 1000);
+  }
+}
+
+function stopTimer() {
+  timerRunning = false;
+  clearInterval(timerInterval);
+  const btn = document.getElementById('timer-play-btn');
+  if (btn) btn.textContent = '▶';
+  updateTimerDisplay();
+}
+
+function resetTimer() {
+  stopTimer();
+  timerSeconds = timerMax;
+  updateTimerDisplay();
+}
+
+function setTimerPreset(secs) {
+  stopTimer();
+  timerMax = secs;
+  timerSeconds = secs;
+  document.querySelectorAll('.timer-preset').forEach(b => {
+    b.classList.toggle('active', parseInt(b.textContent) === secs/60 || b.textContent === '90s');
+  });
+  updateTimerDisplay();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// HISTORY SCREEN
+// ════════════════════════════════════════════════════════════════════════════
+function showHistory() {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-history').classList.add('active');
+  renderHistory();
+}
+
+function toggleHistoryItem(id) {
+  const el = document.getElementById('hist-' + id);
+  if (el) el.classList.toggle('open');
+}
+
+function renderHistorySessionCard(s, showDate) {
+  const v = VARIATIONS[s.variationKey];
+  const totalSets = s.exercises.reduce((acc, e) => acc + e.sets.filter(st => st.reps).length, 0);
+  const hasAnyData = totalSets > 0;
+
+  // Build exercise detail blocks
+  let detailHtml = '';
+  if (s.missed && !hasAnyData) {
+    detailHtml += `<div class="history-missed-badge">Missed / No sets logged</div>`;
+  }
+
+  const loggedExercises = s.exercises.filter(e => e.sets && e.sets.some(st => st.reps));
+  if (loggedExercises.length) {
+    loggedExercises.forEach(ex => {
+      const validSets = ex.sets.filter(st => st.reps);
+      detailHtml += `<div class="history-ex-block">
+        <div class="history-ex-name">${ex.name}</div>
+        ${validSets.map((st, i) => {
+          const reps = st.reps || '—';
+          const weight = st.weight ? `${st.weight} lbs` : '';
+          const val = weight ? `${reps} reps × ${weight}` : `${reps} reps`;
+          return `<div class="history-set-row">
+            <div class="history-set-num">${i + 1}</div>
+            <div class="history-set-val">${val}</div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    });
+  } else if (!s.missed) {
+    detailHtml += `<div class="history-no-sets">No sets recorded for this session.</div>`;
+  }
+
+  const metaParts = [];
+  if (totalSets) metaParts.push(`${totalSets} set${totalSets !== 1 ? 's' : ''}`);
+  if (s.missed) metaParts.push('retroactive');
+  const meta = metaParts.join(' · ') || 'No sets logged';
+
+  return `<div class="history-item" id="hist-${s.id}" onclick="toggleHistoryItem('${s.id}')">
+    <div class="history-item-header">
+      <div class="history-item-left">
+        <div class="history-item-name" style="color:${TYPE_COLOR[v.type]}">${v.label} — ${v.name}</div>
+        <div class="history-item-meta">${meta}</div>
+      </div>
+      <div class="history-item-chevron">⌄</div>
+    </div>
+    <div class="history-detail">${detailHtml}</div>
+  </div>`;
+}
+
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  if (!sessions.length) {
+    list.innerHTML = '<div class="history-empty">No sessions logged yet.</div>';
+    return;
+  }
+
+  // Group sessions by calendar date (most recent first)
+  const grouped = {};
+  [...sessions].reverse().forEach(s => {
+    const d = new Date(s.date);
+    const key = d.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+    if (!grouped[key]) grouped[key] = { label: key, sessions: [], dateObj: d };
+    grouped[key].sessions.push(s);
+  });
+
+  list.innerHTML = Object.values(grouped).map(group => {
+    const today = new Date();
+    const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+    const gd = group.dateObj;
+    let label = group.label;
+    if (gd.toDateString() === today.toDateString()) label = 'Today';
+    else if (gd.toDateString() === yesterday.toDateString()) label = 'Yesterday';
+
+    const cards = group.sessions.map(s => renderHistorySessionCard(s)).join('');
+    return `<div class="history-date-group">
+      <div class="history-day-header">
+        <div class="history-day-label">${label}</div>
+        <div class="history-day-line"></div>
+      </div>
+      ${cards}
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════════════════════════════════
+let toastTimeout;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PERSONAL BESTS ENGINE
+// ════════════════════════════════════════════════════════════════════════════
+
+// Compute PBs from all sessions. Returns map: exName -> { weight, reps, weightDate, repsDate }
+function computePBs() {
+  const pbs = {};
+  sessions.forEach(s => {
+    s.exercises.forEach(ex => {
+      if (!ex.name) return;
+      ex.sets.forEach(set => {
+        const reps = parseFloat(set.reps);
+        const weight = parseFloat(set.weight);
+        if (!pbs[ex.name]) pbs[ex.name] = { weight: 0, reps: 0, weightDate: null, repsDate: null, variationKey: s.variationKey };
+        if (!isNaN(weight) && weight > pbs[ex.name].weight) {
+          pbs[ex.name].weight = weight;
+          pbs[ex.name].weightDate = s.date;
+          pbs[ex.name].variationKey = s.variationKey;
+        }
+        if (!isNaN(reps) && reps > pbs[ex.name].reps) {
+          pbs[ex.name].reps = reps;
+          pbs[ex.name].repsDate = s.date;
+        }
+      });
+    });
+  });
+  return pbs;
+}
+
+// Check the most recently saved session for new PBs and fire notifications
+function checkAndAutoSyncPBs() {
+  if (!sessions.length) return;
+  const latest = sessions[sessions.length - 1];
+  const allPrevious = sessions.slice(0, -1);
+
+  // Build PBs from all sessions EXCEPT the latest
+  const prevPBs = {};
+  allPrevious.forEach(s => {
+    s.exercises.forEach(ex => {
+      if (!ex.name) return;
+      ex.sets.forEach(set => {
+        const reps = parseFloat(set.reps);
+        const weight = parseFloat(set.weight);
+        if (!prevPBs[ex.name]) prevPBs[ex.name] = { weight: 0, reps: 0 };
+        if (!isNaN(weight) && weight > prevPBs[ex.name].weight) prevPBs[ex.name].weight = weight;
+        if (!isNaN(reps) && reps > prevPBs[ex.name].reps) prevPBs[ex.name].reps = reps;
+      });
+    });
+  });
+
+  // Check latest session for beats
+  const newPBs = [];
+  latest.exercises.forEach(ex => {
+    if (!ex.name) return;
+    ex.sets.forEach(set => {
+      const reps = parseFloat(set.reps);
+      const weight = parseFloat(set.weight);
+      const prev = prevPBs[ex.name] || { weight: 0, reps: 0 };
+      if (!isNaN(weight) && weight > 0 && weight > prev.weight) {
+        const shortName = ex.name.split(' ').slice(0, 3).join(' ');
+        if (!newPBs.find(p => p.name === shortName && p.type === 'weight')) {
+          newPBs.push({ name: shortName, type: 'weight', value: weight });
+        }
+      }
+      if (!isNaN(reps) && reps > 0 && reps > prev.reps) {
+        const shortName = ex.name.split(' ').slice(0, 3).join(' ');
+        if (!newPBs.find(p => p.name === shortName && p.type === 'reps')) {
+          newPBs.push({ name: shortName, type: 'reps', value: reps });
+        }
+      }
+    });
+  });
+
+  // Fire PB notifications with staggered timing
+  newPBs.slice(0, 3).forEach((pb, i) => {
+    setTimeout(() => {
+      const unit = pb.type === 'weight' ? 'lbs' : 'reps';
+      showPBToast(`New ${pb.type} record — ${pb.name}: ${pb.value} ${unit}`);
+    }, i * 2600);
+  });
+}
+
+let pbToastTimeout;
+function showPBToast(msg) {
+  const el = document.getElementById('pb-toast');
+  const msgEl = document.getElementById('pb-toast-msg');
+  msgEl.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(pbToastTimeout);
+  pbToastTimeout = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PERSONAL BESTS SCREEN
+// ════════════════════════════════════════════════════════════════════════════
+function showBests() {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-bests').classList.add('active');
+  renderBestsScreen();
+}
+
+function renderBestsScreen() {
+  const body = document.getElementById('bests-body');
+  const pbs = computePBs();
+  const exNames = Object.keys(pbs);
+
+  if (!exNames.length) {
+    body.innerHTML = `<div class="pb-empty">No personal bests yet.<br>Start logging sets and they will appear here.</div>`;
+    return;
+  }
+
+  // Group exercises by variation type
+  const byType = { push: [], pull: [], legs: [] };
+  exNames.forEach(name => {
+    const pb = pbs[name];
+    const v = VARIATIONS[pb.variationKey];
+    if (v && byType[v.type]) byType[v.type].push({ name, pb, type: v.type });
+  });
+  // Catch any exercises not tied to a variation (e.g. core)
+  const ungrouped = exNames.filter(name => {
+    const v = VARIATIONS[pbs[name].variationKey];
+    return !v || !byType[v.type];
+  }).map(name => ({ name, pb: pbs[name], type: 'core' }));
+
+  let html = '<div style="height:14px"></div>';
+
+  const groups = [
+    { key: 'push', label: 'Push', color: TYPE_COLOR.push, bg: TYPE_BG.push, text: 'var(--push-text)' },
+    { key: 'pull', label: 'Pull', color: TYPE_COLOR.pull, bg: TYPE_BG.pull, text: 'var(--pull-text)' },
+    { key: 'legs', label: 'Legs', color: TYPE_COLOR.legs, bg: TYPE_BG.legs, text: 'var(--legs-text)' },
+  ];
+  if (ungrouped.length) groups.push({ key: 'core', label: 'Core', color: 'var(--core)', bg: 'var(--core-bg)', text: 'var(--core-text)' });
+
+  groups.forEach(g => {
+    const items = g.key === 'core' ? ungrouped : byType[g.key];
+    if (!items || !items.length) return;
+
+    html += `<div class="section-label" style="color:${g.color}">${g.label} Exercises</div>`;
+
+    items.forEach(({ name, pb }) => {
+      const hasWeight = pb.weight > 0;
+      const hasReps = pb.reps > 0;
+      if (!hasWeight && !hasReps) return;
+
+      html += `<div class="pb-exercise-card">
+        <div class="pb-ex-header">
+          <div class="pb-ex-name">${name}</div>
+          <div class="pb-ex-tag" style="color:${g.color}">${g.label}</div>
+        </div>
+        <div class="pb-records">`;
+
+      if (hasWeight) {
+        const d = pb.weightDate ? new Date(pb.weightDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+        html += `<div class="pb-record">
+          <div class="pb-record-label">Max weight</div>
+          <div class="pb-record-value" style="color:${g.color}">${pb.weight}</div>
+          <div class="pb-record-unit">lbs</div>
+          <div class="pb-record-date">${d}</div>
+        </div>`;
+      }
+      if (hasReps) {
+        const d = pb.repsDate ? new Date(pb.repsDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+        html += `<div class="pb-record">
+          <div class="pb-record-label">Max reps</div>
+          <div class="pb-record-value" style="color:${g.color}">${pb.reps}</div>
+          <div class="pb-record-unit">reps</div>
+          <div class="pb-record-date">${d}</div>
+        </div>`;
+      }
+      if (!hasWeight && hasReps) {
+        html += `<div class="pb-record" style="opacity:0.2"><div class="pb-record-label">Max weight</div><div class="pb-record-value">—</div></div>`;
+      }
+      if (hasWeight && !hasReps) {
+        html += `<div class="pb-record" style="opacity:0.2"><div class="pb-record-label">Max reps</div><div class="pb-record-value">—</div></div>`;
+      }
+
+      html += `</div></div>`;
+    });
+  });
+
+  body.innerHTML = html;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// DATA & BACKUP SCREEN
+// ════════════════════════════════════════════════════════════════════════════
+function showData() {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-data').classList.add('active');
+  renderDataScreen();
+}
+
+function renderDataScreen() {
+  const body = document.getElementById('data-body');
+  const totalSets = sessions.reduce((acc, s) =>
+    acc + s.exercises.reduce((a, e) => a + e.sets.filter(st => st.reps).length, 0), 0);
+  const firstSession = sessions.length ? new Date(sessions[0].date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+  const pbs = computePBs();
+  const pbCount = Object.keys(pbs).length;
+
+  const html = `
+    <div style="height:16px"></div>
+    <div class="section-label">Your data</div>
+    <div class="data-section-card">
+      <div class="data-section-row">
+        <div><div class="data-row-label">Total sessions</div><div class="data-row-value">${sessions.length}</div></div>
+      </div>
+      <div class="data-section-row">
+        <div><div class="data-row-label">Total sets logged</div><div class="data-row-value">${totalSets}</div></div>
+      </div>
+      <div class="data-section-row">
+        <div><div class="data-row-label">Exercises with PBs</div><div class="data-row-value">${pbCount}</div></div>
+      </div>
+      <div class="data-section-row">
+        <div><div class="data-row-label">Tracking since</div><div class="data-row-value">${firstSession}</div></div>
+      </div>
+    </div>
+
+    <div class="section-label" style="margin-top:20px">Backup & restore</div>
+    <div class="data-info-box">
+      <strong>Export</strong> saves all your sessions, sets, weights, and personal bests to a <code>.json</code>
+      file in your Downloads folder.  <strong>Import</strong> loads a previously exported file and merges
+      it with your current data — no sessions are deleted.  Back up every week or two for peace of mind.
+    </div>
+    <div style="padding:0 18px">
+      <button class="data-action-btn export" onclick="exportData()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export to Downloads
+      </button>
+      <button class="data-action-btn import" onclick="triggerImport()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,14 12,9 17,14"/><line x1="12" y1="9" x2="12" y2="21"/></svg>
+        Import from File
+      </button>
+    </div>
+
+    <div class="section-label" style="margin-top:20px">Danger zone</div>
+    <div class="data-info-box" style="border-color:#5a1010;background:#1a0808;color:#c07070">
+      Clearing all data is permanent and cannot be undone.  Export a backup first if you want to keep your history.
+    </div>
+    <div style="padding:0 18px">
+      <button class="data-action-btn danger" onclick="confirmClearData()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        Clear All Data
+      </button>
+    </div>`;
+
+  body.innerHTML = html;
+}
+
+function exportData() {
+  const payload = {
+    version: 2,
+    exportDate: new Date().toISOString(),
+    sessions,
+    pbs: computePBs()
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const dateStr = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `ppl_workout_backup_${dateStr}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Backup saved to Downloads ✓');
+  renderDataScreen();
+}
+
+function triggerImport() {
+  document.getElementById('import-file-input').click();
+}
+
+function handleImportFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      const imported = data.sessions || (Array.isArray(data) ? data : []);
+      if (!imported.length) { showToast('No sessions found in file'); return; }
+
+      // Merge by ID — keep both, deduplicate
+      const existingIds = new Set(sessions.map(s => String(s.id)));
+      let added = 0;
+      imported.forEach(s => {
+        if (!existingIds.has(String(s.id))) {
+          sessions.push(s);
+          added++;
+        }
+      });
+      sessions.sort((a, b) => new Date(a.date) - new Date(b.date));
+      localStorage.setItem('ppl_sessions', JSON.stringify(sessions));
+      showToast(`Imported ${added} new session${added !== 1 ? 's' : ''} ✓`);
+      renderDataScreen();
+      renderHome();
+    } catch(err) {
+      showToast('Could not read file — is it a valid backup?');
+    }
+  };
+  reader.readAsText(file);
+  // Reset input so same file can be re-imported if needed
+  event.target.value = '';
+}
+
+function confirmClearData() {
+  if (confirm('Delete ALL workout data? This cannot be undone.\n\nTap OK to confirm.')) {
+    sessions = [];
+    localStorage.removeItem('ppl_sessions');
+    showToast('All data cleared');
+    renderDataScreen();
+    renderHome();
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════════════════
+updateTimerDisplay();
+showHome();
+</script>
+</body>
+</html>
