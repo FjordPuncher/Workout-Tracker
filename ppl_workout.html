@@ -42,42 +42,30 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-html {
-  height: 100%;
-  height: -webkit-fill-available;
-  overflow: hidden;
-}
-
-body {
+html, body {
   background: var(--bg);
   color: var(--text);
   font-family: 'DM Sans', sans-serif;
   font-size: 15px;
   line-height: 1.5;
-  height: 100%;
-  height: -webkit-fill-available;
-  overflow: hidden;
-  position: fixed;
-  width: 100%;
-  overscroll-behavior: none;
+  margin: 0; padding: 0;
 }
 
 /* ── SCREENS ── */
-.screen {
-  display: none; flex-direction: column;
-  height: 100dvh; height: 100vh;
-  width: 100%; overflow: hidden;
-  position: absolute; top: 0; left: 0;
-}
-.screen.active { display: flex; }
+/* Each screen is a full-page block. Only the active one is shown.
+   The bottom nav is position:fixed so it never moves.
+   The scroll-body has padding-bottom to clear the fixed nav. */
+.screen { display: none; }
+.screen.active { display: block; }
 
 /* ── TOP BAR ── */
 .topbar {
+  position: sticky; top: 0;
   display: flex; align-items: center; justify-content: space-between;
   padding: calc(var(--safe-top) + 14px) 18px 14px;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
-  flex-shrink: 0; z-index: 10;
+  z-index: 100;
 }
 .topbar-title { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
 .back-btn {
@@ -89,13 +77,8 @@ body {
 
 /* ── SCROLLABLE CONTENT ── */
 .scroll-body {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
-  padding-bottom: calc(var(--safe-bot) + 20px);
-  min-height: 0;
+  display: block;
+  padding-bottom: 100px;
 }
 
 /* ── HOME SCREEN ── */
@@ -184,30 +167,58 @@ body {
 .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .cal-month { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; }
 .cal-nav { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; padding: 4px 8px; }
-.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; }
-.cal-dow { font-size: 10px; font-weight: 500; text-align: center; color: var(--text-dim);
-  padding: 4px 0; font-family: 'DM Mono', monospace; text-transform: uppercase; }
+.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; }
+.cal-dow {
+  font-size: 9px; font-weight: 500; text-align: center; color: var(--text-dim);
+  padding: 4px 0 5px; font-family: 'DM Mono', monospace; text-transform: uppercase;
+}
 .cal-day {
-  aspect-ratio: 1; border-radius: 8px; display: flex; align-items: center; justify-content: center;
-  font-size: 12px; color: var(--text-muted); position: relative; cursor: pointer;
+  border-radius: 6px;
+  min-height: 44px;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 5px 2px 4px;
+  font-size: 11px; color: var(--text-muted);
+  position: relative; cursor: pointer;
+  gap: 3px;
 }
-.cal-day.today { color: var(--text); background: var(--surface2); font-weight: 600; }
+.cal-day-num {
+  font-size: 11px; line-height: 1; flex-shrink: 0;
+}
+.cal-day.today .cal-day-num {
+  background: var(--accent);
+  color: #fff;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 10px;
+}
 .cal-day.empty { pointer-events: none; }
-.cal-day .dot {
-  position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
-  width: 4px; height: 4px; border-radius: 50%;
+.cal-day.future { color: var(--text-dim); opacity: 0.35; pointer-events: none; }
+.cal-day.past-empty { cursor: pointer; }
+.cal-day.past-empty:active { background: var(--surface2); }
+
+/* ── workout bars ── */
+.cal-bars { display: flex; flex-direction: column; gap: 2px; width: 100%; padding: 0 1px; }
+.cal-bar {
+  width: 100%; border-radius: 3px;
+  font-family: 'DM Mono', monospace; font-size: 7px; font-weight: 500;
+  text-align: center; line-height: 12px; height: 12px;
+  letter-spacing: 0.3px; text-transform: uppercase;
+  overflow: hidden; white-space: nowrap;
 }
-.cal-day.has-push .dot { background: var(--push); }
-.cal-day.has-pull .dot { background: var(--pull); }
-.cal-day.has-legs .dot { background: var(--legs); }
+.cal-bar.push { background: var(--push-bg); color: var(--push-text); border: 1px solid var(--push); }
+.cal-bar.pull { background: var(--pull-bg); color: var(--pull-text); border: 1px solid var(--pull); }
+.cal-bar.legs { background: var(--legs-bg); color: var(--legs-text); border: 1px solid var(--legs); }
+
+/* ── add hint on tappable empty days ── */
+.cal-add-hint {
+  font-size: 14px; color: var(--text-dim); opacity: 0.4; line-height: 1; margin-top: 1px;
+}
 
 .cal-day-tooltip {
   font-size: 10px; color: var(--text-muted); text-align: center;
   margin-top: 6px; min-height: 16px; font-family: 'DM Mono', monospace;
 }
-.cal-day.past-empty { cursor: pointer; }
-.cal-day.past-empty:hover, .cal-day.past-empty:active { background: var(--surface2); }
-.cal-day.future { color: var(--text-dim); opacity: 0.4; pointer-events: none; }
 
 /* ── BACKFILL SCREEN ── */
 .backfill-date-banner {
@@ -305,7 +316,6 @@ body {
 .workout-header {
   padding: 18px 18px 14px;
   border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
 }
 .workout-badge {
   display: inline-block;
@@ -317,10 +327,12 @@ body {
 .workout-focus { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
 
 .workout-tabs {
+  position: sticky; top: calc(var(--safe-top) + 51px);
   display: flex; gap: 6px;
   padding: 12px 18px;
   border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
+  background: var(--bg);
+  z-index: 90;
 }
 .workout-tab {
   flex: 1; padding: 8px; border-radius: var(--radius-sm);
@@ -388,7 +400,7 @@ body {
 
 /* ── TIMER ── */
 .timer-bar {
-  position: fixed; bottom: calc(var(--safe-bot) + 0px); left: 0; right: 0;
+  position: fixed; bottom: 64px; left: 0; right: 0;
   background: var(--surface); border-top: 1px solid var(--border);
   padding: 10px 18px calc(var(--safe-bot) + 10px);
   display: none; align-items: center; justify-content: space-between;
@@ -506,10 +518,13 @@ body {
 }
 
 .bottom-nav {
-  display: flex; border-top: 1px solid var(--border);
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  display: flex;
+  border-top: 1px solid var(--border);
   background: var(--bg);
   padding-bottom: var(--safe-bot);
-  flex-shrink: 0;
+  z-index: 200;
 }
 .bnav-btn {
   flex: 1; display: flex; flex-direction: column; align-items: center;
@@ -624,14 +639,17 @@ body {
 <div id="screen-home" class="screen active">
   <div style="flex-shrink:0" id="home-header">
     <div class="home-header">
-      <div class="home-logo">PPL<span>.</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <div class="home-logo">PPL<span>.</span></div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:0.5px">v1.0</div>
+      </div>
       <div class="home-date" id="home-date"></div>
     </div>
     <div id="suggestion-container"></div>
     <div class="section-label">Workouts</div>
     <div class="nav-grid" id="nav-grid"></div>
   </div>
-  <div class="scroll-body" style="padding-top:0">
+  <div class="scroll-body" >
     <div class="section-label" style="margin-top:18px">This Month</div>
     <div class="calendar-wrap">
       <div class="cal-header">
@@ -678,7 +696,7 @@ body {
   </div>
   <div class="workout-header" id="workout-header"></div>
   <div class="workout-tabs" id="workout-tabs"></div>
-  <div class="scroll-body" id="workout-body" style="padding-bottom:120px"></div>
+  <div class="scroll-body" id="workout-body" ></div>
   <div class="timer-bar" id="timer-bar">
     <div>
       <div style="font-size:10px;color:var(--text-dim);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Rest</div>
@@ -740,7 +758,7 @@ body {
     <div class="topbar-title">Log Missed Workout</div>
     <div style="width:60px"></div>
   </div>
-  <div class="scroll-body" id="backfill-body" style="padding-bottom:30px"></div>
+  <div class="scroll-body" id="backfill-body" ></div>
 </div>
 
 <!-- ── DATA SCREEN ── -->
@@ -753,7 +771,7 @@ body {
     <div class="topbar-title">Data & Backup</div>
     <div style="width:60px"></div>
   </div>
-  <div class="scroll-body" id="data-body" style="padding-bottom:30px"></div>
+  <div class="scroll-body" id="data-body" ></div>
   <div class="bottom-nav">
     <button class="bnav-btn" onclick="showHome()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
@@ -784,7 +802,7 @@ body {
     <div class="topbar-title">Personal Bests</div>
     <div style="width:60px"></div>
   </div>
-  <div class="scroll-body" id="bests-body" style="padding-bottom:30px"></div>
+  <div class="scroll-body" id="bests-body" ></div>
   <div class="bottom-nav">
     <button class="bnav-btn" onclick="showHome()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
@@ -1084,13 +1102,15 @@ function renderCalendar() {
   const today = new Date();
   const todayY = today.getFullYear(), todayM = today.getMonth(), todayD = today.getDate();
 
+  // Build a richer map: date -> array of {type, label} in session order
   const sessionsByDate = {};
   sessions.forEach(s => {
     const sd = new Date(s.date);
     if (sd.getFullYear() === y && sd.getMonth() === m) {
       const key = sd.getDate();
       if (!sessionsByDate[key]) sessionsByDate[key] = [];
-      sessionsByDate[key].push(VARIATIONS[s.variationKey].type);
+      const v = VARIATIONS[s.variationKey];
+      sessionsByDate[key].push({ type: v.type, label: v.label, key: s.variationKey });
     }
   });
 
@@ -1106,14 +1126,26 @@ function renderCalendar() {
     const cellDate = new Date(y, m, d);
     const todayDate = new Date(todayY, todayM, todayD);
     const isFuture = cellDate > todayDate;
-    const types = sessionsByDate[d] || [];
-    const typeClass = types.length ? `has-${types[types.length-1]}` : '';
-    const isPastEmpty = !types.length && !isToday && !isFuture;
+    const daySessions = sessionsByDate[d] || [];
+    const isPastEmpty = !daySessions.length && !isToday && !isFuture;
     const extraClass = isFuture ? 'future' : (isPastEmpty ? 'past-empty' : '');
-    grid.innerHTML += `<div class="cal-day ${isToday?'today':''} ${typeClass} ${extraClass}"
-      onclick="calDayClick(${d},${y},${m},${isFuture},${types.length>0})">
-      ${d}${types.length ? '<div class="dot"></div>' : ''}
-      ${isPastEmpty ? '<div style="position:absolute;top:3px;right:4px;font-size:8px;color:var(--text-dim);opacity:0.5">+</div>' : ''}
+
+    // Build bars — one per session on that day, showing variation letter (e.g. "Push A")
+    let barsHtml = '';
+    if (daySessions.length) {
+      barsHtml = `<div class="cal-bars">` +
+        daySessions.map(s =>
+          `<div class="cal-bar ${s.type}">${s.label}</div>`
+        ).join('') +
+        `</div>`;
+    } else if (isPastEmpty) {
+      barsHtml = `<div class="cal-add-hint">+</div>`;
+    }
+
+    grid.innerHTML += `<div class="cal-day ${isToday ? 'today' : ''} ${extraClass}"
+      onclick="calDayClick(${d},${y},${m},${isFuture},${daySessions.length > 0})">
+      <div class="cal-day-num">${d}</div>
+      ${barsHtml}
     </div>`;
   }
 }
