@@ -1029,7 +1029,7 @@ html, body {
     <div class="home-header">
       <div style="display:flex;align-items:baseline;gap:10px">
         <div class="home-logo">PPL<span>.</span></div>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:0.5px">v1.0</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:0.5px">v1.1</div>
       </div>
       <div class="home-date" id="home-date"></div>
     </div>
@@ -1356,6 +1356,21 @@ const TYPE_BG    = { push:'var(--push-bg)', pull:'var(--pull-bg)', legs:'var(--l
 const TYPE_TEXT  = { push:'var(--push-text)', pull:'var(--pull-text)', legs:'var(--legs-text)' };
 const TYPE_MID   = { push:'var(--push-mid)', pull:'var(--pull-mid)', legs:'var(--legs-mid)' };
 
+// Sentinel key for custom/free-form sessions
+const CUSTOM_KEY = '__custom__';
+// Helper: get display info for any variationKey including custom
+function getVariationMeta(key, customName) {
+  if (key === CUSTOM_KEY) {
+    return {
+      label: customName || 'Custom', name: customName || 'Custom Workout',
+      type: 'custom', color: 'var(--text-muted)', bg: 'var(--surface2)', text: 'var(--text)'
+    };
+  }
+  const v = VARIATIONS[key];
+  return { label: v.label, name: v.name, type: v.type,
+    color: TYPE_COLOR[v.type], bg: TYPE_BG[v.type], text: TYPE_TEXT[v.type] };
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // STATE
 // ════════════════════════════════════════════════════════════════════════════
@@ -1475,8 +1490,8 @@ function renderCalendar() {
     if (sd.getFullYear() === y && sd.getMonth() === m) {
       const key = sd.getDate();
       if (!sessionsByDate[key]) sessionsByDate[key] = [];
-      const v = VARIATIONS[s.variationKey];
-      sessionsByDate[key].push({ type: v.type, label: v.label, key: s.variationKey });
+      const vm = getVariationMeta(s.variationKey, s.customName);
+      sessionsByDate[key].push({ type: vm.type, label: vm.label, key: s.variationKey });
     }
   });
 
@@ -1527,7 +1542,7 @@ function calDayClick(d, y, m, isFuture, hasSessions) {
 
   if (daySessions.length) {
     tooltip.textContent = daySessions.map(s =>
-      VARIATIONS[s.variationKey].label + ' — ' + VARIATIONS[s.variationKey].name
+      getVariationMeta(s.variationKey, s.customName).label + ' — ' + getVariationMeta(s.variationKey, s.customName).name
     ).join(' · ');
     // Open backfill screen showing existing sessions for that day with option to add more
     openBackfill(d, y, m, daySessions);
@@ -1542,6 +1557,8 @@ function calDayClick(d, y, m, isFuture, hasSessions) {
 // ════════════════════════════════════════════════════════════════════════════
 let backfillDate = null;   // { d, y, m }
 let backfillSelectedKey = null;
+let backfillMode = 'variation'; // 'variation' | 'specific' | 'custom'
+let backfillCustomName = '';
 let backfillLogSets = false;
 let backfillExercises = [];  // set log data if logging
 let backfillNotes = '';
@@ -1550,6 +1567,8 @@ let backfillDuration = '';
 function openBackfill(d, y, m, existingSessions) {
   backfillDate = { d, y, m };
   backfillSelectedKey = null;
+  backfillMode = 'variation';
+  backfillCustomName = '';
   backfillLogSets = false;
   backfillExercises = [];
   backfillNotes = '';
@@ -1563,6 +1582,8 @@ function openBackfill(d, y, m, existingSessions) {
 function closeBackfill() {
   backfillDate = null;
   backfillSelectedKey = null;
+  backfillMode = 'variation';
+  backfillCustomName = '';
   backfillLogSets = false;
   backfillExercises = [];
   backfillNotes = '';
@@ -1583,17 +1604,17 @@ function renderBackfillScreen(existingSessions) {
     <div style="height:16px"></div>
     <div class="backfill-date-banner">
       <div>
-        <div class="backfill-missed-badge">Missed Workout</div>
+        <div class="backfill-missed-badge">Log Workout</div>
         <div class="backfill-date-text" style="margin-top:6px">${dateStr}</div>
-        <div class="backfill-date-sub">Log a workout for this day</div>
+        <div class="backfill-date-sub">Add a workout for this day</div>
       </div>
     </div>`;
 
-  // Show existing sessions for this day if any
+  // Existing sessions for this day
   if (existing.length) {
     html += `<div class="backfill-pick-label">Already logged this day</div>`;
     existing.forEach(s => {
-      const v = VARIATIONS[s.variationKey];
+      const vm = getVariationMeta(s.variationKey, s.customName);
       const sets = s.exercises.reduce((a, e) => a + e.sets.filter(st => st.reps).length, 0);
       const metaParts = [];
       if (sets) metaParts.push(`${sets} set${sets !== 1 ? 's' : ''} logged`);
@@ -1604,7 +1625,7 @@ function renderBackfillScreen(existingSessions) {
         <div class="backfill-existing-item" style="background:var(--surface);border-radius:var(--radius);border:1px solid var(--border)">
           <button onclick="showSessionDetail('${s.id}', 'backfill')"
             style="flex:1;background:none;border:none;text-align:left;cursor:pointer;padding:0;min-width:0">
-            <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:${TYPE_COLOR[v.type]}">${v.label} — ${v.name}</div>
+            <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:${vm.color}">${vm.label} — ${vm.name}</div>
             <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${meta}</div>
           </button>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:10px">
@@ -1616,79 +1637,212 @@ function renderBackfillScreen(existingSessions) {
     });
     html += `<div class="backfill-pick-label">Add another workout</div>`;
   } else {
-    html += `<div class="backfill-pick-label">Which workout did you do?</div>`;
+    html += `<div class="backfill-pick-label">What type of workout?</div>`;
   }
 
-  // Variation picker grid
-  html += `<div class="backfill-grid">`;
-  ORDER.forEach(key => {
-    const v = VARIATIONS[key];
-    const isSelected = backfillSelectedKey === key;
-    html += `<div class="backfill-cell ${v.type}${isSelected?' selected':''}"
-      onclick="selectBackfillVariation('${key}')">
-      <div class="backfill-cell-tag">${v.label}</div>
-      <div class="backfill-cell-name">${v.name}</div>
-    </div>`;
-  });
-  html += `</div>`;
-
-  // Log sets toggle
-  html += `<div class="backfill-log-toggle" onclick="toggleBackfillLog()">
-    <div>
-      <div class="backfill-log-toggle-left">Log sets & weights</div>
-      <div class="backfill-log-toggle-sub">Optional — add your numbers for this session</div>
-    </div>
-    <div class="toggle-switch${backfillLogSets?' on':''}" id="backfill-toggle-sw"></div>
+  // ── Mode selector tabs ──────────────────────────────────────────────────────
+  html += `<div style="display:flex;gap:6px;padding:0 18px;margin-bottom:4px">
+    <button style="flex:1;padding:8px 6px;border-radius:var(--radius-sm);
+      border:1.5px solid ${backfillMode==='variation'?'var(--accent)':'var(--border)'};
+      background:${backfillMode==='variation'?'#2a1a08':'none'};
+      color:${backfillMode==='variation'?'var(--accent)':'var(--text-muted)'};
+      font-family:'DM Mono',monospace;font-size:9px;font-weight:500;text-transform:uppercase;
+      letter-spacing:0.5px;cursor:pointer"
+      onclick="setBackfillMode('variation')">Full workout</button>
+    <button style="flex:1;padding:8px 6px;border-radius:var(--radius-sm);
+      border:1.5px solid ${backfillMode==='specific'?'var(--accent)':'var(--border)'};
+      background:${backfillMode==='specific'?'#2a1a08':'none'};
+      color:${backfillMode==='specific'?'var(--accent)':'var(--text-muted)'};
+      font-family:'DM Mono',monospace;font-size:9px;font-weight:500;text-transform:uppercase;
+      letter-spacing:0.5px;cursor:pointer"
+      onclick="setBackfillMode('specific')">Specific exercises</button>
+    <button style="flex:1;padding:8px 6px;border-radius:var(--radius-sm);
+      border:1.5px solid ${backfillMode==='custom'?'var(--accent)':'var(--border)'};
+      background:${backfillMode==='custom'?'#2a1a08':'none'};
+      color:${backfillMode==='custom'?'var(--accent)':'var(--text-muted)'};
+      font-family:'DM Mono',monospace;font-size:9px;font-weight:500;text-transform:uppercase;
+      letter-spacing:0.5px;cursor:pointer"
+      onclick="setBackfillMode('custom')">Custom</button>
   </div>`;
 
-  // Set logging area (if toggled on and variation selected)
-  if (backfillLogSets && backfillSelectedKey) {
-    const v = VARIATIONS[backfillSelectedKey];
-    const allEx = [...v.exercises, ...v.core];
-    html += `<div style="margin-top:4px">`;
-    allEx.forEach((ex, i) => {
-      const bfEx = backfillExercises.find(e => e.idx === i) || null;
-      const sets = bfEx ? bfEx.sets : [{reps:'',weight:''}];
-      html += `<div class="ex-card" id="bf-ex-${i}" style="margin:10px 18px 0">
-        <div class="ex-card-header" onclick="toggleEx('bf-ex-${i}')">
-          <div class="ex-card-left">
-            <div class="ex-name">${ex.name}</div>
-            <div class="ex-sets-badge">${ex.sets}</div>
-          </div>
-          <div class="ex-chevron">⌄</div>
-        </div>
-        <div class="ex-desc">${ex.desc}</div>
-        <div class="set-logger">
-          <div class="set-logger-head">
-            <div class="set-logger-title">Sets</div>
-            <button class="add-set-btn" onclick="bfAddSet(${i})">+ Set</button>
-          </div>
-          ${sets.map((s, si) => `
-            <div class="set-row">
-              <div class="set-num">${si+1}</div>
-              <input class="set-input" type="number" inputmode="decimal" placeholder="reps"
-                value="${s.reps}" onchange="bfUpdateSet(${i},${si},'reps',this.value)" style="max-width:70px">
-              <div class="set-unit">×</div>
-              <input class="set-input" type="number" inputmode="decimal" placeholder="lbs"
-                value="${s.weight}" onchange="bfUpdateSet(${i},${si},'weight',this.value)">
-              <div class="set-unit">lbs</div>
-              <button class="del-set-btn" onclick="bfDelSet(${i},${si})">×</button>
-            </div>`).join('')}
-        </div>
+  // ── Full variation mode ─────────────────────────────────────────────────────
+  if (backfillMode === 'variation') {
+    html += `<div class="backfill-grid">`;
+    ORDER.forEach(key => {
+      const v = VARIATIONS[key];
+      const isSelected = backfillSelectedKey === key;
+      html += `<div class="backfill-cell ${v.type}${isSelected?' selected':''}"
+        onclick="selectBackfillVariation('${key}')">
+        <div class="backfill-cell-tag">${v.label}</div>
+        <div class="backfill-cell-name">${v.name}</div>
       </div>`;
     });
     html += `</div>`;
+
+    // Log sets toggle
+    html += `<div class="backfill-log-toggle" onclick="toggleBackfillLog()">
+      <div>
+        <div class="backfill-log-toggle-left">Log sets & weights</div>
+        <div class="backfill-log-toggle-sub">Optional — add your numbers for this session</div>
+      </div>
+      <div class="toggle-switch${backfillLogSets?' on':''}" id="backfill-toggle-sw"></div>
+    </div>`;
+
+    // Set logging area
+    if (backfillLogSets && backfillSelectedKey) {
+      const v = VARIATIONS[backfillSelectedKey];
+      const allEx = [...v.exercises, ...v.core];
+      html += `<div style="margin-top:4px">`;
+      allEx.forEach((ex, i) => {
+        const bfEx = backfillExercises.find(e => e.idx === i) || null;
+        const sets = bfEx ? bfEx.sets : [{reps:'',weight:''}];
+        html += `<div class="ex-card" id="bf-ex-${i}" style="margin:10px 18px 0">
+          <div class="ex-card-header" onclick="toggleEx('bf-ex-${i}')">
+            <div class="ex-card-left">
+              <div class="ex-name">${ex.name}</div>
+              <div class="ex-sets-badge">${ex.sets}</div>
+            </div>
+            <div class="ex-chevron">⌄</div>
+          </div>
+          <div class="ex-desc">${ex.desc}</div>
+          <div class="set-logger">
+            <div class="set-logger-head">
+              <div class="set-logger-title">Sets</div>
+              <button class="add-set-btn" onclick="bfAddSet(${i})">+ Set</button>
+            </div>
+            ${sets.map((s, si) => `
+              <div class="set-row">
+                <div class="set-num">${si+1}</div>
+                <input class="set-input" type="number" inputmode="decimal" placeholder="reps"
+                  value="${s.reps}" onchange="bfUpdateSet(${i},${si},'reps',this.value)" style="max-width:70px">
+                <div class="set-unit">×</div>
+                <input class="set-input" type="number" inputmode="decimal" placeholder="lbs"
+                  value="${s.weight}" onchange="bfUpdateSet(${i},${si},'weight',this.value)">
+                <div class="set-unit">lbs</div>
+                <button class="del-set-btn" onclick="bfDelSet(${i},${si})">×</button>
+              </div>`).join('')}
+          </div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
   }
 
-  // Duration + notes fields — always visible once a variation is selected
-  if (backfillSelectedKey) {
+  // ── Specific exercises mode ─────────────────────────────────────────────────
+  if (backfillMode === 'specific') {
+    backfillSelectedKey = backfillSelectedKey || CUSTOM_KEY;
+    // Show the exercise picker inline always
+    html += `<div class="ex-picker-panel" style="display:block;margin:8px 18px 0;border:1px solid var(--border);border-radius:var(--radius)">
+      <div class="ex-picker-search-wrap">
+        <input class="ex-picker-search" id="ex-picker-search-bf" type="text"
+          placeholder="Search exercises to add…"
+          oninput="filterBfExPicker(this.value)"
+          autocomplete="off" autocorrect="off">
+      </div>
+      <div class="ex-picker-list" id="ex-picker-list-bf"></div>
+    </div>`;
+
+    // Show selected exercises with set logging
+    if (backfillExercises.length) {
+      html += `<div class="edit-section-head" style="margin-top:10px">Added exercises</div>`;
+      backfillExercises.forEach((bfEx, bi) => {
+        html += `<div class="edit-ex-card" style="margin:0 18px 8px">
+          <div class="edit-ex-name" style="display:flex;align-items:center;justify-content:space-between">
+            <span>${bfEx.name}</span>
+            <button onclick="bfRemoveSpecificEx(${bi})"
+              style="background:none;border:none;color:var(--text-dim);font-size:11px;cursor:pointer;padding:2px 4px">
+              Remove
+            </button>
+          </div>`;
+        bfEx.sets.forEach((st, si) => {
+          html += `<div class="set-row" style="padding:8px 14px;border-bottom:1px solid var(--border)">
+            <div class="set-num">${si+1}</div>
+            <input class="set-input" type="number" inputmode="decimal" placeholder="reps"
+              value="${st.reps}" style="max-width:70px"
+              oninput="bfSpecificSetField(${bi},${si},'reps',this.value)">
+            <div class="set-unit">×</div>
+            <input class="set-input" type="number" inputmode="decimal" placeholder="lbs"
+              value="${st.weight||''}"
+              oninput="bfSpecificSetField(${bi},${si},'weight',this.value)">
+            <div class="set-unit">lbs</div>
+            <button class="del-set-btn" onclick="bfSpecificDelSet(${bi},${si})">×</button>
+          </div>`;
+        });
+        html += `<button class="add-set-btn" style="margin:8px 14px;display:block"
+          onclick="bfSpecificAddSet(${bi})">+ Set</button>`;
+        html += `</div>`;
+      });
+    }
+  }
+
+  // ── Custom workout mode ─────────────────────────────────────────────────────
+  if (backfillMode === 'custom') {
+    backfillSelectedKey = CUSTOM_KEY;
+    html += `<div class="session-meta-block" style="margin:8px 18px 0">
+      <div class="session-meta-row">
+        <div class="session-meta-label">Activity</div>
+        <input class="session-meta-input" type="text" placeholder="e.g. Morning run, Yoga, Swim…"
+          value="${backfillCustomName}"
+          oninput="backfillCustomName=this.value;backfillSelectedKey=this.value.trim()?'${CUSTOM_KEY}':null"
+          style="text-align:left">
+      </div>
+    </div>`;
+
+    // Optional: add exercises to custom workout too
+    if (backfillExercises.length) {
+      html += `<div class="edit-section-head" style="margin-top:10px">Exercises</div>`;
+      backfillExercises.forEach((bfEx, bi) => {
+        html += `<div class="edit-ex-card" style="margin:0 18px 8px">
+          <div class="edit-ex-name" style="display:flex;align-items:center;justify-content:space-between">
+            <span>${bfEx.name}</span>
+            <button onclick="bfRemoveSpecificEx(${bi})"
+              style="background:none;border:none;color:var(--text-dim);font-size:11px;cursor:pointer;padding:2px 4px">
+              Remove
+            </button>
+          </div>`;
+        bfEx.sets.forEach((st, si) => {
+          html += `<div class="set-row" style="padding:8px 14px;border-bottom:1px solid var(--border)">
+            <div class="set-num">${si+1}</div>
+            <input class="set-input" type="number" inputmode="decimal" placeholder="reps"
+              value="${st.reps}" style="max-width:70px"
+              oninput="bfSpecificSetField(${bi},${si},'reps',this.value)">
+            <div class="set-unit">×</div>
+            <input class="set-input" type="number" inputmode="decimal" placeholder="lbs"
+              value="${st.weight||''}"
+              oninput="bfSpecificSetField(${bi},${si},'weight',this.value)">
+            <div class="set-unit">lbs</div>
+            <button class="del-set-btn" onclick="bfSpecificDelSet(${bi},${si})">×</button>
+          </div>`;
+        });
+        html += `<button class="add-set-btn" style="margin:8px 14px;display:block"
+          onclick="bfSpecificAddSet(${bi})">+ Set</button>`;
+        html += `</div>`;
+      });
+    }
+
+    // Exercise picker for custom too
+    html += `<button class="edit-add-ex-btn" id="bf-custom-add-btn" onclick="toggleBfCustomPicker()"
+      style="margin-top:8px">+ Add exercise (optional)</button>`;
+    html += `<div class="ex-picker-panel" id="bf-custom-picker" style="display:none">
+      <div class="ex-picker-search-wrap">
+        <input class="ex-picker-search" id="ex-picker-search-custom" type="text"
+          placeholder="Search exercises…"
+          oninput="filterBfCustomPicker(this.value)"
+          autocomplete="off" autocorrect="off">
+      </div>
+      <div class="ex-picker-list" id="ex-picker-list-custom"></div>
+    </div>`;
+  }
+
+  // ── Duration + notes (all modes once something selected) ───────────────────
+  const showMeta = backfillSelectedKey || backfillMode === 'custom';
+  if (showMeta) {
     html += `<div class="session-meta-block" style="margin:14px 18px 0">
       <div class="session-meta-row">
         <div class="session-meta-label">Duration</div>
         <input class="session-meta-input" type="number" inputmode="decimal"
           placeholder="optional" style="max-width:80px;text-align:right"
           value="${backfillDuration}"
-          onchange="backfillDuration=this.value"
           oninput="backfillDuration=this.value">
         <div class="duration-unit">min</div>
       </div>
@@ -1696,26 +1850,114 @@ function renderBackfillScreen(existingSessions) {
         <div class="session-meta-label">Notes</div>
         <textarea class="session-meta-input" rows="3"
           placeholder="How did it go? Anything worth noting…"
-          onchange="backfillNotes=this.value"
           oninput="backfillNotes=this.value">${backfillNotes}</textarea>
       </div>
     </div>`;
   }
 
-  // Confirm button
-  const isReady = !!backfillSelectedKey;
+  // ── Confirm button ──────────────────────────────────────────────────────────
+  const isReady = backfillMode === 'custom'
+    ? !!backfillCustomName.trim()
+    : (backfillMode === 'specific' ? backfillExercises.length > 0 : !!backfillSelectedKey);
+
   html += `<div style="padding:0 18px">
     <button class="backfill-confirm-btn${isReady?' ready':''}" onclick="saveBackfillSession()">
-      ${backfillLogSets ? 'Save Session with Sets' : 'Save Session'}
+      Save Session
     </button>
   </div>`;
 
-  document.getElementById('backfill-body').innerHTML = html;
+  const body = document.getElementById('backfill-body');
+  body.innerHTML = html;
+
+  // Init pickers after render
+  if (backfillMode === 'specific') renderBfExPickerList('');
 }
 
-function selectBackfillVariation(key) {
-  backfillSelectedKey = key;
-  backfillExercises = [];
+function setBackfillMode(mode) {
+  backfillMode = mode;
+  if (mode !== 'variation') { backfillSelectedKey = mode === 'custom' ? CUSTOM_KEY : null; }
+  if (mode === 'variation' && !ORDER.includes(backfillSelectedKey)) backfillSelectedKey = null;
+  renderBackfillScreen();
+}
+
+// ── Specific exercise picker helpers ──────────────────────────────────────────
+let bfCustomPickerOpen = false;
+
+function renderBfExPickerList(q, listId = 'ex-picker-list-bf') {
+  const list = document.getElementById(listId);
+  if (!list) return;
+  const seen = new Set(); const groups = { push:[], pull:[], legs:[], core:[] };
+  const gc = { push: TYPE_COLOR.push, pull: TYPE_COLOR.pull, legs: TYPE_COLOR.legs, core: 'var(--core)' };
+  ORDER.forEach(key => {
+    const v = VARIATIONS[key];
+    [...v.exercises, ...v.core].forEach((ex, i) => {
+      if (seen.has(ex.name)) return; seen.add(ex.name);
+      const type = i < v.exercises.length ? v.type : 'core';
+      groups[type].push(ex.name);
+    });
+  });
+  Object.keys(groups).forEach(k => groups[k].sort());
+  const lq = q.toLowerCase().trim();
+  let html = ''; let total = 0;
+  ['push','pull','legs','core'].forEach(type => {
+    const items = lq ? groups[type].filter(n => n.toLowerCase().includes(lq)) : groups[type];
+    if (!items.length) return;
+    html += `<div class="ex-picker-group" style="color:${gc[type]}">${type.charAt(0).toUpperCase()+type.slice(1)}</div>`;
+    items.forEach(name => {
+      html += `<button class="ex-picker-item"
+        onclick="bfAddSpecificExercise('${name.replace(/'/g,"\\'")}','${listId}')">
+        ${name}
+      </button>`;
+    });
+    total += items.length;
+  });
+  if (!total) html = `<div class="ex-picker-empty">No exercises match "${q}"</div>`;
+  list.innerHTML = html;
+}
+
+function filterBfExPicker(q) { renderBfExPickerList(q, 'ex-picker-list-bf'); }
+function filterBfCustomPicker(q) { renderBfExPickerList(q, 'ex-picker-list-custom'); }
+
+function toggleBfCustomPicker() {
+  bfCustomPickerOpen = !bfCustomPickerOpen;
+  const panel = document.getElementById('bf-custom-picker');
+  const btn   = document.getElementById('bf-custom-add-btn');
+  if (panel) panel.style.display = bfCustomPickerOpen ? 'block' : 'none';
+  if (btn) btn.classList.toggle('open', bfCustomPickerOpen);
+  if (bfCustomPickerOpen) renderBfExPickerList('', 'ex-picker-list-custom');
+}
+
+function bfAddSpecificExercise(name) {
+  if (!name) return;
+  if (!backfillExercises.find(e => e.name === name)) {
+    backfillExercises.push({ name, sets: [{ reps:'', weight:'' }] });
+  }
+  bfCustomPickerOpen = false;
+  if (backfillMode === 'specific' && !backfillSelectedKey) backfillSelectedKey = CUSTOM_KEY;
+  renderBackfillScreen();
+}
+
+function bfRemoveSpecificEx(idx) {
+  backfillExercises.splice(idx, 1);
+  renderBackfillScreen();
+}
+
+function bfSpecificSetField(exIdx, setIdx, field, value) {
+  if (backfillExercises[exIdx]) backfillExercises[exIdx].sets[setIdx][field] = value;
+}
+
+function bfSpecificAddSet(exIdx) {
+  if (backfillExercises[exIdx]) {
+    backfillExercises[exIdx].sets.push({ reps:'', weight:'' });
+    renderBackfillScreen();
+  }
+}
+
+function bfSpecificDelSet(exIdx, setIdx) {
+  const ex = backfillExercises[exIdx];
+  if (!ex) return;
+  if (ex.sets.length <= 1) { backfillExercises.splice(exIdx, 1); }
+  else ex.sets.splice(setIdx, 1);
   renderBackfillScreen();
 }
 
@@ -1770,32 +2012,47 @@ function deleteBackfillSession(sessionId) {
 }
 
 function saveBackfillSession() {
-  if (!backfillSelectedKey) return;
   const { d, y, m } = backfillDate;
-  const v = VARIATIONS[backfillSelectedKey];
+  let exercises = [];
+  let variationKey = backfillSelectedKey;
+  let customName = '';
 
-  // Build exercises array
-  let exercises;
-  if (backfillLogSets && backfillExercises.length) {
-    exercises = backfillExercises.map(e => {
+  if (backfillMode === 'custom') {
+    if (!backfillCustomName.trim()) return;
+    variationKey = CUSTOM_KEY;
+    customName = backfillCustomName.trim();
+    exercises = backfillExercises.map(e => ({
+      key: 'custom_' + e.name.replace(/\s/g,'_'),
+      name: e.name, sets: e.sets
+    }));
+  } else if (backfillMode === 'specific') {
+    if (!backfillExercises.length) return;
+    variationKey = CUSTOM_KEY;
+    customName = 'Specific exercises';
+    exercises = backfillExercises.map(e => ({
+      key: 'custom_' + e.name.replace(/\s/g,'_'),
+      name: e.name, sets: e.sets
+    }));
+  } else {
+    // Full variation mode
+    if (!backfillSelectedKey) return;
+    if (backfillLogSets && backfillExercises.length) {
+      const v = VARIATIONS[backfillSelectedKey];
       const allEx = [...v.exercises, ...v.core];
-      return {
+      exercises = backfillExercises.map(e => ({
         key: 'main_' + e.idx,
         name: allEx[e.idx] ? allEx[e.idx].name : '',
         sets: e.sets
-      };
-    });
-  } else {
-    exercises = [];
+      }));
+    }
   }
 
-  // Set time to noon on that date to avoid timezone edge cases
   const sessionDate = new Date(y, m, d, 12, 0, 0);
-
   const session = {
     id: Date.now(),
     date: sessionDate.toISOString(),
-    variationKey: backfillSelectedKey,
+    variationKey,
+    customName,
     tab: 'main',
     missed: true,
     exercises,
@@ -1804,10 +2061,9 @@ function saveBackfillSession() {
   };
 
   sessions.push(session);
-  // Sort sessions by date so history renders correctly
   sessions.sort((a, b) => new Date(a.date) - new Date(b.date));
   saveSessions();
-  showToast('Missed workout saved ✓');
+  showToast('Workout saved ✓');
   setTimeout(() => { closeBackfill(); }, 1000);
 }
 
@@ -2240,20 +2496,20 @@ function showBackfillFromDetail() {
 }
 
 function renderSessionDetail(s) {
-  const v = VARIATIONS[s.variationKey];
-  const tc = TYPE_COLOR[v.type];
-  const bg = TYPE_BG[v.type];
-  const tt = TYPE_TEXT[v.type];
+  const vm = getVariationMeta(s.variationKey, s.customName);
+  const tc = vm.color;
+  const bg = vm.bg;
+  const tt = vm.text;
   const dateStr = new Date(s.date).toLocaleDateString('en-US', {
     weekday:'long', month:'long', day:'numeric', year:'numeric'
   });
   const totalSets = s.exercises.reduce((acc, e) => acc + e.sets.filter(st => st.reps).length, 0);
 
-  document.getElementById('detail-topbar-title').textContent = v.label;
+  document.getElementById('detail-topbar-title').textContent = vm.label;
 
   let html = `<div class="detail-header">
-    <div class="detail-badge" style="background:${bg};color:${tt}">${v.label} — ${v.type.toUpperCase()}</div>
-    <div class="detail-title">${v.name}</div>
+    <div class="detail-badge" style="background:${bg};color:${tt}">${vm.label} — ${vm.type.toUpperCase()}</div>
+    <div class="detail-title">${vm.name}</div>
     <div class="detail-date">${dateStr}</div>
   </div>`;
 
@@ -2324,7 +2580,7 @@ function deleteSessionFromDetail(sessionId) {
 }
 
 function renderHistorySessionCard(s) {
-  const v = VARIATIONS[s.variationKey];
+  const vm = getVariationMeta(s.variationKey, s.customName);
   const totalSets = s.exercises.reduce((acc, e) => acc + e.sets.filter(st => st.reps).length, 0);
   const metaParts = [];
   if (totalSets) metaParts.push(`${totalSets} set${totalSets !== 1 ? 's' : ''} logged`);
@@ -2335,7 +2591,7 @@ function renderHistorySessionCard(s) {
   return `<button class="history-item" onclick="showSessionDetail('${s.id}')">
     <div class="history-item-header">
       <div class="history-item-left">
-        <div class="history-item-name" style="color:${TYPE_COLOR[v.type]}">${v.label} — ${v.name}</div>
+        <div class="history-item-name" style="color:${vm.color}">${vm.label} — ${vm.name}</div>
         <div class="history-item-meta">${meta}</div>
       </div>
       <div class="history-item-arrow">›</div>
@@ -2698,9 +2954,9 @@ function buildOverviewHTML() {
   const lbs = totalLbs(sessions);
   const mins = totalMinutes(sessions);
   const sets = totalSetsCount(sessions);
-  const pushS = sessions.filter(s => VARIATIONS[s.variationKey].type === 'push');
-  const pullS = sessions.filter(s => VARIATIONS[s.variationKey].type === 'pull');
-  const legsS = sessions.filter(s => VARIATIONS[s.variationKey].type === 'legs');
+  const pushS = sessions.filter(s => s.variationKey !== CUSTOM_KEY && VARIATIONS[s.variationKey] && VARIATIONS[s.variationKey].type === 'push');
+  const pullS = sessions.filter(s => s.variationKey !== CUSTOM_KEY && VARIATIONS[s.variationKey] && VARIATIONS[s.variationKey].type === 'pull');
+  const legsS = sessions.filter(s => s.variationKey !== CUSTOM_KEY && VARIATIONS[s.variationKey] && VARIATIONS[s.variationKey].type === 'legs');
   const total = sessions.length;
   const pushPct = total ? Math.round(pushS.length/total*100) : 0;
   const pullPct = total ? Math.round(pullS.length/total*100) : 0;
@@ -2850,9 +3106,9 @@ function buildPeriodHTML(mode) {
   const lbs = totalLbs(ss);
   const mins = totalMinutes(ss);
   const sets = totalSetsCount(ss);
-  const pushS = ss.filter(s => VARIATIONS[s.variationKey].type === 'push');
-  const pullS = ss.filter(s => VARIATIONS[s.variationKey].type === 'pull');
-  const legsS = ss.filter(s => VARIATIONS[s.variationKey].type === 'legs');
+  const pushS = ss.filter(s => s.variationKey !== CUSTOM_KEY && VARIATIONS[s.variationKey] && VARIATIONS[s.variationKey].type === 'push');
+  const pullS = ss.filter(s => s.variationKey !== CUSTOM_KEY && VARIATIONS[s.variationKey] && VARIATIONS[s.variationKey].type === 'pull');
+  const legsS = ss.filter(s => s.variationKey !== CUSTOM_KEY && VARIATIONS[s.variationKey] && VARIATIONS[s.variationKey].type === 'legs');
   const sessionsWithTime = ss.filter(s => s.duration && parseFloat(s.duration) > 0);
   const avgDur = sessionsWithTime.length ? Math.round(mins / sessionsWithTime.length) : 0;
   const total = ss.length;
@@ -3151,8 +3407,8 @@ function startEditSession() {
 function renderEditSession() {
   const s = editingSession;
   if (!s) return;
-  const v = VARIATIONS[s.variationKey];
-  const tc = TYPE_COLOR[v.type];
+  const vm = getVariationMeta(s.variationKey, s.customName);
+  const tc = vm.color;
   const body = document.getElementById('detail-body');
 
   // Hide the topbar edit button while editing
@@ -3187,7 +3443,13 @@ function renderEditSession() {
   html += `<div class="edit-section-head">Sets</div>`;
   s.exercises.forEach((ex, ei) => {
     html += `<div class="edit-ex-card" id="edit-ex-${ei}">
-      <div class="edit-ex-name">${ex.name}</div>`;
+      <div class="edit-ex-name" style="display:flex;align-items:center;justify-content:space-between">
+        <span>${ex.name}</span>
+        <button onclick="editRemoveExercise(${ei})"
+          style="background:none;border:none;color:var(--text-dim);font-size:11px;cursor:pointer;padding:2px 4px;flex-shrink:0">
+          Remove
+        </button>
+      </div>`;
     ex.sets.forEach((st, si) => {
       html += `<div class="set-row" style="padding:8px 14px;border-bottom:1px solid var(--border)">
         <div class="set-num">${si + 1}</div>
@@ -3207,15 +3469,82 @@ function renderEditSession() {
     html += `</div>`;
   });
 
-  // Add exercise — inline picker panel
-  html += `<button class="edit-add-ex-btn" id="edit-add-ex-btn" onclick="toggleExPicker()">+ Add exercise</button>`;
-  html += `<div class="ex-picker-panel" id="ex-picker-panel" style="display:none">
+  // Add exercise and add full workout — two buttons side by side
+  html += `<div style="display:flex;gap:8px;margin:10px 18px 0">
+    <button class="edit-add-ex-btn${exPickerOpen?' open':''}" id="edit-add-ex-btn"
+      style="flex:1;margin:0" onclick="toggleExPicker()">+ Add exercise</button>
+    <button class="edit-add-ex-btn${editWorkoutPickerOpen?' open':''}" id="edit-add-workout-btn"
+      style="flex:1;margin:0" onclick="toggleEditWorkoutPicker()">+ Add workout</button>
+  </div>`;
+
+  // Exercise picker panel
+  html += `<div class="ex-picker-panel" id="ex-picker-panel" style="display:${exPickerOpen?'block':'none'}">
     <div class="ex-picker-search-wrap">
       <input class="ex-picker-search" id="ex-picker-search" type="text"
         placeholder="Search exercises…" oninput="filterExPicker(this.value)"
         autocomplete="off" autocorrect="off">
     </div>
     <div class="ex-picker-list" id="ex-picker-list"></div>
+  </div>`;
+
+  // Workout variation picker panel
+  html += `<div id="edit-workout-picker-panel" style="display:${editWorkoutPickerOpen?'block':'none'};
+    margin:0 18px;border:1px solid var(--accent);border-top:none;
+    border-bottom-left-radius:var(--radius);border-bottom-right-radius:var(--radius);
+    background:var(--surface);padding:12px">
+    <div style="font-family:'DM Mono',monospace;font-size:9px;font-weight:500;
+      text-transform:uppercase;letter-spacing:0.5px;color:var(--text-dim);margin-bottom:10px">
+      Select a workout to import its exercises
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+      ${ORDER.map(key => {
+        const v = VARIATIONS[key];
+        const exCount = v.exercises.length + v.core.length;
+        return `<button onclick="editImportWorkout('${key}')"
+          style="padding:10px 6px;border-radius:var(--radius-sm);
+            border:1px solid ${TYPE_COLOR[v.type]};
+            background:${TYPE_BG[v.type]};
+            cursor:pointer;text-align:left">
+          <div style="font-family:'DM Mono',monospace;font-size:8px;font-weight:500;
+            text-transform:uppercase;letter-spacing:0.5px;color:${TYPE_TEXT[v.type]};
+            margin-bottom:3px;opacity:0.8">${v.label}</div>
+          <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;
+            color:${TYPE_TEXT[v.type]};line-height:1.2">${v.name}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:8px;
+            color:${TYPE_TEXT[v.type]};opacity:0.5;margin-top:3px">
+            ${exCount} exercises incl. core
+          </div>
+        </button>`;
+      }).join('')}
+    </div>
+    <div style="font-family:'DM Mono',monospace;font-size:9px;font-weight:500;
+      text-transform:uppercase;letter-spacing:0.5px;color:var(--text-dim);
+      margin:14px 0 8px;border-top:1px solid var(--border);padding-top:12px">
+      Core finishers only
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+      ${[
+        { key:'push_a', label:'Push Core', focus:'Anti-extension', typeColor: TYPE_COLOR.push, typeBg: TYPE_BG.push, typeText: TYPE_TEXT.push },
+        { key:'pull_a', label:'Pull Core', focus:'Flexion',        typeColor: TYPE_COLOR.pull, typeBg: TYPE_BG.pull, typeText: TYPE_TEXT.pull },
+        { key:'legs_a', label:'Legs Core', focus:'Rotation & lateral stability', typeColor: TYPE_COLOR.legs, typeBg: TYPE_BG.legs, typeText: TYPE_TEXT.legs },
+      ].map(({ key, label, focus, typeColor, typeBg, typeText }) => {
+        const v = VARIATIONS[key];
+        return `<button onclick="editImportCore('${key}')"
+          style="padding:10px 6px;border-radius:var(--radius-sm);
+            border:1px solid ${typeColor};background:${typeBg};
+            cursor:pointer;text-align:left">
+          <div style="font-family:'DM Mono',monospace;font-size:8px;font-weight:500;
+            text-transform:uppercase;letter-spacing:0.5px;color:${typeText};
+            margin-bottom:3px;opacity:0.8">${label}</div>
+          <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;
+            color:${typeText};line-height:1.2">${focus}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:8px;
+            color:${typeText};opacity:0.5;margin-top:3px">
+            ${v.core.length} exercises
+          </div>
+        </button>`;
+      }).join('')}
+    </div>
   </div>`;
 
   html += `<div style="height:20px"></div>`;
@@ -3246,15 +3575,27 @@ function editDeleteSet(exIdx, setIdx) {
   renderEditSession();
 }
 
+function editRemoveExercise(exIdx) {
+  if (!editingSession) return;
+  editingSession.exercises.splice(exIdx, 1);
+  renderEditSession();
+}
+
 let exPickerOpen = false;
+let editWorkoutPickerOpen = false;
 
 function toggleExPicker() {
   exPickerOpen = !exPickerOpen;
+  editWorkoutPickerOpen = false; // close the other picker if open
   const panel = document.getElementById('ex-picker-panel');
   const btn = document.getElementById('edit-add-ex-btn');
+  const wPanel = document.getElementById('edit-workout-picker-panel');
+  const wBtn = document.getElementById('edit-add-workout-btn');
   if (!panel || !btn) return;
   panel.style.display = exPickerOpen ? 'block' : 'none';
   btn.classList.toggle('open', exPickerOpen);
+  if (wPanel) wPanel.style.display = 'none';
+  if (wBtn) wBtn.classList.remove('open');
   if (exPickerOpen) {
     renderExPickerList('');
     setTimeout(() => {
@@ -3262,6 +3603,61 @@ function toggleExPicker() {
       if (search) search.focus();
     }, 50);
   }
+}
+
+function toggleEditWorkoutPicker() {
+  editWorkoutPickerOpen = !editWorkoutPickerOpen;
+  exPickerOpen = false; // close the other picker if open
+  const panel = document.getElementById('edit-workout-picker-panel');
+  const btn = document.getElementById('edit-add-workout-btn');
+  const ePanel = document.getElementById('ex-picker-panel');
+  const eBtn = document.getElementById('edit-add-ex-btn');
+  if (panel) panel.style.display = editWorkoutPickerOpen ? 'block' : 'none';
+  if (btn) btn.classList.toggle('open', editWorkoutPickerOpen);
+  if (ePanel) ePanel.style.display = 'none';
+  if (eBtn) eBtn.classList.remove('open');
+}
+
+function editImportWorkout(key) {
+  if (!editingSession) return;
+  const v = VARIATIONS[key];
+  const allEx = [...v.exercises, ...v.core];
+  const existingNames = new Set(editingSession.exercises.map(e => e.name));
+  let added = 0;
+  allEx.forEach((ex, i) => {
+    if (!existingNames.has(ex.name)) {
+      editingSession.exercises.push({
+        key: key + '_' + i,
+        name: ex.name,
+        sets: [{ reps: '', weight: '' }]
+      });
+      added++;
+    }
+  });
+  editWorkoutPickerOpen = false;
+  renderEditSession();
+  showToast(`Added ${added} exercise${added !== 1 ? 's' : ''} from ${v.label}`);
+}
+
+function editImportCore(key) {
+  if (!editingSession) return;
+  const v = VARIATIONS[key];
+  const existingNames = new Set(editingSession.exercises.map(e => e.name));
+  let added = 0;
+  v.core.forEach((ex, i) => {
+    if (!existingNames.has(ex.name)) {
+      editingSession.exercises.push({
+        key: key + '_core_' + i,
+        name: ex.name,
+        sets: [{ reps: '', weight: '' }]
+      });
+      added++;
+    }
+  });
+  editWorkoutPickerOpen = false;
+  renderEditSession();
+  const typeLabel = v.type.charAt(0).toUpperCase() + v.type.slice(1);
+  showToast(`Added ${added} core exercise${added !== 1 ? 's' : ''} (${typeLabel})`);
 }
 
 function filterExPicker(q) {
@@ -3339,6 +3735,8 @@ function saveEditSession() {
   showToast('Session updated ✓');
   const saved = editingSession;
   editingSession = null;
+  exPickerOpen = false;
+  editWorkoutPickerOpen = false;
   const editBtn = document.getElementById('detail-edit-btn');
   if (editBtn) editBtn.style.display = '';
   renderSessionDetail(sessions[idx]);
@@ -3348,6 +3746,8 @@ function cancelEditSession() {
   if (!editingSession) return;
   const id = editingSession.id;
   editingSession = null;
+  exPickerOpen = false;
+  editWorkoutPickerOpen = false;
   const editBtn = document.getElementById('detail-edit-btn');
   if (editBtn) editBtn.style.display = '';
   const s = sessions.find(s => String(s.id) === String(id));
