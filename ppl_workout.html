@@ -637,6 +637,77 @@ html, body {
   cursor: pointer;
 }
 
+/* ── Edit session mode ── */
+.detail-edit-bar {
+  display: flex; gap: 8px; padding: 10px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.detail-edit-save {
+  flex: 1; padding: 10px; border-radius: var(--radius-sm);
+  font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+  border: none; cursor: pointer; color: #fff;
+}
+.detail-edit-cancel {
+  padding: 10px 16px; border-radius: var(--radius-sm);
+  font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+  border: 1px solid var(--border); background: none; color: var(--text-muted); cursor: pointer;
+}
+.edit-ex-card {
+  margin: 10px 18px 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+}
+.edit-ex-name {
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700;
+  padding: 10px 14px 8px; border-bottom: 1px solid var(--border); color: var(--text);
+}
+.edit-add-ex-btn {
+  margin: 10px 18px 0; width: calc(100% - 36px);
+  padding: 11px; border-radius: var(--radius);
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+  border: 1px dashed var(--border); background: none; color: var(--text-dim); cursor: pointer;
+}
+.edit-add-ex-btn.open {
+  border-style: solid; border-color: var(--accent); color: var(--accent);
+  border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+}
+.ex-picker-panel {
+  margin: 0 18px; border: 1px solid var(--accent);
+  border-top: none; border-bottom-left-radius: var(--radius);
+  border-bottom-right-radius: var(--radius);
+  background: var(--surface); overflow: hidden;
+}
+.ex-picker-search-wrap { position: relative; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+.ex-picker-search {
+  width: 100%; padding: 7px 10px; background: var(--surface2);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px;
+  outline: none; -webkit-appearance: none;
+}
+.ex-picker-search::placeholder { color: var(--text-dim); }
+.ex-picker-list { max-height: 240px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.ex-picker-group {
+  font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.6px;
+  padding: 8px 12px 4px; color: var(--text-dim);
+  border-top: 1px solid var(--border);
+}
+.ex-picker-group:first-child { border-top: none; }
+.ex-picker-item {
+  display: block; width: 100%; padding: 10px 12px;
+  font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--text);
+  background: none; border: none; text-align: left; cursor: pointer;
+  border-bottom: 1px solid var(--border);
+}
+.ex-picker-item:last-child { border-bottom: none; }
+.ex-picker-item:active { background: var(--surface2); }
+.ex-picker-empty { padding: 14px 12px; font-size: 13px; color: var(--text-dim); text-align: center; }
+.edit-section-head {
+  font-size: 10px; font-weight: 500; text-transform: uppercase;
+  letter-spacing: 0.8px; color: var(--text-dim); margin: 14px 18px 8px;
+}
+
 .history-ex-block { margin-bottom: 12px; }
 .history-ex-block:last-child { margin-bottom: 0; }
 .history-ex-name {
@@ -1097,7 +1168,12 @@ html, body {
       History
     </button>
     <div class="topbar-title" id="detail-topbar-title"></div>
-    <div style="width:60px"></div>
+    <div style="width:60px;text-align:right">
+      <button id="detail-edit-btn" onclick="startEditSession()"
+        style="background:none;border:none;color:var(--accent);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer">
+        Edit
+      </button>
+    </div>
   </div>
   <div class="scroll-body" id="detail-body"></div>
 </div>
@@ -1285,6 +1361,7 @@ const TYPE_MID   = { push:'var(--push-mid)', pull:'var(--pull-mid)', legs:'var(-
 // ════════════════════════════════════════════════════════════════════════════
 let sessions = JSON.parse(localStorage.getItem('ppl_sessions') || '[]');
 let activeSession = null;
+let editingSession = null;  // deep copy of session being edited
 let sessionStartTime = null;
 let elapsedInterval = null;
 let currentVariation = null;
@@ -2228,7 +2305,7 @@ function renderSessionDetail(s) {
     });
   }
 
-  html += `<button class="detail-delete-btn" onclick="deleteSessionFromDetail('${s.id}')">
+  html += `<button class="detail-delete-btn" data-session-id="${s.id}" onclick="deleteSessionFromDetail('${s.id}')">
     Delete this session
   </button>`;
 
@@ -3053,6 +3130,228 @@ function confirmClearData() {
     renderDataScreen();
     renderHome();
   }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// EDIT SESSION
+// ════════════════════════════════════════════════════════════════════════════
+
+function startEditSession() {
+  // Pull the session currently displayed from its ID stored on the delete button
+  const deleteBtn = document.querySelector('#detail-body .detail-delete-btn');
+  if (!deleteBtn) return;
+  const sessionId = deleteBtn.getAttribute('data-session-id');
+  const s = sessions.find(s => String(s.id) === String(sessionId));
+  if (!s) return;
+  // Deep clone so we can cancel without side effects
+  editingSession = JSON.parse(JSON.stringify(s));
+  renderEditSession();
+}
+
+function renderEditSession() {
+  const s = editingSession;
+  if (!s) return;
+  const v = VARIATIONS[s.variationKey];
+  const tc = TYPE_COLOR[v.type];
+  const body = document.getElementById('detail-body');
+
+  // Hide the topbar edit button while editing
+  const editBtn = document.getElementById('detail-edit-btn');
+  if (editBtn) editBtn.style.display = 'none';
+
+  let html = `<div class="detail-edit-bar">
+    <button class="detail-edit-save" style="background:${tc}" onclick="saveEditSession()">Save changes</button>
+    <button class="detail-edit-cancel" onclick="cancelEditSession()">Cancel</button>
+  </div>`;
+
+  // Duration + notes
+  html += `<div class="edit-section-head">Session info</div>`;
+  html += `<div class="session-meta-block">
+    <div class="session-meta-row">
+      <div class="session-meta-label">Duration</div>
+      <input class="session-meta-input" type="number" inputmode="decimal"
+        placeholder="optional" style="max-width:80px;text-align:right"
+        value="${s.duration || ''}"
+        oninput="editingSession.duration=this.value">
+      <div class="duration-unit">min</div>
+    </div>
+    <div class="session-meta-row">
+      <div class="session-meta-label">Notes</div>
+      <textarea class="session-meta-input" rows="3"
+        placeholder="How did it go? Anything worth noting…"
+        oninput="editingSession.notes=this.value">${s.notes || ''}</textarea>
+    </div>
+  </div>`;
+
+  // Exercises
+  html += `<div class="edit-section-head">Sets</div>`;
+  s.exercises.forEach((ex, ei) => {
+    html += `<div class="edit-ex-card" id="edit-ex-${ei}">
+      <div class="edit-ex-name">${ex.name}</div>`;
+    ex.sets.forEach((st, si) => {
+      html += `<div class="set-row" style="padding:8px 14px;border-bottom:1px solid var(--border)">
+        <div class="set-num">${si + 1}</div>
+        <input class="set-input" type="number" inputmode="decimal" placeholder="reps"
+          value="${st.reps}" style="max-width:70px"
+          oninput="editSetField(${ei},${si},'reps',this.value)">
+        <div class="set-unit">×</div>
+        <input class="set-input" type="number" inputmode="decimal" placeholder="lbs"
+          value="${st.weight || ''}"
+          oninput="editSetField(${ei},${si},'weight',this.value)">
+        <div class="set-unit">lbs</div>
+        <button class="del-set-btn" onclick="editDeleteSet(${ei},${si})">×</button>
+      </div>`;
+    });
+    html += `<button class="add-set-btn" style="margin:8px 14px;display:block"
+      onclick="editAddSet(${ei})">+ Set</button>`;
+    html += `</div>`;
+  });
+
+  // Add exercise — inline picker panel
+  html += `<button class="edit-add-ex-btn" id="edit-add-ex-btn" onclick="toggleExPicker()">+ Add exercise</button>`;
+  html += `<div class="ex-picker-panel" id="ex-picker-panel" style="display:none">
+    <div class="ex-picker-search-wrap">
+      <input class="ex-picker-search" id="ex-picker-search" type="text"
+        placeholder="Search exercises…" oninput="filterExPicker(this.value)"
+        autocomplete="off" autocorrect="off">
+    </div>
+    <div class="ex-picker-list" id="ex-picker-list"></div>
+  </div>`;
+
+  html += `<div style="height:20px"></div>`;
+  body.innerHTML = html;
+  body.scrollTop = 0;
+}
+
+function editSetField(exIdx, setIdx, field, value) {
+  if (!editingSession) return;
+  editingSession.exercises[exIdx].sets[setIdx][field] = value;
+}
+
+function editAddSet(exIdx) {
+  if (!editingSession) return;
+  editingSession.exercises[exIdx].sets.push({ reps: '', weight: '' });
+  renderEditSession();
+}
+
+function editDeleteSet(exIdx, setIdx) {
+  if (!editingSession) return;
+  const ex = editingSession.exercises[exIdx];
+  if (ex.sets.length <= 1) {
+    // Remove whole exercise if last set deleted
+    editingSession.exercises.splice(exIdx, 1);
+  } else {
+    ex.sets.splice(setIdx, 1);
+  }
+  renderEditSession();
+}
+
+let exPickerOpen = false;
+
+function toggleExPicker() {
+  exPickerOpen = !exPickerOpen;
+  const panel = document.getElementById('ex-picker-panel');
+  const btn = document.getElementById('edit-add-ex-btn');
+  if (!panel || !btn) return;
+  panel.style.display = exPickerOpen ? 'block' : 'none';
+  btn.classList.toggle('open', exPickerOpen);
+  if (exPickerOpen) {
+    renderExPickerList('');
+    setTimeout(() => {
+      const search = document.getElementById('ex-picker-search');
+      if (search) search.focus();
+    }, 50);
+  }
+}
+
+function filterExPicker(q) {
+  renderExPickerList(q || '');
+}
+
+function renderExPickerList(q) {
+  const list = document.getElementById('ex-picker-list');
+  if (!list) return;
+
+  // Build sorted grouped list from all variations
+  const seen = new Set();
+  const groups = { push: [], pull: [], legs: [], core: [] };
+  const groupLabels = { push: 'Push', pull: 'Pull', legs: 'Legs', core: 'Core' };
+  const groupColors = {
+    push: TYPE_COLOR.push, pull: TYPE_COLOR.pull,
+    legs: TYPE_COLOR.legs, core: 'var(--core)'
+  };
+
+  ORDER.forEach(key => {
+    const v = VARIATIONS[key];
+    [...v.exercises, ...v.core].forEach((ex, i) => {
+      if (seen.has(ex.name)) return;
+      seen.add(ex.name);
+      const type = i < v.exercises.length ? v.type : 'core';
+      groups[type].push(ex.name);
+    });
+  });
+
+  // Sort each group alphabetically
+  Object.keys(groups).forEach(k => groups[k].sort());
+
+  const lq = q.toLowerCase().trim();
+  let html = '';
+  let totalVisible = 0;
+
+  ['push', 'pull', 'legs', 'core'].forEach(type => {
+    const items = lq
+      ? groups[type].filter(n => n.toLowerCase().includes(lq))
+      : groups[type];
+    if (!items.length) return;
+    html += `<div class="ex-picker-group" style="color:${groupColors[type]}">${groupLabels[type]}</div>`;
+    items.forEach(name => {
+      html += `<button class="ex-picker-item" onclick="editAddExercise('${name.replace(/'/g,"\\'")}')">
+        ${name}
+      </button>`;
+    });
+    totalVisible += items.length;
+  });
+
+  if (!totalVisible) {
+    html = `<div class="ex-picker-empty">No exercises match "${q}"</div>`;
+  }
+
+  list.innerHTML = html;
+}
+
+function editAddExercise(name) {
+  if (!name || !editingSession) return;
+  editingSession.exercises.push({
+    key: 'edit_' + Date.now(),
+    name: name.trim(),
+    sets: [{ reps: '', weight: '' }]
+  });
+  exPickerOpen = false;
+  renderEditSession();
+}
+
+function saveEditSession() {
+  if (!editingSession) return;
+  const idx = sessions.findIndex(s => String(s.id) === String(editingSession.id));
+  if (idx === -1) { showToast('Session not found'); return; }
+  sessions[idx] = editingSession;
+  saveSessions();
+  showToast('Session updated ✓');
+  const saved = editingSession;
+  editingSession = null;
+  const editBtn = document.getElementById('detail-edit-btn');
+  if (editBtn) editBtn.style.display = '';
+  renderSessionDetail(sessions[idx]);
+}
+
+function cancelEditSession() {
+  if (!editingSession) return;
+  const id = editingSession.id;
+  editingSession = null;
+  const editBtn = document.getElementById('detail-edit-btn');
+  if (editBtn) editBtn.style.display = '';
+  const s = sessions.find(s => String(s.id) === String(id));
+  if (s) renderSessionDetail(s);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
