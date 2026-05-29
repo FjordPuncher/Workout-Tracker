@@ -467,22 +467,29 @@ html, body {
   border-radius: var(--radius);
   margin-bottom: 8px;
   overflow: hidden;
-  cursor: pointer;
 }
 .history-item-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 13px 14px;
   gap: 10px;
+  cursor: pointer;
+  width: 100%;
+  background: none;
+  border: none;
+  text-align: left;
+  -webkit-tap-highlight-color: rgba(255,255,255,0.05);
 }
+.history-item-header:active { background: var(--surface2); }
 .history-item-left { flex: 1; min-width: 0; }
 .history-item-name {
   font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: inherit;
 }
 .history-item-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
 .history-item-chevron {
-  color: var(--text-dim); font-size: 18px; flex-shrink: 0;
-  transition: transform 0.2s; line-height: 1;
+  color: var(--text-dim); font-size: 20px; flex-shrink: 0;
+  transition: transform 0.2s; line-height: 1; display: block;
 }
 .history-item.open .history-item-chevron { transform: rotate(180deg); }
 
@@ -1717,14 +1724,14 @@ function renderHistorySessionCard(s, showDate) {
   if (s.missed) metaParts.push('retroactive');
   const meta = metaParts.join(' · ') || 'No sets logged';
 
-  return `<div class="history-item" id="hist-${s.id}" onclick="toggleHistoryItem('${s.id}')">
-    <div class="history-item-header">
+  return `<div class="history-item" id="hist-${s.id}">
+    <button class="history-item-header" onclick="toggleHistoryItem('${s.id}')">
       <div class="history-item-left">
         <div class="history-item-name" style="color:${TYPE_COLOR[v.type]}">${v.label} — ${v.name}</div>
         <div class="history-item-meta">${meta}</div>
       </div>
-      <div class="history-item-chevron">⌄</div>
-    </div>
+      <span class="history-item-chevron">⌄</span>
+    </button>
     <div class="history-detail">${detailHtml}</div>
   </div>`;
 }
