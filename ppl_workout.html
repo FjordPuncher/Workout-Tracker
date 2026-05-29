@@ -442,6 +442,64 @@ html, body {
   border: none; cursor: pointer; color: #fff; letter-spacing: 0.3px;
 }
 
+/* ── Session notes + duration block ── */
+.session-meta-block {
+  margin: 14px 18px 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.session-meta-row {
+  display: flex; align-items: center;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--border);
+  gap: 10px;
+}
+.session-meta-row:last-child { border-bottom: none; }
+.session-meta-label {
+  font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--text-dim); white-space: nowrap; flex-shrink: 0; padding: 14px 0;
+}
+.session-meta-input {
+  flex: 1; background: none; border: none; outline: none;
+  color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px;
+  padding: 14px 0; resize: none; line-height: 1.5;
+}
+.session-meta-input::placeholder { color: var(--text-dim); }
+.session-meta-input[type="number"] { -webkit-appearance: none; }
+.duration-unit {
+  font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-dim); flex-shrink: 0;
+}
+.session-timer-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.session-elapsed {
+  font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 500; color: var(--text);
+  letter-spacing: 1px;
+}
+.session-elapsed-label {
+  font-family: 'DM Mono', monospace; font-size: 9px; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;
+}
+
+/* ── Detail screen meta display ── */
+.detail-meta-row {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.detail-meta-row:last-child { border-bottom: none; }
+.detail-meta-label {
+  font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim);
+  white-space: nowrap; flex-shrink: 0; padding-top: 1px; min-width: 80px;
+}
+.detail-meta-value { font-size: 14px; color: var(--text); line-height: 1.5; }
+
 /* ── HISTORY SCREEN ── */
 .history-list { padding: 0 18px; }
 .history-empty { text-align: center; color: var(--text-dim); font-size: 14px; padding: 60px 0; }
@@ -460,46 +518,95 @@ html, body {
 }
 .history-day-line { flex: 1; height: 1px; background: var(--border); }
 
-/* ── session card ── */
+/* ── session card (now a nav link, no dropdown) ── */
 .history-item {
+  display: block;
+  width: 100%;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   margin-bottom: 8px;
   overflow: hidden;
-}
-.history-item-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 13px 14px;
-  gap: 10px;
   cursor: pointer;
-  width: 100%;
-  background: none;
-  border: none;
   text-align: left;
   -webkit-tap-highlight-color: rgba(255,255,255,0.05);
 }
-.history-item-header:active { background: var(--surface2); }
+.history-item:active { background: var(--surface2); }
+.history-item-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 14px; gap: 10px;
+}
 .history-item-left { flex: 1; min-width: 0; }
 .history-item-name {
   font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  color: inherit;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: inherit;
 }
 .history-item-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
-.history-item-chevron {
-  color: var(--text-dim); font-size: 20px; flex-shrink: 0;
-  transition: transform 0.2s; line-height: 1; display: block;
-}
-.history-item.open .history-item-chevron { transform: rotate(180deg); }
+.history-item-arrow { color: var(--text-dim); font-size: 18px; flex-shrink: 0; }
 
-/* ── session detail panel ── */
-.history-detail {
-  display: none;
-  border-top: 1px solid var(--border);
-  padding: 10px 14px 14px;
+/* ── session detail screen ── */
+.detail-header {
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid var(--border);
 }
-.history-item.open .history-detail { display: block; }
+.detail-badge {
+  display: inline-block; font-family: 'DM Mono', monospace; font-size: 9px;
+  font-weight: 500; text-transform: uppercase; letter-spacing: 1px;
+  padding: 4px 10px; border-radius: 20px; margin-bottom: 8px;
+}
+.detail-title {
+  font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800;
+  letter-spacing: -0.5px; line-height: 1.1;
+}
+.detail-date {
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  color: var(--text-muted); margin-top: 5px;
+}
+.detail-section-label {
+  font-size: 10px; font-weight: 500; text-transform: uppercase;
+  letter-spacing: 0.8px; color: var(--text-dim);
+  margin: 18px 18px 10px;
+}
+.detail-ex-card {
+  margin: 0 18px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.detail-ex-name {
+  font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.detail-set-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px; border-bottom: 1px solid var(--border);
+  font-family: 'DM Mono', monospace; font-size: 13px;
+}
+.detail-set-row:last-child { border-bottom: none; }
+.detail-set-num { color: var(--text-dim); width: 20px; flex-shrink: 0; text-align: right; font-size: 11px; }
+.detail-set-reps { color: var(--text); font-weight: 500; }
+.detail-set-x { color: var(--text-dim); font-size: 11px; }
+.detail-set-weight { color: var(--text); }
+.detail-set-weight-unit { color: var(--text-dim); font-size: 11px; }
+.detail-no-sets {
+  padding: 12px 14px; font-size: 13px; color: var(--text-dim); font-style: italic;
+}
+.detail-missed-pill {
+  display: inline-block; font-family: 'DM Mono', monospace; font-size: 9px;
+  font-weight: 500; text-transform: uppercase; letter-spacing: 0.8px;
+  padding: 3px 8px; border-radius: 20px;
+  background: #2a1a08; color: #e09a40; border: 1px solid #5a3010;
+  margin: 12px 18px 0; display: block; width: fit-content;
+}
+.detail-delete-btn {
+  margin: 20px 18px 0; width: calc(100% - 36px);
+  padding: 13px; border-radius: var(--radius);
+  font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+  border: 1px solid #5a1010; background: #1a0808; color: #e05b5b;
+  cursor: pointer;
+}
 
 .history-ex-block { margin-bottom: 12px; }
 .history-ex-block:last-child { margin-bottom: 0; }
@@ -670,26 +777,7 @@ html, body {
 
     <div class="section-label" style="margin-top:8px">Recent Sessions</div>
     <div id="recent-sessions" style="padding:0 18px"></div>
-  </div>
-  <div class="bottom-nav">
-    <button class="bnav-btn active" onclick="showHome()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
-      <span>Home</span>
-    </button>
-    <button class="bnav-btn" onclick="showHistory()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
-      <span>History</span>
-    </button>
-    <button class="bnav-btn" onclick="showData()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      <span>Data</span>
-    </button>
-    <button class="bnav-btn" onclick="showBests()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
-      <span>Bests</span>
-    </button>
-  </div>
-</div>
+  </div></div>
 <div id="screen-workout" class="screen">
   <div class="topbar">
     <button class="back-btn" onclick="showHome()">
@@ -734,26 +822,7 @@ html, body {
   <div class="scroll-body">
     <div class="section-label" style="margin-top:16px">All Sessions</div>
     <div class="history-list" id="history-list"></div>
-  </div>
-  <div class="bottom-nav">
-    <button class="bnav-btn" onclick="showHome()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
-      <span>Home</span>
-    </button>
-    <button class="bnav-btn active" onclick="showHistory()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
-      <span>History</span>
-    </button>
-    <button class="bnav-btn" onclick="showData()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      <span>Data</span>
-    </button>
-    <button class="bnav-btn" onclick="showBests()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
-      <span>Bests</span>
-    </button>
-  </div>
-</div>
+  </div></div>
 
 <!-- ── BACKFILL SCREEN ── -->
 <div id="screen-backfill" class="screen">
@@ -778,26 +847,7 @@ html, body {
     <div class="topbar-title">Data & Backup</div>
     <div style="width:60px"></div>
   </div>
-  <div class="scroll-body" id="data-body" ></div>
-  <div class="bottom-nav">
-    <button class="bnav-btn" onclick="showHome()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
-      <span>Home</span>
-    </button>
-    <button class="bnav-btn" onclick="showHistory()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
-      <span>History</span>
-    </button>
-    <button class="bnav-btn active" onclick="showData()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      <span>Data</span>
-    </button>
-    <button class="bnav-btn" onclick="showBests()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
-      <span>Bests</span>
-    </button>
-  </div>
-</div>
+  <div class="scroll-body" id="data-body" ></div></div>
 
 <!-- ── PERSONAL BESTS SCREEN ── -->
 <div id="screen-bests" class="screen">
@@ -809,28 +859,23 @@ html, body {
     <div class="topbar-title">Personal Bests</div>
     <div style="width:60px"></div>
   </div>
-  <div class="scroll-body" id="bests-body" ></div>
-  <div class="bottom-nav">
-    <button class="bnav-btn" onclick="showHome()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
-      <span>Home</span>
-    </button>
-    <button class="bnav-btn" onclick="showHistory()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
-      <span>History</span>
-    </button>
-    <button class="bnav-btn" onclick="showData()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      <span>Data</span>
-    </button>
-    <button class="bnav-btn active" onclick="showBests()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
-      <span>Bests</span>
-    </button>
-  </div>
-</div>
+  <div class="scroll-body" id="bests-body" ></div></div>
 
 <input type="file" id="import-file-input" accept=".json" onchange="handleImportFile(event)">
+
+<!-- ── SESSION DETAIL SCREEN ── -->
+<div id="screen-session-detail" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="showHistory()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg>
+      History
+    </button>
+    <div class="topbar-title" id="detail-topbar-title"></div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="scroll-body" id="detail-body"></div>
+</div>
+
 <div class="pb-toast" id="pb-toast"><span class="pb-toast-star">★</span><span id="pb-toast-msg"></span></div>
 <div class="session-toast" id="toast"></div>
 
@@ -1014,6 +1059,8 @@ const TYPE_MID   = { push:'var(--push-mid)', pull:'var(--pull-mid)', legs:'var(-
 // ════════════════════════════════════════════════════════════════════════════
 let sessions = JSON.parse(localStorage.getItem('ppl_sessions') || '[]');
 let activeSession = null;
+let sessionStartTime = null;
+let elapsedInterval = null;
 let currentVariation = null;
 let currentTab = 'main'; // 'main' | 'core'
 let timerSeconds = 90;
@@ -1040,9 +1087,18 @@ function getSuggested() {
 // ════════════════════════════════════════════════════════════════════════════
 // HOME SCREEN
 // ════════════════════════════════════════════════════════════════════════════
+// ── Nav active state ─────────────────────────────────────────────────────────
+function setActiveNav(id) {
+  ['bnav-home','bnav-history','bnav-data','bnav-bests'].forEach(b => {
+    const el = document.getElementById(b);
+    if (el) el.classList.toggle('active', b === id);
+  });
+}
+
 function showHome() {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-home').classList.add('active');
+  setActiveNav('bnav-home');
   renderHome();
 }
 
@@ -1185,15 +1241,20 @@ let backfillDate = null;   // { d, y, m }
 let backfillSelectedKey = null;
 let backfillLogSets = false;
 let backfillExercises = [];  // set log data if logging
+let backfillNotes = '';
+let backfillDuration = '';
 
 function openBackfill(d, y, m, existingSessions) {
   backfillDate = { d, y, m };
   backfillSelectedKey = null;
   backfillLogSets = false;
   backfillExercises = [];
+  backfillNotes = '';
+  backfillDuration = '';
   renderBackfillScreen(existingSessions);
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-backfill').classList.add('active');
+  setActiveNav(null);
 }
 
 function closeBackfill() {
@@ -1201,6 +1262,8 @@ function closeBackfill() {
   backfillSelectedKey = null;
   backfillLogSets = false;
   backfillExercises = [];
+  backfillNotes = '';
+  backfillDuration = '';
   showHome();
 }
 
@@ -1229,13 +1292,22 @@ function renderBackfillScreen(existingSessions) {
     existing.forEach(s => {
       const v = VARIATIONS[s.variationKey];
       const sets = s.exercises.reduce((a, e) => a + e.sets.filter(st => st.reps).length, 0);
-      html += `<div style="padding:0 18px">
-        <div class="backfill-existing-item" style="background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:6px">
-          <div>
+      const metaParts = [];
+      if (sets) metaParts.push(`${sets} set${sets !== 1 ? 's' : ''} logged`);
+      if (s.duration && String(s.duration).trim()) metaParts.push(`${s.duration} min`);
+      if (s.missed) metaParts.push('retroactive');
+      const meta = metaParts.join(' · ') || 'No sets logged';
+      html += `<div style="padding:0 18px;margin-bottom:6px">
+        <div class="backfill-existing-item" style="background:var(--surface);border-radius:var(--radius);border:1px solid var(--border)">
+          <button onclick="showSessionDetail('${s.id}', 'backfill')"
+            style="flex:1;background:none;border:none;text-align:left;cursor:pointer;padding:0;min-width:0">
             <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:${TYPE_COLOR[v.type]}">${v.label} — ${v.name}</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${sets} sets logged</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${meta}</div>
+          </button>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:10px">
+            <div style="font-size:16px;color:var(--text-dim)">›</div>
+            <button class="backfill-del-btn" onclick="deleteBackfillSession('${s.id}')">Remove</button>
           </div>
-          <button class="backfill-del-btn" onclick="deleteBackfillSession('${s.id}')">Remove</button>
         </div>
       </div>`;
     });
@@ -1303,6 +1375,28 @@ function renderBackfillScreen(existingSessions) {
       </div>`;
     });
     html += `</div>`;
+  }
+
+  // Duration + notes fields — always visible once a variation is selected
+  if (backfillSelectedKey) {
+    html += `<div class="session-meta-block" style="margin:14px 18px 0">
+      <div class="session-meta-row">
+        <div class="session-meta-label">Duration</div>
+        <input class="session-meta-input" type="number" inputmode="decimal"
+          placeholder="optional" style="max-width:80px;text-align:right"
+          value="${backfillDuration}"
+          onchange="backfillDuration=this.value"
+          oninput="backfillDuration=this.value">
+        <div class="duration-unit">min</div>
+      </div>
+      <div class="session-meta-row">
+        <div class="session-meta-label">Notes</div>
+        <textarea class="session-meta-input" rows="3"
+          placeholder="How did it go? Anything worth noting…"
+          onchange="backfillNotes=this.value"
+          oninput="backfillNotes=this.value">${backfillNotes}</textarea>
+      </div>
+    </div>`;
   }
 
   // Confirm button
@@ -1401,7 +1495,9 @@ function saveBackfillSession() {
     variationKey: backfillSelectedKey,
     tab: 'main',
     missed: true,
-    exercises
+    exercises,
+    notes: backfillNotes.trim(),
+    duration: backfillDuration.trim()
   };
 
   sessions.push(session);
@@ -1432,6 +1528,7 @@ function openVariation(key) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-workout').classList.add('active');
   document.getElementById('workout-body').scrollTop = 0;
+  setActiveNav(null);
   document.getElementById('timer-bar').classList.remove('visible');
   stopTimer();
 }
@@ -1535,13 +1632,39 @@ function renderExercises() {
   });
 
   if (isLogging) {
-    html += `<div class="finish-btn-wrap">
+    const notes = activeSession.notes || '';
+    const duration = activeSession.duration || '';
+    html += `
+    <div class="session-meta-block">
+      <div class="session-timer-row">
+        <div>
+          <div class="session-elapsed" id="session-elapsed-display">0:00</div>
+          <div class="session-elapsed-label">Elapsed</div>
+        </div>
+        <div class="session-meta-label" style="padding:0">Override duration</div>
+        <input class="session-meta-input" type="number" inputmode="decimal"
+          placeholder="mins" style="max-width:60px;text-align:right"
+          value="${duration}"
+          onchange="activeSession.duration=this.value">
+        <div class="duration-unit">min</div>
+      </div>
+      <div class="session-meta-row">
+        <div class="session-meta-label">Notes</div>
+        <textarea class="session-meta-input" rows="3"
+          placeholder="How did it go? Anything worth noting…"
+          onchange="activeSession.notes=this.value"
+          oninput="activeSession.notes=this.value">${notes}</textarea>
+      </div>
+    </div>
+    <div class="finish-btn-wrap">
       <button class="finish-btn"
         style="background:${currentTab==='main'?tc:'var(--core)'}"
         onclick="finishSession()">
         Finish & Save
       </button>
     </div>`;
+    // Start / refresh the elapsed timer display after render
+    setTimeout(updateElapsedDisplay, 50);
   }
 
   body.innerHTML = html;
@@ -1562,14 +1685,29 @@ function startSession() {
       name: ex.name,
       sets: [{reps:'', weight:''}]
     }));
+  sessionStartTime = Date.now();
   activeSession = {
-    id: Date.now(),
+    id: sessionStartTime,
     date: new Date().toISOString(),
     variationKey: currentVariation.key,
     tab: currentTab,
-    exercises
+    exercises,
+    notes: '',
+    duration: ''
   };
+  clearInterval(elapsedInterval);
+  elapsedInterval = setInterval(updateElapsedDisplay, 10000);
   renderExercises();
+}
+
+function updateElapsedDisplay() {
+  if (!sessionStartTime) return;
+  const el = document.getElementById('session-elapsed-display');
+  if (!el) return;
+  const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+  const m = Math.floor(elapsed / 60);
+  const s = elapsed % 60;
+  el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
 }
 
 function updateSet(exKey, setIdx, field, value) {
@@ -1608,6 +1746,14 @@ function deleteSet(exKey, setIdx) {
 
 function finishSession() {
   if (!activeSession) return;
+  // Auto-calculate duration from elapsed time if user didn't override
+  if (!activeSession.duration && sessionStartTime) {
+    const mins = Math.round((Date.now() - sessionStartTime) / 60000);
+    if (mins > 0) activeSession.duration = String(mins);
+  }
+  clearInterval(elapsedInterval);
+  elapsedInterval = null;
+  sessionStartTime = null;
   sessions.push(activeSession);
   saveSessions();
   activeSession = null;
@@ -1679,61 +1825,143 @@ function setTimerPreset(secs) {
 function showHistory() {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-history').classList.add('active');
+  setActiveNav('bnav-history');
   renderHistory();
 }
 
-function toggleHistoryItem(id) {
-  const el = document.getElementById('hist-' + id);
-  if (el) el.classList.toggle('open');
+let sessionDetailReferrer = 'history'; // 'history' | 'backfill'
+
+function showSessionDetail(sessionId, referrer) {
+  const s = sessions.find(s => String(s.id) === String(sessionId));
+  if (!s) return;
+  sessionDetailReferrer = referrer || 'history';
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  document.getElementById('screen-session-detail').classList.add('active');
+  setActiveNav('bnav-history');
+  // Update back button label and target based on where we came from
+  const backBtn = document.querySelector('#screen-session-detail .back-btn');
+  if (backBtn) {
+    if (sessionDetailReferrer === 'backfill') {
+      backBtn.setAttribute('onclick', 'showBackfillFromDetail()');
+      backBtn.childNodes[backBtn.childNodes.length - 1].textContent = ' Calendar';
+    } else {
+      backBtn.setAttribute('onclick', 'showHistory()');
+      backBtn.childNodes[backBtn.childNodes.length - 1].textContent = ' History';
+    }
+  }
+  renderSessionDetail(s);
+  document.getElementById('detail-body').scrollTop = 0;
 }
 
-function renderHistorySessionCard(s, showDate) {
-  const v = VARIATIONS[s.variationKey];
-  const totalSets = s.exercises.reduce((acc, e) => acc + e.sets.filter(st => st.reps).length, 0);
-  const hasAnyData = totalSets > 0;
+function showBackfillFromDetail() {
+  // Return to backfill screen for the same date
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  document.getElementById('screen-backfill').classList.add('active');
+  setActiveNav(null);
+}
 
-  // Build exercise detail blocks
-  let detailHtml = '';
-  if (s.missed && !hasAnyData) {
-    detailHtml += `<div class="history-missed-badge">Missed / No sets logged</div>`;
+function renderSessionDetail(s) {
+  const v = VARIATIONS[s.variationKey];
+  const tc = TYPE_COLOR[v.type];
+  const bg = TYPE_BG[v.type];
+  const tt = TYPE_TEXT[v.type];
+  const dateStr = new Date(s.date).toLocaleDateString('en-US', {
+    weekday:'long', month:'long', day:'numeric', year:'numeric'
+  });
+  const totalSets = s.exercises.reduce((acc, e) => acc + e.sets.filter(st => st.reps).length, 0);
+
+  document.getElementById('detail-topbar-title').textContent = v.label;
+
+  let html = `<div class="detail-header">
+    <div class="detail-badge" style="background:${bg};color:${tt}">${v.label} — ${v.type.toUpperCase()}</div>
+    <div class="detail-title">${v.name}</div>
+    <div class="detail-date">${dateStr}</div>
+  </div>`;
+
+  if (s.missed) {
+    html += `<div class="detail-missed-pill">Retroactive / Missed workout</div>`;
+  }
+
+  // Duration and notes meta block
+  const hasMeta = (s.duration && String(s.duration).trim()) || (s.notes && s.notes.trim());
+  if (hasMeta) {
+    html += `<div class="data-section-card" style="margin:14px 18px 0">`;
+    if (s.duration && String(s.duration).trim()) {
+      html += `<div class="detail-meta-row">
+        <div class="detail-meta-label">Duration</div>
+        <div class="detail-meta-value">${s.duration} min</div>
+      </div>`;
+    }
+    if (s.notes && s.notes.trim()) {
+      html += `<div class="detail-meta-row">
+        <div class="detail-meta-label">Notes</div>
+        <div class="detail-meta-value">${s.notes.replace(/\n/g, '<br>')}</div>
+      </div>`;
+    }
+    html += `</div>`;
   }
 
   const loggedExercises = s.exercises.filter(e => e.sets && e.sets.some(st => st.reps));
-  if (loggedExercises.length) {
+
+  if (!loggedExercises.length) {
+    html += `<div style="padding:24px 18px;color:var(--text-dim);font-size:13px">No sets were logged for this session.</div>`;
+  } else {
+    html += `<div class="detail-section-label">${totalSets} sets logged</div>`;
     loggedExercises.forEach(ex => {
       const validSets = ex.sets.filter(st => st.reps);
-      detailHtml += `<div class="history-ex-block">
-        <div class="history-ex-name">${ex.name}</div>
+      html += `<div class="detail-ex-card">
+        <div class="detail-ex-name">${ex.name}</div>
         ${validSets.map((st, i) => {
-          const reps = st.reps || '—';
-          const weight = st.weight ? `${st.weight} lbs` : '';
-          const val = weight ? `${reps} reps × ${weight}` : `${reps} reps`;
-          return `<div class="history-set-row">
-            <div class="history-set-num">${i + 1}</div>
-            <div class="history-set-val">${val}</div>
+          const reps = st.reps;
+          const hasWeight = st.weight && parseFloat(st.weight) > 0;
+          return `<div class="detail-set-row">
+            <div class="detail-set-num">${i + 1}</div>
+            <div class="detail-set-reps">${reps}</div>
+            <div class="detail-set-x">${hasWeight ? '×' : 'reps'}</div>
+            ${hasWeight ? `<div class="detail-set-weight">${st.weight}</div>
+            <div class="detail-set-weight-unit">lbs</div>` : ''}
           </div>`;
         }).join('')}
       </div>`;
     });
-  } else if (!s.missed) {
-    detailHtml += `<div class="history-no-sets">No sets recorded for this session.</div>`;
   }
 
+  html += `<button class="detail-delete-btn" onclick="deleteSessionFromDetail('${s.id}')">
+    Delete this session
+  </button>`;
+
+  document.getElementById('detail-body').innerHTML = html;
+}
+
+function deleteSessionFromDetail(sessionId) {
+  if (!confirm('Delete this session? This cannot be undone.')) return;
+  const idx = sessions.findIndex(s => String(s.id) === String(sessionId));
+  if (idx !== -1) {
+    sessions.splice(idx, 1);
+    saveSessions();
+    showToast('Session deleted');
+    showHistory();
+  }
+}
+
+function renderHistorySessionCard(s) {
+  const v = VARIATIONS[s.variationKey];
+  const totalSets = s.exercises.reduce((acc, e) => acc + e.sets.filter(st => st.reps).length, 0);
   const metaParts = [];
-  if (totalSets) metaParts.push(`${totalSets} set${totalSets !== 1 ? 's' : ''}`);
+  if (totalSets) metaParts.push(`${totalSets} set${totalSets !== 1 ? 's' : ''} logged`);
+  if (s.duration && String(s.duration).trim()) metaParts.push(`${s.duration} min`);
   if (s.missed) metaParts.push('retroactive');
   const meta = metaParts.join(' · ') || 'No sets logged';
 
-  return `<div class="history-item" id="hist-${s.id}">
-    <button class="history-item-header" onclick="toggleHistoryItem('${s.id}')">
+  return `<button class="history-item" onclick="showSessionDetail('${s.id}')">
+    <div class="history-item-header">
       <div class="history-item-left">
         <div class="history-item-name" style="color:${TYPE_COLOR[v.type]}">${v.label} — ${v.name}</div>
         <div class="history-item-meta">${meta}</div>
       </div>
-      <span class="history-item-chevron">⌄</span>
-    </button>
-    <div class="history-detail">${detailHtml}</div>
-  </div>`;
+      <div class="history-item-arrow">›</div>
+    </div>
+  </button>`;
 }
 
 function renderHistory() {
@@ -1881,6 +2109,7 @@ function showPBToast(msg) {
 function showBests() {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-bests').classList.add('active');
+  setActiveNav('bnav-bests');
   renderBestsScreen();
 }
 
@@ -1972,6 +2201,7 @@ function renderBestsScreen() {
 function showData() {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-data').classList.add('active');
+  setActiveNav('bnav-data');
   renderDataScreen();
 }
 
@@ -2106,5 +2336,25 @@ function confirmClearData() {
 updateTimerDisplay();
 showHome();
 </script>
+
+<!-- ── GLOBAL BOTTOM NAV ── -->
+<nav class="bottom-nav" id="global-bottom-nav">
+  <button class="bnav-btn" id="bnav-home" onclick="showHome()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+    <span>Home</span>
+  </button>
+  <button class="bnav-btn" id="bnav-history" onclick="showHistory()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+    <span>History</span>
+  </button>
+  <button class="bnav-btn" id="bnav-data" onclick="showData()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    <span>Data</span>
+  </button>
+  <button class="bnav-btn" id="bnav-bests" onclick="showBests()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+    <span>Bests</span>
+  </button>
+</nav>
 </body>
 </html>
