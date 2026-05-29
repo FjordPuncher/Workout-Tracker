@@ -42,18 +42,33 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-html, body {
+html {
+  height: 100%;
+  height: -webkit-fill-available;
+  overflow: hidden;
+}
+
+body {
   background: var(--bg);
   color: var(--text);
   font-family: 'DM Sans', sans-serif;
   font-size: 15px;
   line-height: 1.5;
   height: 100%;
+  height: -webkit-fill-available;
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
   overscroll-behavior: none;
 }
 
 /* ── SCREENS ── */
-.screen { display: none; flex-direction: column; height: 100dvh; overflow: hidden; }
+.screen {
+  display: none; flex-direction: column;
+  height: 100dvh; height: 100vh;
+  width: 100%; overflow: hidden;
+  position: absolute; top: 0; left: 0;
+}
 .screen.active { display: flex; }
 
 /* ── TOP BAR ── */
@@ -73,7 +88,15 @@ html, body {
 .back-btn svg { width: 18px; height: 18px; }
 
 /* ── SCROLLABLE CONTENT ── */
-.scroll-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(var(--safe-bot) + 20px); }
+.scroll-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  padding-bottom: calc(var(--safe-bot) + 20px);
+  min-height: 0;
+}
 
 /* ── HOME SCREEN ── */
 .home-header {
