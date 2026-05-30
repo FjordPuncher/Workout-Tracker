@@ -1783,7 +1783,7 @@ function renderBackfillScreen(existingSessions) {
         <div class="session-meta-label">Activity</div>
         <input class="session-meta-input" type="text" placeholder="e.g. Morning run, Yoga, Swim…"
           value="${backfillCustomName}"
-          oninput="backfillCustomName=this.value;backfillSelectedKey=this.value.trim()?'${CUSTOM_KEY}':null"
+          oninput="updateBackfillCustomName(this.value)"
           style="text-align:left">
       </div>
     </div>`;
@@ -1877,7 +1877,26 @@ function setBackfillMode(mode) {
   backfillMode = mode;
   if (mode !== 'variation') { backfillSelectedKey = mode === 'custom' ? CUSTOM_KEY : null; }
   if (mode === 'variation' && !ORDER.includes(backfillSelectedKey)) backfillSelectedKey = null;
+  backfillExercises = [];
   renderBackfillScreen();
+}
+
+function selectBackfillVariation(key) {
+  backfillSelectedKey = key;
+  backfillExercises = [];
+  renderBackfillScreen();
+}
+
+function updateBackfillCustomName(val) {
+  backfillCustomName = val;
+  backfillSelectedKey = val.trim() ? CUSTOM_KEY : null;
+  // Re-render just the save button state without wiping the input
+  const btn = document.querySelector('.backfill-confirm-btn');
+  if (btn) {
+    const ready = !!val.trim();
+    btn.classList.toggle('ready', ready);
+    btn.style.pointerEvents = ready ? 'auto' : 'none';
+  }
 }
 
 // ── Specific exercise picker helpers ──────────────────────────────────────────
