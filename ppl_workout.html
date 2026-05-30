@@ -1397,7 +1397,10 @@ function saveSessions() {
 // ════════════════════════════════════════════════════════════════════════════
 function getSuggested() {
   if (!sessions.length) return 'push_a';
-  const last = sessions[sessions.length - 1].variationKey;
+  // Only consider sessions that are part of the PPL rotation — skip custom
+  const pplSessions = sessions.filter(s => ORDER.includes(s.variationKey));
+  if (!pplSessions.length) return 'push_a';
+  const last = pplSessions[pplSessions.length - 1].variationKey;
   const idx = ORDER.indexOf(last);
   return ORDER[(idx + 1) % ORDER.length];
 }
