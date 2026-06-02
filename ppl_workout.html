@@ -1408,6 +1408,14 @@ const PREDEFINED_ACTIVITIES = [
     supportsDistance: true,
     desc: 'Cardiovascular endurance training on foot. Log distance and duration to track pace over time. Distance and pace totals appear on the Stats screen. Works as a standalone session or as active recovery between strength training days.'
   },
+  {
+    key: 'general_core',
+    name: 'General Core Workout',
+    category: 'core',
+    supportsDuration: true,
+    supportsNotes: true,
+    desc: 'A catch-all for any core-focused session — YouTube routines, class-based core work, or any structured core training outside the built-in Push/Pull/Legs finishers. Log duration and use the notes field to record the source, exercises, or anything worth remembering about the session.'
+  },
 ];
 
 // Returns true if a session supports distance tracking (Running only for now)
@@ -1432,6 +1440,9 @@ function getVariationMeta(key, customName, category) {
     const name  = customName || 'Custom Workout';
     if (cat === 'cardio') {
       return { label, name, type:'cardio', color:'var(--cardio)', bg:'var(--cardio-bg)', text:'var(--cardio-text)' };
+    }
+    if (cat === 'core') {
+      return { label, name, type:'core', color:'var(--core)', bg:'var(--core-bg)', text:'var(--core-text)' };
     }
     if (cat === 'push') {
       return { label, name, type:'push', color: TYPE_COLOR.push, bg: TYPE_BG.push, text: TYPE_TEXT.push };
@@ -1863,7 +1874,7 @@ function renderBackfillScreen(existingSessions) {
           </div>`;
 
         if (isActivity) {
-          // Activities just show duration row instead of sets
+          // Activities show duration and/or distance instead of sets
           html += `<div class="session-meta-row" style="padding:8px 14px;border-top:1px solid var(--border)">
             <div class="session-meta-label">Duration</div>
             <input class="session-meta-input" type="number" inputmode="decimal"
@@ -1880,6 +1891,14 @@ function renderBackfillScreen(existingSessions) {
                 value="${bfEx.distance||''}"
                 oninput="backfillExercises[${bi}].distance=this.value">
               <div class="duration-unit">mi</div>
+            </div>`;
+          }
+          if (bfEx.supportsNotes) {
+            html += `<div class="session-meta-row" style="padding:8px 14px;border-top:1px solid var(--border)">
+              <div class="session-meta-label">Notes</div>
+              <textarea class="session-meta-input" rows="2"
+                placeholder="Source, exercises, anything worth noting…"
+                oninput="backfillExercises[${bi}].activityNotes=this.value">${bfEx.activityNotes||''}</textarea>
             </div>`;
           }
         } else {
@@ -1904,15 +1923,19 @@ function renderBackfillScreen(existingSessions) {
       });
     }
 
-    // Notes field for specific exercises session
-    html += `<div class="session-meta-block" style="margin:14px 18px 0">
-      <div class="session-meta-row">
-        <div class="session-meta-label">Notes</div>
-        <textarea class="session-meta-input" rows="3"
-          placeholder="How did it go? Anything worth noting…"
-          oninput="backfillNotes=this.value">${backfillNotes}</textarea>
-      </div>
-    </div>`;
+    // Notes field — hide if every added item already has its own per-activity notes field
+    const allHaveNotes = backfillExercises.length > 0 &&
+      backfillExercises.every(e => e.isActivity && e.supportsNotes);
+    if (!allHaveNotes) {
+      html += `<div class="session-meta-block" style="margin:14px 18px 0">
+        <div class="session-meta-row">
+          <div class="session-meta-label">Notes</div>
+          <textarea class="session-meta-input" rows="3"
+            placeholder="How did it go? Anything worth noting…"
+            oninput="backfillNotes=this.value">${backfillNotes}</textarea>
+        </div>
+      </div>`;
+    }
   }
 
   // ── Custom workout mode — free text only ────────────────────────────────────
@@ -1934,6 +1957,7 @@ function renderBackfillScreen(existingSessions) {
           <option value="push"    ${backfillCategory==='push'?'selected':''}>Push</option>
           <option value="pull"    ${backfillCategory==='pull'?'selected':''}>Pull</option>
           <option value="legs"    ${backfillCategory==='legs'?'selected':''}>Legs</option>
+          <option value="core"    ${backfillCategory==='core'?'selected':''}>Core</option>
           <option value="cardio"  ${backfillCategory==='cardio'?'selected':''}>Cardio</option>
           <option value="general" ${backfillCategory==='general'?'selected':''}>General</option>
         </select>
@@ -2037,7 +2061,8 @@ function renderBfExPickerList(q, listId = 'ex-picker-list-bf') {
     groups.activity.push({
       name: act.name, isActivity: true,
       category: act.category || 'general',
-      supportsDistance: !!act.supportsDistance
+      supportsDistance: !!act.supportsDistance,
+      supportsNotes: !!act.supportsNotes
     });
   });
 
@@ -2055,8 +2080,9 @@ function renderBfExPickerList(q, listId = 'ex-picker-list-bf') {
       const isAct = item.isActivity ? 'true' : 'false';
       const cat = (item.category || '').replace(/'/g, "\\'");
       const dist = item.supportsDistance ? 'true' : 'false';
+      const hasNotes = item.supportsNotes ? 'true' : 'false';
       html += `<button class="ex-picker-item"
-        onclick="bfAddSpecificExercise('${safeName}',${isAct},'${cat}',${dist})">
+        onclick="bfAddSpecificExercise('${safeName}',${isAct},'${cat}',${dist},${hasNotes})">
         ${item.name}
       </button>`;
     });
@@ -2078,7 +2104,7 @@ function toggleBfCustomPicker() {
   if (bfCustomPickerOpen) renderBfExPickerList('', 'ex-picker-list-custom');
 }
 
-function bfAddSpecificExercise(name, isActivity, category, supportsDistance) {
+function bfAddSpecificExercise(name, isActivity, category, supportsDistance, supportsNotes) {
   if (!name) return;
   if (!backfillExercises.find(e => e.name === name)) {
     if (isActivity) {
@@ -2086,7 +2112,8 @@ function bfAddSpecificExercise(name, isActivity, category, supportsDistance) {
         name, isActivity: true,
         category: category || 'general',
         supportsDistance: !!supportsDistance,
-        duration: '', distance: ''
+        supportsNotes: !!supportsNotes,
+        duration: '', distance: '', activityNotes: ''
       });
       // Auto-set session category from first activity added if not already set
       if (!backfillCategory && category) backfillCategory = category;
@@ -2197,9 +2224,10 @@ function saveBackfillSession() {
 
     if (activityItems.length === 1 && exerciseItems.length === 0) {
       customName = activityItems[0].name;
-      // Use per-activity duration/distance as session-level values if not already set
+      // Use per-activity duration/distance/notes as session-level values if not already set
       if (!backfillDuration && activityItems[0].duration) backfillDuration = activityItems[0].duration;
       if (!backfillDistance && activityItems[0].distance) backfillDistance = activityItems[0].distance;
+      if (!backfillNotes && activityItems[0].activityNotes) backfillNotes = activityItems[0].activityNotes;
       if (!backfillCategory) backfillCategory = activityItems[0].category || 'general';
     } else {
       customName = activityItems.length ? activityItems.map(a => a.name.split('(')[0].trim()).join(' + ') : 'Specific exercises';
@@ -2227,6 +2255,7 @@ function saveBackfillSession() {
   const session = {
     id: Date.now(),
     date: sessionDate.toISOString(),
+    loggedAt: new Date().toISOString(),
     variationKey,
     customName,
     tab: 'main',
@@ -2512,6 +2541,7 @@ function startSession() {
   activeSession = {
     id: sessionStartTime,
     date: new Date().toISOString(),
+    loggedAt: null,  // set when session is saved in finishSession
     variationKey: currentVariation.key,
     tab: currentTab,
     exercises,
@@ -2576,6 +2606,7 @@ function finishSession() {
     const mins = Math.round((Date.now() - sessionStartTime) / 60000);
     if (mins > 0) activeSession.duration = String(mins);
   }
+  activeSession.loggedAt = new Date().toISOString();
   clearInterval(elapsedInterval);
   elapsedInterval = null;
   sessionStartTime = null;
@@ -2685,6 +2716,18 @@ function showBackfillFromDetail() {
   setActiveNav(null);
 }
 
+// Returns a human-readable note if the session was logged on a different day than it occurred
+function loggedLaterNote(s) {
+  if (!s.loggedAt) return null;
+  const workoutDay = new Date(s.date).toDateString();
+  const logDay = new Date(s.loggedAt).toDateString();
+  if (workoutDay === logDay) return null;
+  return 'Added to log on ' + new Date(s.loggedAt).toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
+    hour: 'numeric', minute: '2-digit'
+  });
+}
+
 function renderSessionDetail(s) {
   const vm = getVariationMeta(s.variationKey, s.customName, s.category);
   const tc = vm.color;
@@ -2701,6 +2744,7 @@ function renderSessionDetail(s) {
     <div class="detail-badge" style="background:${bg};color:${tt}">${vm.label} — ${vm.type.toUpperCase()}</div>
     <div class="detail-title">${vm.name}</div>
     <div class="detail-date">${dateStr}</div>
+    ${loggedLaterNote(s) ? `<div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-top:5px;opacity:0.8">${loggedLaterNote(s)}</div>` : ''}
   </div>`;
 
   if (s.missed) {
@@ -2786,6 +2830,8 @@ function renderHistorySessionCard(s) {
   if (totalSets) metaParts.push(`${totalSets} set${totalSets !== 1 ? 's' : ''} logged`);
   if (s.duration && String(s.duration).trim()) metaParts.push(`${s.duration} min`);
   if (s.missed) metaParts.push('retroactive');
+  const logNote = loggedLaterNote(s);
+  if (logNote) metaParts.push(logNote);
   const meta = metaParts.join(' · ') || 'No sets logged';
 
   return `<button class="history-item" onclick="showSessionDetail('${s.id}')">
