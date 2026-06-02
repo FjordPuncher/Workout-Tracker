@@ -2946,6 +2946,21 @@ function renderSessionDetail(s) {
   });
   const totalSets = s.exercises.reduce((acc, e) => acc + e.sets.filter(st => st.reps).length, 0);
 
+  // Calculate XP for this session
+  const sessionIdx = sessions.indexOf(s);
+  const priorSessions = sessionIdx > 0 ? sessions.slice(0, sessionIdx) : [];
+  const priorPBs = {};
+  priorSessions.forEach(ps => ps.exercises.forEach(ex => {
+    if (!priorPBs[ex.name]) priorPBs[ex.name] = {weight:0, reps:0};
+    ex.sets.forEach(st => {
+      const w = parseFloat(st.weight)||0, r = parseFloat(st.reps)||0;
+      if (w > priorPBs[ex.name].weight) priorPBs[ex.name].weight = w;
+      if (r > priorPBs[ex.name].reps) priorPBs[ex.name].reps = r;
+    });
+  }));
+  const { breakdown, attrGains } = calcSessionXP(s, priorSessions, priorPBs);
+  const totalXP = Object.values(attrGains).reduce((a, b) => a + b, 0);
+
   document.getElementById('detail-topbar-title').textContent = vm.label;
 
   let html = `<div class="detail-header">
@@ -2959,7 +2974,7 @@ function renderSessionDetail(s) {
     html += `<div class="detail-missed-pill">Retroactive / Missed workout</div>`;
   }
 
-  // Duration and notes meta block
+  // Duration / distance / notes meta block
   const hasMeta = (s.duration && String(s.duration).trim()) || (s.notes && s.notes.trim()) || (s.distance && parseFloat(s.distance) > 0);
   if (hasMeta) {
     html += `<div class="data-section-card" style="margin:14px 18px 0">`;
@@ -2988,12 +3003,67 @@ function renderSessionDetail(s) {
     html += `</div>`;
   }
 
+  // ── XP breakdown ──────────────────────────────────────────────────────────
+  if (totalXP > 0) {
+    html += `<div class="detail-section-label" style="margin-top:16px">
+      Experience earned
+      <span style="font-family:'Syne',sans-serif;font-size:14px;font-weight:800;
+        color:var(--str);margin-left:8px;text-shadow:0 0 10px var(--str-glow)">
+        +${totalXP} XP
+      </span>
+    </div>`;
+
+    html += `<div class="data-section-card" style="margin:0 18px">`;
+
+    // Breakdown rows
+    if (breakdown.base > 0) html += `<div class="detail-meta-row">
+      <div class="detail-meta-label">Showed up</div>
+      <div class="detail-meta-value" style="color:var(--text-muted)">+${breakdown.base}</div>
+    </div>`;
+    if (breakdown.duration > 0) html += `<div class="detail-meta-row">
+      <div class="detail-meta-label">Duration</div>
+      <div class="detail-meta-value" style="color:var(--text-muted)">+${breakdown.duration}</div>
+    </div>`;
+    if (breakdown.volume > 0) html += `<div class="detail-meta-row">
+      <div class="detail-meta-label">Volume</div>
+      <div class="detail-meta-value" style="color:var(--text-muted)">+${breakdown.volume}</div>
+    </div>`;
+    if (breakdown.pr > 0) html += `<div class="detail-meta-row">
+      <div class="detail-meta-label">PB bonus</div>
+      <div class="detail-meta-value" style="color:var(--str-text)">+${breakdown.pr} ⭐</div>
+    </div>`;
+
+    html += `</div>`;
+
+    // Per-attribute gains
+    const attrRows = Object.entries(attrGains).filter(([,xp]) => xp > 0);
+    if (attrRows.length) {
+      html += `<div style="display:flex;gap:8px;padding:0 18px;margin-top:8px">`;
+      attrRows.forEach(([key, xp]) => {
+        const a = ATTRS[key];
+        const lvl = levelFromXP((computeAllXP(priorSessions).totalAttrXP[key]||0) + xp);
+        html += `<div style="flex:1;background:${a.bg};border:1px solid ${a.color}20;
+          border-radius:10px;padding:10px 10px 8px;text-align:center">
+          <div style="font-size:16px">${a.icon}</div>
+          <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:800;
+            color:${a.color};margin-top:2px">+${xp}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:8px;
+            color:${a.text};opacity:0.6;margin-top:1px;text-transform:uppercase">
+            ${a.name.slice(0,3)} Lv${lvl.level}
+          </div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+  }
+
+  // ── Sets ──────────────────────────────────────────────────────────────────
   const loggedExercises = s.exercises.filter(e => e.sets && e.sets.some(st => st.reps));
 
   if (!loggedExercises.length) {
     html += `<div style="padding:24px 18px;color:var(--text-dim);font-size:13px">No sets were logged for this session.</div>`;
   } else {
-    html += `<div class="detail-section-label">${totalSets} sets logged</div>`;
+    html += `<div class="detail-section-label" style="margin-top:16px">${totalSets} sets logged</div>`;
     loggedExercises.forEach(ex => {
       const validSets = ex.sets.filter(st => st.reps);
       html += `<div class="detail-ex-card">
@@ -3034,9 +3104,26 @@ function deleteSessionFromDetail(sessionId) {
 function renderHistorySessionCard(s) {
   const vm = getVariationMeta(s.variationKey, s.customName, s.category);
   const totalSets = s.exercises.reduce((acc, e) => acc + e.sets.filter(st => st.reps).length, 0);
+
+  // Calculate XP earned this session
+  const sessionIdx = sessions.indexOf(s);
+  const priorSessions = sessionIdx > 0 ? sessions.slice(0, sessionIdx) : [];
+  const priorPBs = {};
+  priorSessions.forEach(ps => ps.exercises.forEach(ex => {
+    if (!priorPBs[ex.name]) priorPBs[ex.name] = {weight:0, reps:0};
+    ex.sets.forEach(st => {
+      const w = parseFloat(st.weight)||0, r = parseFloat(st.reps)||0;
+      if (w > priorPBs[ex.name].weight) priorPBs[ex.name].weight = w;
+      if (r > priorPBs[ex.name].reps) priorPBs[ex.name].reps = r;
+    });
+  }));
+  const { attrGains } = calcSessionXP(s, priorSessions, priorPBs);
+  const totalXP = Object.values(attrGains).reduce((a, b) => a + b, 0);
+
   const metaParts = [];
   if (totalSets) metaParts.push(`${totalSets} set${totalSets !== 1 ? 's' : ''} logged`);
   if (s.duration && String(s.duration).trim()) metaParts.push(`${s.duration} min`);
+  if (totalXP > 0) metaParts.push(`+${totalXP} XP`);
   if (s.missed) metaParts.push('retroactive');
   const logNote = loggedLaterNote(s);
   if (logNote) metaParts.push(logNote);
