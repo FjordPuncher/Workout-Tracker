@@ -26,6 +26,13 @@
   --core: #888780;
   --core-bg: #161614;
   --core-text: #D4D2CC;
+  --cardio: #1A9E9E;
+  --cardio-bg: #071A1A;
+  --cardio-mid: #0D2828;
+  --cardio-text: #7FDBDB;
+  --general: #7A7060;
+  --general-bg: #161410;
+  --general-text: #C8BAA0;
   --bg: #0A0A09;
   --surface: #141412;
   --surface2: #1C1C1A;
@@ -206,9 +213,12 @@ html, body {
   letter-spacing: 0.3px; text-transform: uppercase;
   overflow: hidden; white-space: nowrap;
 }
-.cal-bar.push { background: var(--push-bg); color: var(--push-text); border: 1px solid var(--push); }
-.cal-bar.pull { background: var(--pull-bg); color: var(--pull-text); border: 1px solid var(--pull); }
-.cal-bar.legs { background: var(--legs-bg); color: var(--legs-text); border: 1px solid var(--legs); }
+.cal-bar.push    { background: var(--push-bg);    color: var(--push-text);    border: 1px solid var(--push); }
+.cal-bar.pull    { background: var(--pull-bg);    color: var(--pull-text);    border: 1px solid var(--pull); }
+.cal-bar.legs    { background: var(--legs-bg);    color: var(--legs-text);    border: 1px solid var(--legs); }
+.cal-bar.cardio  { background: var(--cardio-bg);  color: var(--cardio-text);  border: 1px solid var(--cardio); }
+.cal-bar.general { background: var(--general-bg); color: var(--general-text); border: 1px solid var(--general); }
+.cal-bar.custom  { background: var(--surface2);   color: var(--text-muted);   border: 1px solid var(--border); }
 
 /* ── add hint on tappable empty days ── */
 .cal-add-hint {
@@ -1029,7 +1039,7 @@ html, body {
     <div class="home-header">
       <div style="display:flex;align-items:baseline;gap:10px">
         <div class="home-logo">PPL<span>.</span></div>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:0.5px">v1.1</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:0.5px">v1.2</div>
       </div>
       <div class="home-date" id="home-date"></div>
     </div>
@@ -1358,13 +1368,82 @@ const TYPE_MID   = { push:'var(--push-mid)', pull:'var(--pull-mid)', legs:'var(-
 
 // Sentinel key for custom/free-form sessions
 const CUSTOM_KEY = '__custom__';
+
+// Predefined activities — appear in the backfill/custom workout picker
+const PREDEFINED_ACTIVITIES = [
+  {
+    key: 'tkd_small_target',
+    name: 'Taekwondo (Small Target Training)',
+    category: 'general',
+    desc: 'Pad and mitt work focused on precision striking to small, moving targets. Develops accuracy, timing, and combination control. Typically involves partner-held targets with high repetition strike sequences at varying angles and distances.'
+  },
+  {
+    key: 'tkd_sparring',
+    name: 'Taekwondo (Sparring)',
+    category: 'general',
+    desc: 'Live or controlled contact practice against a partner. Develops timing, distance management, reaction speed, and the ability to execute techniques under pressure. Can range from light point-sparring to full-contact rounds depending on session intensity.'
+  },
+  {
+    key: 'tkd_partner_drills',
+    name: 'Taekwondo (Partner Drills)',
+    category: 'general',
+    desc: 'Structured cooperative practice with a partner, typically working pre-set attack and defense sequences, step-sparring, or technique refinement. Lower intensity than sparring — focused on form, flow, and muscle memory rather than competition.'
+  },
+  {
+    key: 'tkd_fitness',
+    name: 'Taekwondo (Fitness)',
+    category: 'cardio',
+    desc: 'Conditioning-focused training using Taekwondo movements — kicking combinations, bag work, plyometrics, and drills designed to build cardiovascular endurance, flexibility, and explosive power specific to martial arts performance.'
+  },
+  {
+    key: 'tkd_general',
+    name: 'Taekwondo (General)',
+    category: 'general',
+    desc: 'General Taekwondo practice not falling into a specific category. May include forms (poomsae), warm-up drills, technique review, belt curriculum work, or mixed training covering multiple aspects of practice in a single session.'
+  },
+  {
+    key: 'running',
+    name: 'Running',
+    category: 'cardio',
+    supportsDistance: true,
+    desc: 'Cardiovascular endurance training on foot. Log distance and duration to track pace over time. Distance and pace totals appear on the Stats screen. Works as a standalone session or as active recovery between strength training days.'
+  },
+];
+
+// Returns true if a session supports distance tracking (Running only for now)
+function isCardioSession(variationKey, customCategory, customName) {
+  if (variationKey !== CUSTOM_KEY) return false;
+  // Only Running gets the distance field
+  const act = customName ? getActivity(customName) : null;
+  return act && act.supportsDistance === true;
+}
+
+// Get predefined activity by name
+function getActivity(name) {
+  return PREDEFINED_ACTIVITIES.find(a => a.name === name) || null;
+}
 // Helper: get display info for any variationKey including custom
-function getVariationMeta(key, customName) {
+function getVariationMeta(key, customName, category) {
   if (key === CUSTOM_KEY) {
-    return {
-      label: customName || 'Custom', name: customName || 'Custom Workout',
-      type: 'custom', color: 'var(--text-muted)', bg: 'var(--surface2)', text: 'var(--text)'
-    };
+    // Check if it matches a predefined activity
+    const act = customName ? getActivity(customName) : null;
+    const cat = category || (act ? act.category : 'general');
+    const label = customName || 'Custom';
+    const name  = customName || 'Custom Workout';
+    if (cat === 'cardio') {
+      return { label, name, type:'cardio', color:'var(--cardio)', bg:'var(--cardio-bg)', text:'var(--cardio-text)' };
+    }
+    if (cat === 'push') {
+      return { label, name, type:'push', color: TYPE_COLOR.push, bg: TYPE_BG.push, text: TYPE_TEXT.push };
+    }
+    if (cat === 'pull') {
+      return { label, name, type:'pull', color: TYPE_COLOR.pull, bg: TYPE_BG.pull, text: TYPE_TEXT.pull };
+    }
+    if (cat === 'legs') {
+      return { label, name, type:'legs', color: TYPE_COLOR.legs, bg: TYPE_BG.legs, text: TYPE_TEXT.legs };
+    }
+    // general or unset
+    return { label, name, type:'general', color:'var(--general)', bg:'var(--general-bg)', text:'var(--general-text)' };
   }
   const v = VARIATIONS[key];
   return { label: v.label, name: v.name, type: v.type,
@@ -1493,7 +1572,7 @@ function renderCalendar() {
     if (sd.getFullYear() === y && sd.getMonth() === m) {
       const key = sd.getDate();
       if (!sessionsByDate[key]) sessionsByDate[key] = [];
-      const vm = getVariationMeta(s.variationKey, s.customName);
+      const vm = getVariationMeta(s.variationKey, s.customName, s.category);
       sessionsByDate[key].push({ type: vm.type, label: vm.label, key: s.variationKey });
     }
   });
@@ -1545,7 +1624,7 @@ function calDayClick(d, y, m, isFuture, hasSessions) {
 
   if (daySessions.length) {
     tooltip.textContent = daySessions.map(s =>
-      getVariationMeta(s.variationKey, s.customName).label + ' — ' + getVariationMeta(s.variationKey, s.customName).name
+      getVariationMeta(s.variationKey, s.customName, s.category).label + ' — ' + getVariationMeta(s.variationKey, s.customName, s.category).name
     ).join(' · ');
     // Open backfill screen showing existing sessions for that day with option to add more
     openBackfill(d, y, m, daySessions);
@@ -1566,6 +1645,8 @@ let backfillLogSets = false;
 let backfillExercises = [];  // set log data if logging
 let backfillNotes = '';
 let backfillDuration = '';
+let backfillDistance = '';
+let backfillCategory = '';
 
 function openBackfill(d, y, m, existingSessions) {
   backfillDate = { d, y, m };
@@ -1576,6 +1657,10 @@ function openBackfill(d, y, m, existingSessions) {
   backfillExercises = [];
   backfillNotes = '';
   backfillDuration = '';
+  backfillDistance = '';
+  backfillCategory = '';
+  backfillDistance = '';
+  backfillCategory = '';
   renderBackfillScreen(existingSessions);
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-backfill').classList.add('active');
@@ -1591,6 +1676,8 @@ function closeBackfill() {
   backfillExercises = [];
   backfillNotes = '';
   backfillDuration = '';
+  backfillDistance = '';
+  backfillCategory = '';
   showHome();
 }
 
@@ -1617,7 +1704,7 @@ function renderBackfillScreen(existingSessions) {
   if (existing.length) {
     html += `<div class="backfill-pick-label">Already logged this day</div>`;
     existing.forEach(s => {
-      const vm = getVariationMeta(s.variationKey, s.customName);
+      const vm = getVariationMeta(s.variationKey, s.customName, s.category);
       const sets = s.exercises.reduce((a, e) => a + e.sets.filter(st => st.reps).length, 0);
       const metaParts = [];
       if (sets) metaParts.push(`${sets} set${sets !== 1 ? 's' : ''} logged`);
@@ -1729,118 +1816,128 @@ function renderBackfillScreen(existingSessions) {
       });
       html += `</div>`;
     }
+
+    // Notes field — shown once a variation is selected
+    if (backfillSelectedKey) {
+      html += `<div class="session-meta-block" style="margin:14px 18px 0">
+        <div class="session-meta-row">
+          <div class="session-meta-label">Notes</div>
+          <textarea class="session-meta-input" rows="3"
+            placeholder="How did it go? Anything worth noting…"
+            oninput="backfillNotes=this.value">${backfillNotes}</textarea>
+        </div>
+      </div>`;
+    }
   }
 
   // ── Specific exercises mode ─────────────────────────────────────────────────
   if (backfillMode === 'specific') {
     backfillSelectedKey = backfillSelectedKey || CUSTOM_KEY;
-    // Show the exercise picker inline always
+
+    // Show the exercise + activity picker inline always
     html += `<div class="ex-picker-panel" style="display:block;margin:8px 18px 0;border:1px solid var(--border);border-radius:var(--radius)">
       <div class="ex-picker-search-wrap">
         <input class="ex-picker-search" id="ex-picker-search-bf" type="text"
-          placeholder="Search exercises to add…"
+          placeholder="Search exercises and activities…"
           oninput="filterBfExPicker(this.value)"
           autocomplete="off" autocorrect="off">
       </div>
       <div class="ex-picker-list" id="ex-picker-list-bf"></div>
     </div>`;
 
-    // Show selected exercises with set logging
+    // Show selected exercises/activities with set logging
     if (backfillExercises.length) {
-      html += `<div class="edit-section-head" style="margin-top:10px">Added exercises</div>`;
+      html += `<div class="edit-section-head" style="margin-top:10px">Added</div>`;
       backfillExercises.forEach((bfEx, bi) => {
+        const isActivity = bfEx.isActivity;
         html += `<div class="edit-ex-card" style="margin:0 18px 8px">
           <div class="edit-ex-name" style="display:flex;align-items:center;justify-content:space-between">
-            <span>${bfEx.name}</span>
+            <div>
+              <span>${bfEx.name}</span>
+              ${isActivity ? `<div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:2px">${bfEx.category || 'general'}</div>` : ''}
+            </div>
             <button onclick="bfRemoveSpecificEx(${bi})"
               style="background:none;border:none;color:var(--text-dim);font-size:11px;cursor:pointer;padding:2px 4px">
               Remove
             </button>
           </div>`;
-        bfEx.sets.forEach((st, si) => {
-          html += `<div class="set-row" style="padding:8px 14px;border-bottom:1px solid var(--border)">
-            <div class="set-num">${si+1}</div>
-            <input class="set-input" type="number" inputmode="decimal" placeholder="reps"
-              value="${st.reps}" style="max-width:70px"
-              oninput="bfSpecificSetField(${bi},${si},'reps',this.value)">
-            <div class="set-unit">×</div>
-            <input class="set-input" type="number" inputmode="decimal" placeholder="lbs"
-              value="${st.weight||''}"
-              oninput="bfSpecificSetField(${bi},${si},'weight',this.value)">
-            <div class="set-unit">lbs</div>
-            <button class="del-set-btn" onclick="bfSpecificDelSet(${bi},${si})">×</button>
+
+        if (isActivity) {
+          // Activities just show duration row instead of sets
+          html += `<div class="session-meta-row" style="padding:8px 14px;border-top:1px solid var(--border)">
+            <div class="session-meta-label">Duration</div>
+            <input class="session-meta-input" type="number" inputmode="decimal"
+              placeholder="optional" style="max-width:80px;text-align:right"
+              value="${bfEx.duration||''}"
+              oninput="backfillExercises[${bi}].duration=this.value">
+            <div class="duration-unit">min</div>
           </div>`;
-        });
-        html += `<button class="add-set-btn" style="margin:8px 14px;display:block"
-          onclick="bfSpecificAddSet(${bi})">+ Set</button>`;
+          if (bfEx.supportsDistance) {
+            html += `<div class="session-meta-row" style="padding:8px 14px;border-top:1px solid var(--border)">
+              <div class="session-meta-label">Distance</div>
+              <input class="session-meta-input" type="number" inputmode="decimal"
+                placeholder="optional" style="max-width:80px;text-align:right"
+                value="${bfEx.distance||''}"
+                oninput="backfillExercises[${bi}].distance=this.value">
+              <div class="duration-unit">mi</div>
+            </div>`;
+          }
+        } else {
+          bfEx.sets.forEach((st, si) => {
+            html += `<div class="set-row" style="padding:8px 14px;border-top:1px solid var(--border)">
+              <div class="set-num">${si+1}</div>
+              <input class="set-input" type="number" inputmode="decimal" placeholder="reps"
+                value="${st.reps}" style="max-width:70px"
+                oninput="bfSpecificSetField(${bi},${si},'reps',this.value)">
+              <div class="set-unit">×</div>
+              <input class="set-input" type="number" inputmode="decimal" placeholder="lbs"
+                value="${st.weight||''}"
+                oninput="bfSpecificSetField(${bi},${si},'weight',this.value)">
+              <div class="set-unit">lbs</div>
+              <button class="del-set-btn" onclick="bfSpecificDelSet(${bi},${si})">×</button>
+            </div>`;
+          });
+          html += `<button class="add-set-btn" style="margin:8px 14px;display:block"
+            onclick="bfSpecificAddSet(${bi})">+ Set</button>`;
+        }
         html += `</div>`;
       });
     }
+
+    // Notes field for specific exercises session
+    html += `<div class="session-meta-block" style="margin:14px 18px 0">
+      <div class="session-meta-row">
+        <div class="session-meta-label">Notes</div>
+        <textarea class="session-meta-input" rows="3"
+          placeholder="How did it go? Anything worth noting…"
+          oninput="backfillNotes=this.value">${backfillNotes}</textarea>
+      </div>
+    </div>`;
   }
 
-  // ── Custom workout mode ─────────────────────────────────────────────────────
+  // ── Custom workout mode — free text only ────────────────────────────────────
   if (backfillMode === 'custom') {
     backfillSelectedKey = CUSTOM_KEY;
     html += `<div class="session-meta-block" style="margin:8px 18px 0">
       <div class="session-meta-row">
         <div class="session-meta-label">Activity</div>
-        <input class="session-meta-input" type="text" placeholder="e.g. Morning run, Yoga, Swim…"
+        <input class="session-meta-input" type="text" placeholder="e.g. Yoga, Swim, Hike…"
           value="${backfillCustomName}"
           oninput="updateBackfillCustomName(this.value)"
           style="text-align:left">
       </div>
-    </div>`;
-
-    // Optional: add exercises to custom workout too
-    if (backfillExercises.length) {
-      html += `<div class="edit-section-head" style="margin-top:10px">Exercises</div>`;
-      backfillExercises.forEach((bfEx, bi) => {
-        html += `<div class="edit-ex-card" style="margin:0 18px 8px">
-          <div class="edit-ex-name" style="display:flex;align-items:center;justify-content:space-between">
-            <span>${bfEx.name}</span>
-            <button onclick="bfRemoveSpecificEx(${bi})"
-              style="background:none;border:none;color:var(--text-dim);font-size:11px;cursor:pointer;padding:2px 4px">
-              Remove
-            </button>
-          </div>`;
-        bfEx.sets.forEach((st, si) => {
-          html += `<div class="set-row" style="padding:8px 14px;border-bottom:1px solid var(--border)">
-            <div class="set-num">${si+1}</div>
-            <input class="set-input" type="number" inputmode="decimal" placeholder="reps"
-              value="${st.reps}" style="max-width:70px"
-              oninput="bfSpecificSetField(${bi},${si},'reps',this.value)">
-            <div class="set-unit">×</div>
-            <input class="set-input" type="number" inputmode="decimal" placeholder="lbs"
-              value="${st.weight||''}"
-              oninput="bfSpecificSetField(${bi},${si},'weight',this.value)">
-            <div class="set-unit">lbs</div>
-            <button class="del-set-btn" onclick="bfSpecificDelSet(${bi},${si})">×</button>
-          </div>`;
-        });
-        html += `<button class="add-set-btn" style="margin:8px 14px;display:block"
-          onclick="bfSpecificAddSet(${bi})">+ Set</button>`;
-        html += `</div>`;
-      });
-    }
-
-    // Exercise picker for custom too
-    html += `<button class="edit-add-ex-btn" id="bf-custom-add-btn" onclick="toggleBfCustomPicker()"
-      style="margin-top:8px">+ Add exercise (optional)</button>`;
-    html += `<div class="ex-picker-panel" id="bf-custom-picker" style="display:none">
-      <div class="ex-picker-search-wrap">
-        <input class="ex-picker-search" id="ex-picker-search-custom" type="text"
-          placeholder="Search exercises…"
-          oninput="filterBfCustomPicker(this.value)"
-          autocomplete="off" autocorrect="off">
+      <div class="session-meta-row">
+        <div class="session-meta-label">Category</div>
+        <select class="session-meta-input" style="text-align:right;background:transparent"
+          onchange="backfillCategory=this.value">
+          <option value="" ${!backfillCategory?'selected':''}>General (default)</option>
+          <option value="push"    ${backfillCategory==='push'?'selected':''}>Push</option>
+          <option value="pull"    ${backfillCategory==='pull'?'selected':''}>Pull</option>
+          <option value="legs"    ${backfillCategory==='legs'?'selected':''}>Legs</option>
+          <option value="cardio"  ${backfillCategory==='cardio'?'selected':''}>Cardio</option>
+          <option value="general" ${backfillCategory==='general'?'selected':''}>General</option>
+        </select>
       </div>
-      <div class="ex-picker-list" id="ex-picker-list-custom"></div>
-    </div>`;
-  }
-
-  // ── Duration + notes (all modes once something selected) ───────────────────
-  const showMeta = backfillSelectedKey || backfillMode === 'custom';
-  if (showMeta) {
-    html += `<div class="session-meta-block" style="margin:14px 18px 0">
       <div class="session-meta-row">
         <div class="session-meta-label">Duration</div>
         <input class="session-meta-input" type="number" inputmode="decimal"
@@ -1863,7 +1960,7 @@ function renderBackfillScreen(existingSessions) {
     ? !!backfillCustomName.trim()
     : (backfillMode === 'specific' ? backfillExercises.length > 0 : !!backfillSelectedKey);
 
-  html += `<div style="padding:0 18px">
+  html += `<div style="padding:0 18px;margin-top:14px">
     <button class="backfill-confirm-btn${isReady?' ready':''}" onclick="saveBackfillSession()">
       Save Session
     </button>
@@ -1890,9 +1987,21 @@ function selectBackfillVariation(key) {
   renderBackfillScreen();
 }
 
+function bfSelectPredefined(actKey) {
+  const act = PREDEFINED_ACTIVITIES.find(a => a.key === actKey);
+  if (!act) return;
+  backfillCustomName = act.name;
+  backfillCategory = act.category || 'general';
+  backfillSelectedKey = CUSTOM_KEY;
+  renderBackfillScreen();
+}
+
 function updateBackfillCustomName(val) {
   backfillCustomName = val;
   backfillSelectedKey = val.trim() ? CUSTOM_KEY : null;
+  // Auto-set category from predefined activity if it matches
+  const act = getActivity(val.trim());
+  if (act) backfillCategory = act.category || 'general';
   // Re-render just the save button state without wiping the input
   const btn = document.querySelector('.backfill-confirm-btn');
   if (btn) {
@@ -1908,32 +2017,52 @@ let bfCustomPickerOpen = false;
 function renderBfExPickerList(q, listId = 'ex-picker-list-bf') {
   const list = document.getElementById(listId);
   if (!list) return;
-  const seen = new Set(); const groups = { push:[], pull:[], legs:[], core:[] };
-  const gc = { push: TYPE_COLOR.push, pull: TYPE_COLOR.pull, legs: TYPE_COLOR.legs, core: 'var(--core)' };
+  const seen = new Set();
+  const groups = { push:[], pull:[], legs:[], core:[], activity:[] };
+  const gc = { push: TYPE_COLOR.push, pull: TYPE_COLOR.pull, legs: TYPE_COLOR.legs, core: 'var(--core)', activity: 'var(--cardio)' };
+  const gl = { push:'Push', pull:'Pull', legs:'Legs', core:'Core', activity:'Activities' };
+
   ORDER.forEach(key => {
     const v = VARIATIONS[key];
     [...v.exercises, ...v.core].forEach((ex, i) => {
       if (seen.has(ex.name)) return; seen.add(ex.name);
       const type = i < v.exercises.length ? v.type : 'core';
-      groups[type].push(ex.name);
+      groups[type].push({ name: ex.name, isActivity: false });
     });
   });
-  Object.keys(groups).forEach(k => groups[k].sort());
+
+  // Add predefined activities
+  PREDEFINED_ACTIVITIES.forEach(act => {
+    if (seen.has(act.name)) return; seen.add(act.name);
+    groups.activity.push({
+      name: act.name, isActivity: true,
+      category: act.category || 'general',
+      supportsDistance: !!act.supportsDistance
+    });
+  });
+
+  // Sort alphabetically within each group
+  Object.keys(groups).forEach(k => groups[k].sort((a,b) => a.name.localeCompare(b.name)));
+
   const lq = q.toLowerCase().trim();
   let html = ''; let total = 0;
-  ['push','pull','legs','core'].forEach(type => {
-    const items = lq ? groups[type].filter(n => n.toLowerCase().includes(lq)) : groups[type];
+  ['push','pull','legs','core','activity'].forEach(type => {
+    const items = lq ? groups[type].filter(n => n.name.toLowerCase().includes(lq)) : groups[type];
     if (!items.length) return;
-    html += `<div class="ex-picker-group" style="color:${gc[type]}">${type.charAt(0).toUpperCase()+type.slice(1)}</div>`;
-    items.forEach(name => {
+    html += `<div class="ex-picker-group" style="color:${gc[type]}">${gl[type]}</div>`;
+    items.forEach(item => {
+      const safeName = item.name.replace(/'/g, "\\'");
+      const isAct = item.isActivity ? 'true' : 'false';
+      const cat = (item.category || '').replace(/'/g, "\\'");
+      const dist = item.supportsDistance ? 'true' : 'false';
       html += `<button class="ex-picker-item"
-        onclick="bfAddSpecificExercise('${name.replace(/'/g,"\\'")}','${listId}')">
-        ${name}
+        onclick="bfAddSpecificExercise('${safeName}',${isAct},'${cat}',${dist})">
+        ${item.name}
       </button>`;
     });
     total += items.length;
   });
-  if (!total) html = `<div class="ex-picker-empty">No exercises match "${q}"</div>`;
+  if (!total) html = `<div class="ex-picker-empty">No results for "${q}"</div>`;
   list.innerHTML = html;
 }
 
@@ -1949,10 +2078,21 @@ function toggleBfCustomPicker() {
   if (bfCustomPickerOpen) renderBfExPickerList('', 'ex-picker-list-custom');
 }
 
-function bfAddSpecificExercise(name) {
+function bfAddSpecificExercise(name, isActivity, category, supportsDistance) {
   if (!name) return;
   if (!backfillExercises.find(e => e.name === name)) {
-    backfillExercises.push({ name, sets: [{ reps:'', weight:'' }] });
+    if (isActivity) {
+      backfillExercises.push({
+        name, isActivity: true,
+        category: category || 'general',
+        supportsDistance: !!supportsDistance,
+        duration: '', distance: ''
+      });
+      // Auto-set session category from first activity added if not already set
+      if (!backfillCategory && category) backfillCategory = category;
+    } else {
+      backfillExercises.push({ name, isActivity: false, sets: [{ reps:'', weight:'' }] });
+    }
   }
   bfCustomPickerOpen = false;
   if (backfillMode === 'specific' && !backfillSelectedKey) backfillSelectedKey = CUSTOM_KEY;
@@ -2050,10 +2190,24 @@ function saveBackfillSession() {
   } else if (backfillMode === 'specific') {
     if (!backfillExercises.length) return;
     variationKey = CUSTOM_KEY;
-    customName = 'Specific exercises';
-    exercises = backfillExercises.map(e => ({
+
+    // If only one activity was added (and no exercises), use its name as the session name
+    const activityItems = backfillExercises.filter(e => e.isActivity);
+    const exerciseItems = backfillExercises.filter(e => !e.isActivity);
+
+    if (activityItems.length === 1 && exerciseItems.length === 0) {
+      customName = activityItems[0].name;
+      // Use per-activity duration/distance as session-level values if not already set
+      if (!backfillDuration && activityItems[0].duration) backfillDuration = activityItems[0].duration;
+      if (!backfillDistance && activityItems[0].distance) backfillDistance = activityItems[0].distance;
+      if (!backfillCategory) backfillCategory = activityItems[0].category || 'general';
+    } else {
+      customName = activityItems.length ? activityItems.map(a => a.name.split('(')[0].trim()).join(' + ') : 'Specific exercises';
+    }
+
+    exercises = exerciseItems.map(e => ({
       key: 'custom_' + e.name.replace(/\s/g,'_'),
-      name: e.name, sets: e.sets
+      name: e.name, sets: e.sets || []
     }));
   } else {
     // Full variation mode
@@ -2079,7 +2233,9 @@ function saveBackfillSession() {
     missed: true,
     exercises,
     notes: backfillNotes.trim(),
-    duration: backfillDuration.trim()
+    duration: backfillDuration.trim(),
+    distance: backfillDistance.trim(),
+    category: backfillCategory
   };
 
   sessions.push(session);
@@ -2291,6 +2447,8 @@ function renderExercises() {
   if (isLogging) {
     const notes = activeSession.notes || '';
     const duration = activeSession.duration || '';
+    const distance = activeSession.distance || '';
+    const isCardio = isCardioSession(currentVariation.key, activeSession.category, activeSession.customName);
     html += `
     <div class="session-meta-block">
       <div class="session-timer-row">
@@ -2305,6 +2463,14 @@ function renderExercises() {
           onchange="activeSession.duration=this.value">
         <div class="duration-unit">min</div>
       </div>
+      ${isCardio ? `<div class="session-meta-row">
+        <div class="session-meta-label">Distance</div>
+        <input class="session-meta-input" type="number" inputmode="decimal"
+          placeholder="optional" style="max-width:60px;text-align:right"
+          value="${distance}"
+          oninput="activeSession.distance=this.value">
+        <div class="duration-unit">mi</div>
+      </div>` : ''}
       <div class="session-meta-row">
         <div class="session-meta-label">Notes</div>
         <textarea class="session-meta-input" rows="3"
@@ -2350,7 +2516,9 @@ function startSession() {
     tab: currentTab,
     exercises,
     notes: '',
-    duration: ''
+    duration: '',
+    distance: '',
+    category: ''
   };
   clearInterval(elapsedInterval);
   elapsedInterval = setInterval(updateElapsedDisplay, 10000);
@@ -2518,7 +2686,7 @@ function showBackfillFromDetail() {
 }
 
 function renderSessionDetail(s) {
-  const vm = getVariationMeta(s.variationKey, s.customName);
+  const vm = getVariationMeta(s.variationKey, s.customName, s.category);
   const tc = vm.color;
   const bg = vm.bg;
   const tt = vm.text;
@@ -2540,13 +2708,23 @@ function renderSessionDetail(s) {
   }
 
   // Duration and notes meta block
-  const hasMeta = (s.duration && String(s.duration).trim()) || (s.notes && s.notes.trim());
+  const hasMeta = (s.duration && String(s.duration).trim()) || (s.notes && s.notes.trim()) || (s.distance && parseFloat(s.distance) > 0);
   if (hasMeta) {
     html += `<div class="data-section-card" style="margin:14px 18px 0">`;
     if (s.duration && String(s.duration).trim()) {
       html += `<div class="detail-meta-row">
         <div class="detail-meta-label">Duration</div>
         <div class="detail-meta-value">${s.duration} min</div>
+      </div>`;
+    }
+    if (s.distance && String(s.distance).trim() && parseFloat(s.distance) > 0) {
+      const dist = parseFloat(s.distance);
+      const pace = (s.duration && parseFloat(s.duration) > 0)
+        ? (() => { const p = parseFloat(s.duration)/dist; const m=Math.floor(p); const sec=Math.round((p-m)*60); return `${m}:${String(sec).padStart(2,'0')} /mi`; })()
+        : null;
+      html += `<div class="detail-meta-row">
+        <div class="detail-meta-label">Distance</div>
+        <div class="detail-meta-value">${dist.toFixed(2)} mi${pace ? ` · ${pace}` : ''}</div>
       </div>`;
     }
     if (s.notes && s.notes.trim()) {
@@ -2602,7 +2780,7 @@ function deleteSessionFromDetail(sessionId) {
 }
 
 function renderHistorySessionCard(s) {
-  const vm = getVariationMeta(s.variationKey, s.customName);
+  const vm = getVariationMeta(s.variationKey, s.customName, s.category);
   const totalSets = s.exercises.reduce((acc, e) => acc + e.sets.filter(st => st.reps).length, 0);
   const metaParts = [];
   if (totalSets) metaParts.push(`${totalSets} set${totalSets !== 1 ? 's' : ''} logged`);
@@ -2788,6 +2966,59 @@ function totalLbs(sessionList) {
         const w = parseFloat(st.weight) || 0;
         return a3 + (r * w);
       }, 0), 0), 0);
+}
+
+function totalMiles(sessionList) {
+  return sessionList.reduce((acc, s) => acc + (parseFloat(s.distance) || 0), 0);
+}
+
+function cardioSessions(sessionList) {
+  return sessionList.filter(s => {
+    if (ORDER.includes(s.variationKey)) return false;
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category);
+    return vm.type === 'cardio';
+  });
+}
+
+// Returns avg pace as "M:SS /mi" string, or null if no data
+function avgPace(sessionList) {
+  const withBoth = sessionList.filter(s => parseFloat(s.distance) > 0 && parseFloat(s.duration) > 0);
+  if (!withBoth.length) return null;
+  const totalMins = withBoth.reduce((a, s) => a + parseFloat(s.duration), 0);
+  const totalDist = withBoth.reduce((a, s) => a + parseFloat(s.distance), 0);
+  if (!totalDist) return null;
+  const paceDecimal = totalMins / totalDist;
+  const m = Math.floor(paceDecimal);
+  const s = Math.round((paceDecimal - m) * 60);
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+// Best distance in a single session
+function bestDistance(sessionList) {
+  let best = { dist: 0, date: null };
+  sessionList.forEach(s => {
+    const d = parseFloat(s.distance);
+    if (d > best.dist) { best = { dist: d, date: s.date }; }
+  });
+  return best.dist > 0 ? best : null;
+}
+
+// Best pace (fastest min/mi) in a single session
+function bestPace(sessionList) {
+  let best = { pace: Infinity, paceStr: null, date: null };
+  sessionList.forEach(s => {
+    const d = parseFloat(s.distance);
+    const t = parseFloat(s.duration);
+    if (d > 0 && t > 0) {
+      const pace = t / d;
+      if (pace < best.pace) {
+        const m = Math.floor(pace);
+        const sec = Math.round((pace - m) * 60);
+        best = { pace, paceStr: `${m}:${String(sec).padStart(2,'0')}`, date: s.date };
+      }
+    }
+  });
+  return best.paceStr ? best : null;
 }
 
 function totalSetsCount(sessionList) {
@@ -2979,10 +3210,14 @@ function buildOverviewHTML() {
   const pushS = sessions.filter(s => s.variationKey !== CUSTOM_KEY && VARIATIONS[s.variationKey] && VARIATIONS[s.variationKey].type === 'push');
   const pullS = sessions.filter(s => s.variationKey !== CUSTOM_KEY && VARIATIONS[s.variationKey] && VARIATIONS[s.variationKey].type === 'pull');
   const legsS = sessions.filter(s => s.variationKey !== CUSTOM_KEY && VARIATIONS[s.variationKey] && VARIATIONS[s.variationKey].type === 'legs');
+  const cardioS = cardioSessions(sessions);
   const total = sessions.length;
-  const pushPct = total ? Math.round(pushS.length/total*100) : 0;
-  const pullPct = total ? Math.round(pullS.length/total*100) : 0;
-  const legsPct = 100 - pushPct - pullPct;
+  const pplTotal = pushS.length + pullS.length + legsS.length;
+  const pushPct  = total ? Math.round(pushS.length/total*100) : 0;
+  const pullPct  = total ? Math.round(pullS.length/total*100) : 0;
+  const legsPct  = total ? Math.round(legsS.length/total*100) : 0;
+  const cardioPct = total ? Math.round(cardioS.length/total*100) : 0;
+  const otherPct = Math.max(0, 100 - pushPct - pullPct - legsPct - cardioPct);
 
   // Months active
   const months = new Set(sessions.map(s => { const d=new Date(s.date); return `${d.getFullYear()}-${d.getMonth()}`; })).size;
@@ -3072,14 +3307,60 @@ function buildOverviewHTML() {
       <div class="type-bar-seg" style="width:${pushPct}%;background:var(--push)"></div>
       <div class="type-bar-seg" style="width:${pullPct}%;background:var(--pull)"></div>
       <div class="type-bar-seg" style="width:${legsPct}%;background:var(--legs)"></div>
+      <div class="type-bar-seg" style="width:${cardioPct}%;background:var(--cardio)"></div>
+      <div class="type-bar-seg" style="width:${otherPct}%;background:var(--general)"></div>
     </div>
     <div class="type-legend">
       <div class="type-legend-item"><div class="type-legend-dot" style="background:var(--push)"></div>Push ${pushS.length} (${pushPct}%)</div>
       <div class="type-legend-item"><div class="type-legend-dot" style="background:var(--pull)"></div>Pull ${pullS.length} (${pullPct}%)</div>
       <div class="type-legend-item"><div class="type-legend-dot" style="background:var(--legs)"></div>Legs ${legsS.length} (${legsPct}%)</div>
+      ${cardioS.length ? `<div class="type-legend-item"><div class="type-legend-dot" style="background:var(--cardio)"></div>Cardio ${cardioS.length} (${cardioPct}%)</div>` : ''}
+      ${otherPct > 0 ? `<div class="type-legend-item"><div class="type-legend-dot" style="background:var(--general)"></div>General ${total - pushS.length - pullS.length - legsS.length - cardioS.length} (${otherPct}%)</div>` : ''}
     </div>
   </div>`;
 
+  // Cardio section
+  if (cardioS.length) {
+    const cardioMiles = totalMiles(cardioS);
+    const cardioMins  = totalMinutes(cardioS);
+    const pace = avgPace(cardioS);
+    const best = bestDistance(cardioS);
+    const fastPace = bestPace(cardioS);
+    h += `<div class="section-label" style="margin-top:18px;color:var(--cardio)">Cardio</div>`;
+    h += `<div class="stats-grid">
+      <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
+        <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Sessions</div>
+        <div class="stat-tile-value" style="color:var(--cardio-text)">${cardioS.length}</div>
+        <div class="stat-tile-unit">cardio workouts</div>
+      </div>
+      <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
+        <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Time</div>
+        <div class="stat-tile-value" style="color:var(--cardio-text)">${fmtTime(cardioMins)}</div>
+        <div class="stat-tile-unit">total cardio</div>
+      </div>
+      ${cardioMiles > 0 ? `
+      <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
+        <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Distance</div>
+        <div class="stat-tile-value" style="color:var(--cardio-text)">${cardioMiles.toFixed(1)}</div>
+        <div class="stat-tile-unit">total miles</div>
+      </div>
+      <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
+        <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Avg pace</div>
+        <div class="stat-tile-value" style="color:var(--cardio-text);font-size:20px">${pace || '—'}</div>
+        <div class="stat-tile-unit">min / mile</div>
+      </div>
+      <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
+        <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Best distance</div>
+        <div class="stat-tile-value" style="color:var(--cardio-text);font-size:20px">${best ? best.dist.toFixed(1) : '—'}</div>
+        <div class="stat-tile-unit">${best ? 'mi · ' + new Date(best.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : 'miles'}</div>
+      </div>
+      <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
+        <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Best pace</div>
+        <div class="stat-tile-value" style="color:var(--cardio-text);font-size:20px">${fastPace ? fastPace.paceStr : '—'}</div>
+        <div class="stat-tile-unit">${fastPace ? 'min/mi · ' + new Date(fastPace.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : 'min / mile'}</div>
+      </div>` : ''}
+    </div>`;
+  }
   h += `<div class="section-label" style="margin-top:18px">Volume by day type</div>`;
   h += `<div class="stats-grid">
     <div class="stat-tile push-tint">
@@ -3131,12 +3412,17 @@ function buildPeriodHTML(mode) {
   const pushS = ss.filter(s => s.variationKey !== CUSTOM_KEY && VARIATIONS[s.variationKey] && VARIATIONS[s.variationKey].type === 'push');
   const pullS = ss.filter(s => s.variationKey !== CUSTOM_KEY && VARIATIONS[s.variationKey] && VARIATIONS[s.variationKey].type === 'pull');
   const legsS = ss.filter(s => s.variationKey !== CUSTOM_KEY && VARIATIONS[s.variationKey] && VARIATIONS[s.variationKey].type === 'legs');
+  const cardioS = cardioSessions(ss);
   const sessionsWithTime = ss.filter(s => s.duration && parseFloat(s.duration) > 0);
   const avgDur = sessionsWithTime.length ? Math.round(mins / sessionsWithTime.length) : 0;
   const total = ss.length;
-  const pushPct = total ? Math.round(pushS.length/total*100) : 0;
-  const pullPct = total ? Math.round(pullS.length/total*100) : 0;
-  const legsPct = 100 - pushPct - pullPct;
+  const pushPct   = total ? Math.round(pushS.length/total*100) : 0;
+  const pullPct   = total ? Math.round(pullS.length/total*100) : 0;
+  const legsPct   = total ? Math.round(legsS.length/total*100) : 0;
+  const cardioPct = total ? Math.round(cardioS.length/total*100) : 0;
+  const otherPct  = Math.max(0, 100 - pushPct - pullPct - legsPct - cardioPct);
+  const periodMiles = totalMiles(cardioS);
+  const periodPace  = avgPace(cardioS);
 
   const label = mode === 'monthly'
     ? new Date(period.key + '-02').toLocaleDateString('en-US', {month:'long', year:'numeric'})
@@ -3189,13 +3475,44 @@ function buildPeriodHTML(mode) {
         <div class="type-bar-seg" style="width:${pushPct}%;background:var(--push)"></div>
         <div class="type-bar-seg" style="width:${pullPct}%;background:var(--pull)"></div>
         <div class="type-bar-seg" style="width:${legsPct}%;background:var(--legs)"></div>
+        <div class="type-bar-seg" style="width:${cardioPct}%;background:var(--cardio)"></div>
+        <div class="type-bar-seg" style="width:${otherPct}%;background:var(--general)"></div>
       </div>
       <div class="type-legend">
         <div class="type-legend-item"><div class="type-legend-dot" style="background:var(--push)"></div>Push ${pushS.length}</div>
         <div class="type-legend-item"><div class="type-legend-dot" style="background:var(--pull)"></div>Pull ${pullS.length}</div>
         <div class="type-legend-item"><div class="type-legend-dot" style="background:var(--legs)"></div>Legs ${legsS.length}</div>
+        ${cardioS.length ? `<div class="type-legend-item"><div class="type-legend-dot" style="background:var(--cardio)"></div>Cardio ${cardioS.length}</div>` : ''}
+        ${otherPct > 0 ? `<div class="type-legend-item"><div class="type-legend-dot" style="background:var(--general)"></div>General ${total - pushS.length - pullS.length - legsS.length - cardioS.length}</div>` : ''}
       </div>
     </div>`;
+
+    if (cardioS.length) {
+      h += `<div class="section-label" style="margin-top:16px;color:var(--cardio)">Cardio</div>`;
+      h += `<div class="stats-grid">
+        <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
+          <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Sessions</div>
+          <div class="stat-tile-value" style="color:var(--cardio-text)">${cardioS.length}</div>
+          <div class="stat-tile-unit">cardio workouts</div>
+        </div>
+        <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
+          <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Time</div>
+          <div class="stat-tile-value" style="color:var(--cardio-text)">${fmtTime(totalMinutes(cardioS))}</div>
+          <div class="stat-tile-unit">cardio time</div>
+        </div>
+        ${periodMiles > 0 ? `
+        <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
+          <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Distance</div>
+          <div class="stat-tile-value" style="color:var(--cardio-text)">${periodMiles.toFixed(1)}</div>
+          <div class="stat-tile-unit">miles</div>
+        </div>
+        <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
+          <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Avg pace</div>
+          <div class="stat-tile-value" style="color:var(--cardio-text);font-size:20px">${periodPace || '—'}</div>
+          <div class="stat-tile-unit">min / mile</div>
+        </div>` : ''}
+      </div>`;
+    }
 
     h += `<div class="section-label" style="margin-top:16px">Volume by type</div>`;
     h += `<div class="stats-grid">
@@ -3429,7 +3746,7 @@ function startEditSession() {
 function renderEditSession() {
   const s = editingSession;
   if (!s) return;
-  const vm = getVariationMeta(s.variationKey, s.customName);
+  const vm = getVariationMeta(s.variationKey, s.customName, s.category);
   const tc = vm.color;
   const body = document.getElementById('detail-body');
 
@@ -3821,6 +4138,24 @@ function buildGlossary() {
     });
   });
 
+  // Add predefined activities as a group
+  const activityGroup = { type: 'activity', label: 'Activities', items: [] };
+  PREDEFINED_ACTIVITIES.forEach(act => {
+    if (seen.has(act.name)) return;
+    seen.add(act.name);
+    items.push({
+      name: act.name,
+      desc: act.desc,
+      type: act.category === 'cardio' ? 'cardio' : 'general',
+      typeLabel: act.category === 'cardio' ? 'Cardio' : 'General',
+      color: act.category === 'cardio' ? 'var(--cardio)' : 'var(--general)',
+      textColor: act.category === 'cardio' ? 'var(--cardio-text)' : 'var(--general-text)',
+      appearsIn: [],
+      isActivity: true,
+      supportsDistance: !!act.supportsDistance,
+    });
+  });
+
   return items.sort((a, b) => a.name.localeCompare(b.name));
 }
 
@@ -3862,7 +4197,40 @@ function renderGlossary(query) {
     let statsHtml = '';
     const hasHistory = pb || lastSession;
 
-    if (!hasHistory) {
+    if (item.isActivity && item.supportsDistance) {
+      // Running-specific stats based on custom sessions with this activity name
+      const runningSessions = sessions.filter(s =>
+        s.variationKey === CUSTOM_KEY && s.customName === item.name
+      );
+      if (!runningSessions.length) {
+        statsHtml = `<div class="glossary-first-pill">★ Never logged yet — lace up!</div>`;
+      } else {
+        const lastRun = runningSessions[runningSessions.length - 1];
+        const bDist = bestDistance(runningSessions);
+        const bPace = bestPace(runningSessions);
+        let rows = '';
+        const lastDate = new Date(lastRun.date).toLocaleDateString('en-US', {month:'short', day:'numeric'});
+        const d = lastRun.distance ? `${parseFloat(lastRun.distance).toFixed(2)} mi` : '';
+        const t = lastRun.duration ? `${lastRun.duration} min` : '';
+        rows += `<div class="glossary-stat-row">
+          <div class="glossary-stat-label">Last (${lastDate})</div>
+          <div class="glossary-stat-value">${[d,t].filter(Boolean).join(' · ') || '—'}</div>
+        </div>`;
+        if (bDist) {
+          rows += `<div class="glossary-stat-row">
+            <div class="glossary-stat-label">Best dist</div>
+            <div class="glossary-stat-value"><strong>${bDist.dist.toFixed(2)} mi</strong> · ${new Date(bDist.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'})}</div>
+          </div>`;
+        }
+        if (bPace) {
+          rows += `<div class="glossary-stat-row">
+            <div class="glossary-stat-label">Best pace</div>
+            <div class="glossary-stat-value"><strong>${bPace.paceStr} /mi</strong> · ${new Date(bPace.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'})}</div>
+          </div>`;
+        }
+        if (rows) statsHtml = `<div class="glossary-stats">${rows}</div>`;
+      }
+    } else if (!hasHistory) {
       statsHtml = `<div class="glossary-first-pill">★ Never logged — start light, focus on form</div>`;
     } else {
       let rows = '';
@@ -3926,11 +4294,16 @@ function renderGlossary(query) {
     const typeLabels = { push: 'Push', pull: 'Pull', legs: 'Legs', core: 'Core' };
     const typeColors = { push: TYPE_COLOR.push, pull: TYPE_COLOR.pull, legs: TYPE_COLOR.legs, core: 'var(--core)' };
     typeOrder.forEach(type => {
-      const group = filtered.filter(item => item.type === type);
+      const group = filtered.filter(item => item.type === type && !item.isActivity);
       if (!group.length) return;
       html += `<div class="glossary-group-label" style="color:${typeColors[type]}">${typeLabels[type]} exercises</div>`;
       html += group.map((item, i) => renderCard(item, i)).join('');
     });
+    const actItems = filtered.filter(item => item.isActivity);
+    if (actItems.length) {
+      html += `<div class="glossary-group-label" style="color:var(--cardio)">Activities</div>`;
+      html += actItems.map((item, i) => renderCard(item, i)).join('');
+    }
   }
 
   html += '<div style="height:16px"></div>';
