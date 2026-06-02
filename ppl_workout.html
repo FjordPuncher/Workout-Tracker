@@ -1317,9 +1317,9 @@ html, body {
   <div class="topbar">
     <button class="back-btn" onclick="closeBackfill()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg>
-      Back
+      Calendar
     </button>
-    <div class="topbar-title">Log Missed Workout</div>
+    <div class="topbar-title" id="backfill-topbar-title">Log a Workout</div>
     <div style="width:60px"></div>
   </div>
   <div class="scroll-body" id="backfill-body" ></div>
@@ -1878,8 +1878,11 @@ function openBackfill(d, y, m, existingSessions) {
   backfillDuration = '';
   backfillDistance = '';
   backfillCategory = '';
-  backfillDistance = '';
-  backfillCategory = '';
+  // Set topbar title to the selected date
+  const titleEl = document.getElementById('backfill-topbar-title');
+  if (titleEl) {
+    titleEl.textContent = new Date(y, m, d).toLocaleDateString('en-US', {month:'short', day:'numeric'});
+  }
   renderBackfillScreen(existingSessions);
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-backfill').classList.add('active');
@@ -1909,19 +1912,11 @@ function renderBackfillScreen(existingSessions) {
     return sd.getFullYear()===y && sd.getMonth()===m && sd.getDate()===d;
   });
 
-  let html = `
-    <div style="height:16px"></div>
-    <div class="backfill-date-banner">
-      <div>
-        <div class="backfill-missed-badge">Log Workout</div>
-        <div class="backfill-date-text" style="margin-top:6px">${dateStr}</div>
-        <div class="backfill-date-sub">Add a workout for this day</div>
-      </div>
-    </div>`;
+  let html = `<div style="height:12px"></div>`;
 
   // Existing sessions for this day
   if (existing.length) {
-    html += `<div class="backfill-pick-label">Already logged this day</div>`;
+    html += `<div class="section-label">Already logged</div>`;
     existing.forEach(s => {
       const vm = getVariationMeta(s.variationKey, s.customName, s.category);
       const sets = s.exercises.reduce((a, e) => a + e.sets.filter(st => st.reps).length, 0);
@@ -1944,9 +1939,9 @@ function renderBackfillScreen(existingSessions) {
         </div>
       </div>`;
     });
-    html += `<div class="backfill-pick-label">Add another workout</div>`;
+    html += `<div class="section-label" style="margin-top:14px">Add a workout</div>`;
   } else {
-    html += `<div class="backfill-pick-label">What type of workout?</div>`;
+    html += `<div class="section-label">What did you do?</div>`;
   }
 
   // ── Mode selector tabs ──────────────────────────────────────────────────────
@@ -2543,17 +2538,29 @@ function getExerciseHistory(exName) {
   const pbs = computePBs();
   const pb = pbs[exName] || null;
 
-  // Find most recent session (excluding current active) where this exercise was logged
+  // Find most recent session where this exercise was logged —
+  // checks both the exercises array AND session-level customName for predefined activities
   let lastSession = null;
   for (let i = sessions.length - 1; i >= 0; i--) {
     const s = sessions[i];
-    // Skip the active session if it's already in sessions (shouldn't be, but guard anyway)
     if (activeSession && String(s.id) === String(activeSession.id)) continue;
+
+    // Check exercises array first
     const ex = s.exercises.find(e => e.name === exName && e.sets.some(st => st.reps));
     if (ex) {
+      lastSession = { date: s.date, sets: ex.sets.filter(st => st.reps), isActivity: false };
+      break;
+    }
+
+    // Check if this session IS the activity (stored at session level, not in exercises)
+    if (s.customName === exName) {
       lastSession = {
         date: s.date,
-        sets: ex.sets.filter(st => st.reps)
+        sets: [],
+        isActivity: true,
+        duration: s.duration || null,
+        distance: s.distance || null,
+        notes: s.notes || null
       };
       break;
     }
@@ -2620,14 +2627,21 @@ function renderExercises() {
       // Last session summary
       if (lastSession) {
         const lastDate = new Date(lastSession.date).toLocaleDateString('en-US', {month:'short', day:'numeric'});
-        // Show first 2 sets from last session as a quick reference
-        const setPreview = lastSession.sets.slice(0, 3).map(st => {
-          const w = st.weight && parseFloat(st.weight) > 0 ? `${st.weight}lbs` : '';
-          return w ? `${st.reps} × ${w}` : `${st.reps} reps`;
-        }).join(', ');
+        let setPreview;
+        if (lastSession.isActivity) {
+          const parts = [];
+          if (lastSession.duration) parts.push(`${lastSession.duration} min`);
+          if (lastSession.distance) parts.push(`${parseFloat(lastSession.distance).toFixed(2)} mi`);
+          setPreview = parts.join(', ') || 'logged';
+        } else {
+          setPreview = lastSession.sets.slice(0, 3).map(st => {
+            const w = st.weight && parseFloat(st.weight) > 0 ? `${st.weight}lbs` : '';
+            return w ? `${st.reps} × ${w}` : `${st.reps} reps`;
+          }).join(', ');
+        }
         refHtml += `<div class="ex-ref-row">
           <div class="ex-ref-label">Last (${lastDate})</div>
-          <div class="ex-ref-value">${setPreview}${lastSession.sets.length > 3 ? '…' : ''}</div>
+          <div class="ex-ref-value">${setPreview}${!lastSession.isActivity && lastSession.sets.length > 3 ? '…' : ''}</div>
         </div>`;
       }
 
@@ -4599,13 +4613,21 @@ function renderGlossary(query) {
       let rows = '';
       if (lastSession) {
         const lastDate = new Date(lastSession.date).toLocaleDateString('en-US', {month:'short', day:'numeric'});
-        const setPreview = lastSession.sets.slice(0, 3).map(st => {
-          const w = st.weight && parseFloat(st.weight) > 0 ? ` × ${st.weight}lbs` : '';
-          return `${st.reps}${w}`;
-        }).join(', ');
+        let setPreview;
+        if (lastSession.isActivity) {
+          const parts = [];
+          if (lastSession.duration) parts.push(`${lastSession.duration} min`);
+          if (lastSession.distance) parts.push(`${parseFloat(lastSession.distance).toFixed(2)} mi`);
+          setPreview = parts.join(', ') || 'logged';
+        } else {
+          setPreview = lastSession.sets.slice(0, 3).map(st => {
+            const w = st.weight && parseFloat(st.weight) > 0 ? ` × ${st.weight}lbs` : '';
+            return `${st.reps}${w}`;
+          }).join(', ');
+        }
         rows += `<div class="glossary-stat-row">
           <div class="glossary-stat-label">Last (${lastDate})</div>
-          <div class="glossary-stat-value">${setPreview}${lastSession.sets.length > 3 ? '…' : ''}</div>
+          <div class="glossary-stat-value">${setPreview}${!lastSession.isActivity && lastSession.sets.length > 3 ? '…' : ''}</div>
         </div>`;
       }
       if (pb && pb.weight > 0) {
