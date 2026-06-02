@@ -33,6 +33,11 @@
   --general: #7A7060;
   --general-bg: #161410;
   --general-text: #C8BAA0;
+  /* ── RPG Attributes ── */
+  --str: #C4732A; --str-bg: #2A1A08; --str-text: #F5C989; --str-glow: rgba(196,115,42,0.4);
+  --end: #1A9E9E; --end-bg: #071A1A; --end-text: #7FDBDB; --end-glow: rgba(26,158,158,0.4);
+  --agi: #6B5FD4; --agi-bg: #100D2A; --agi-text: #B5AFFE; --agi-glow: rgba(107,95,212,0.4);
+  --dex: #888780; --dex-bg: #161614; --dex-text: #D4D2CC; --dex-glow: rgba(136,135,128,0.3);
   --bg: #0A0A09;
   --surface: #141412;
   --surface2: #1C1C1A;
@@ -1014,6 +1019,204 @@ html, body {
   text-align: center; color: var(--text-dim); font-size: 13px; padding: 40px 18px;
 }
 
+/* ══════════════════════════════════════════════════════
+   PROFILE / RPG SYSTEM CSS
+══════════════════════════════════════════════════════ */
+/* ── Trading Card ── */
+.profile-card {
+  margin: 14px 18px;
+  background: linear-gradient(160deg, #1A1814 0%, #0F0E0C 100%);
+  border: 1px solid #3A3530;
+  border-radius: 20px; overflow: hidden;
+  position: relative;
+}
+.profile-card-inner { padding: 20px 20px 18px; }
+.profile-top { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+.profile-avatar-wrap { position: relative; flex-shrink: 0; cursor: pointer; }
+.profile-avatar {
+  width: 72px; height: 72px; border-radius: 50%;
+  object-fit: cover; display: block;
+  border: 2px solid var(--str);
+  box-shadow: 0 0 16px var(--str-glow), 0 0 32px var(--str-glow);
+}
+.profile-avatar-placeholder {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: var(--surface2); border: 2px solid var(--str);
+  box-shadow: 0 0 16px var(--str-glow);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800;
+  color: var(--str-text);
+}
+.profile-avatar-edit {
+  position: absolute; bottom: 0; right: 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 50%; width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; color: var(--text-muted);
+}
+.profile-info { flex: 1; min-width: 0; }
+.profile-name {
+  font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800;
+  color: var(--text); letter-spacing: -0.3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.profile-title {
+  font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500;
+  color: var(--str); text-transform: uppercase; letter-spacing: 1px; margin-top: 3px;
+}
+.profile-tagline { font-size: 12px; color: var(--text-muted); margin-top: 5px; line-height: 1.4; }
+.profile-char-level {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid #2A2820; border-radius: 10px; margin-bottom: 16px;
+}
+.profile-char-num {
+  font-family: 'Syne', sans-serif; font-size: 34px; font-weight: 800;
+  color: var(--str); line-height: 1; flex-shrink: 0;
+  text-shadow: 0 0 20px var(--str-glow);
+}
+.profile-char-label { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+.profile-char-bar-wrap { flex: 1; }
+.profile-char-bar-track {
+  height: 5px; background: #2A2820; border-radius: 3px; overflow: hidden; margin-top: 4px;
+}
+.profile-char-bar-fill {
+  height: 100%; border-radius: 3px;
+  background: linear-gradient(90deg, var(--str), var(--str-text));
+  box-shadow: 0 0 6px var(--str-glow);
+  transition: width 0.4s ease;
+}
+
+/* ── Attribute rows ── */
+.attr-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; border-top: 1px solid #1E1C18;
+}
+.attr-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+}
+.attr-info { flex: 1; min-width: 0; }
+.attr-name { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.6px; font-family: 'DM Mono', monospace; }
+.attr-level { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; line-height: 1; margin-top: 1px; }
+.attr-bar-track {
+  height: 4px; background: #2A2820; border-radius: 2px; overflow: hidden; margin-top: 4px;
+}
+.attr-bar-fill {
+  height: 100%; border-radius: 2px; transition: width 0.5s ease;
+}
+.attr-xp-label { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--text-dim); white-space: nowrap; flex-shrink: 0; }
+
+/* ── Achievements ── */
+.achievement-card {
+  margin: 0 18px 8px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+  display: flex; align-items: center; gap: 14px; padding: 12px 14px;
+}
+.achievement-card.locked { opacity: 0.45; }
+.achievement-icon { font-size: 28px; flex-shrink: 0; }
+.achievement-info { flex: 1; min-width: 0; }
+.achievement-name {
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--text);
+}
+.achievement-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+.achievement-progress {
+  font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-dim); margin-top: 4px;
+}
+.achievement-badge {
+  font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 500; text-transform: uppercase;
+  letter-spacing: 0.5px; padding: 3px 8px; border-radius: 20px; flex-shrink: 0;
+  background: #2A1A08; color: var(--str); border: 1px solid var(--str);
+}
+.achievement-badge.locked { background: var(--surface2); color: var(--text-dim); border-color: var(--border); }
+
+/* ── Exercise mastery bar in glossary/cards ── */
+.mastery-bar-wrap { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+.mastery-bar-track {
+  flex: 1; height: 3px; background: #2A2820; border-radius: 2px; overflow: hidden;
+}
+.mastery-bar-fill { height: 100%; border-radius: 2px; background: var(--str); transition: width 0.3s; }
+.mastery-label { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--text-dim); white-space: nowrap; flex-shrink: 0; }
+
+/* ── XP Summary overlay ── */
+.xp-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.92);
+  z-index: 500; display: flex; flex-direction: column;
+  transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  overflow-y: auto;
+}
+.xp-overlay.show { transform: translateY(0); }
+.xp-overlay-body { padding: 40px 24px 120px; flex: 1; }
+.xp-header {
+  text-align: center; margin-bottom: 28px;
+}
+.xp-header-label {
+  font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 1px; color: var(--str); margin-bottom: 8px;
+}
+.xp-header-title {
+  font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; color: var(--text);
+}
+.xp-total {
+  text-align: center; margin: 20px 0 28px;
+  font-family: 'Syne', sans-serif; font-size: 52px; font-weight: 800;
+  color: var(--str); line-height: 1;
+  text-shadow: 0 0 30px var(--str-glow), 0 0 60px var(--str-glow);
+}
+.xp-total-label { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+.xp-breakdown-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; margin-bottom: 8px;
+}
+.xp-breakdown-label { font-size: 13px; color: var(--text-muted); }
+.xp-breakdown-val { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; color: var(--str); }
+.xp-levelup {
+  margin-top: 16px; padding: 16px;
+  background: linear-gradient(135deg, #2A1A08, #1A1408);
+  border: 1px solid var(--str); border-radius: 12px; text-align: center;
+  animation: xp-glow-pulse 1.5s ease-in-out infinite;
+}
+@keyframes xp-glow-pulse {
+  0%,100% { box-shadow: 0 0 12px var(--str-glow); }
+  50%      { box-shadow: 0 0 28px var(--str-glow), 0 0 50px var(--str-glow); }
+}
+.xp-levelup-label { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--str); }
+.xp-levelup-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: var(--str-text); margin-top: 4px; }
+.xp-achievement {
+  margin-top: 12px; display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; background: var(--surface); border: 1px solid #3A3010;
+  border-radius: 10px;
+}
+.xp-continue-btn {
+  position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+  background: var(--str); color: #fff;
+  font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700;
+  padding: 15px 48px; border: none; border-radius: 30px; cursor: pointer;
+  box-shadow: 0 4px 24px var(--str-glow);
+}
+
+/* ── Home screen RPG widget ── */
+.home-rpg-widget {
+  margin: 12px 18px 0;
+  background: linear-gradient(135deg, #1A1814, #0F0E0C);
+  border: 1px solid #2A2820; border-radius: 14px;
+  padding: 14px 16px; cursor: pointer;
+}
+.home-rpg-widget:active { background: #1E1C18; }
+.home-rpg-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.home-rpg-name { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--text); }
+.home-rpg-level { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--str); text-transform: uppercase; letter-spacing: 0.5px; }
+.home-rpg-attrs { display: flex; gap: 8px; }
+.home-attr-mini { flex: 1; }
+.home-attr-mini-label { font-family: 'DM Mono', monospace; font-size: 8px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+.home-attr-mini-level { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 800; line-height: 1; margin-bottom: 2px; }
+.home-attr-mini-bar { height: 3px; background: #2A2820; border-radius: 2px; overflow: hidden; }
+.home-attr-mini-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+
 /* ── PB TOAST (already exists — keep) ── */
 .pb-toast {
   position: fixed; bottom: calc(var(--safe-bot) + 80px); left: 50%;
@@ -1039,10 +1242,11 @@ html, body {
     <div class="home-header">
       <div style="display:flex;align-items:baseline;gap:10px">
         <div class="home-logo">PPL<span>.</span></div>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:0.5px">v1.2</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:0.5px">v2.0</div>
       </div>
       <div class="home-date" id="home-date"></div>
     </div>
+    <div class="home-rpg-widget" onclick="showBests('profile')" id="home-rpg-widget" style="margin-top:0;border-radius:0;border-left:none;border-right:none;border-top:none;border-bottom:1px solid var(--border)"></div>
     <div id="suggestion-container"></div>
     <div class="section-label">Workouts</div>
     <div class="nav-grid" id="nav-grid"></div>
@@ -1187,6 +1391,14 @@ html, body {
   </div>
   <div class="scroll-body" id="detail-body"></div>
 </div>
+
+<!-- ── XP SUMMARY OVERLAY ── -->
+<div id="xp-overlay" class="xp-overlay">
+  <div class="xp-overlay-body" id="xp-overlay-body"></div>
+  <button class="xp-continue-btn" onclick="dismissXPOverlay()">Continue ›</button>
+</div>
+
+<input type="file" id="profile-photo-input" accept="image/*" onchange="handleProfilePhoto(event)" style="display:none">
 
 <div class="pb-toast" id="pb-toast"><span class="pb-toast-star">★</span><span id="pb-toast-msg"></span></div>
 <div class="session-toast" id="toast"></div>
@@ -1477,11 +1689,6 @@ let timerRunning = false;
 let timerInterval = null;
 let calViewDate = new Date();
 
-function saveSessions() {
-  localStorage.setItem('ppl_sessions', JSON.stringify(sessions));
-  checkAndAutoSyncPBs();
-}
-
 // ════════════════════════════════════════════════════════════════════════════
 // SUGGESTION LOGIC
 // ════════════════════════════════════════════════════════════════════════════
@@ -1551,6 +1758,7 @@ function renderHome() {
 
   renderCalendar();
   renderRecent();
+  renderHomeRPGWidget();
 }
 
 function renderRecent() {
@@ -2994,11 +3202,11 @@ function showPBToast(msg) {
 let statsTab = 'overview';   // 'overview' | 'monthly' | 'yearly' | 'bests'
 let statsPeriodIdx = 0;      // index into periods array (0 = most recent)
 
-function showBests() {
+function showBests(tab) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-bests').classList.add('active');
   setActiveNav('bnav-bests');
-  statsTab = 'overview';
+  statsTab = tab || 'overview';
   statsPeriodIdx = 0;
   renderStatsScreen();
 }
@@ -3217,6 +3425,7 @@ function renderStatsTabs() {
     { id: 'monthly',  label: 'Monthly' },
     { id: 'yearly',   label: 'Yearly' },
     { id: 'bests',    label: 'Bests' },
+    { id: 'profile',  label: 'Profile' },
   ];
   document.getElementById('stats-tabs').innerHTML = tabs.map(t =>
     `<button class="stats-tab${statsTab===t.id?' active':''}" onclick="switchStatsTab('${t.id}')">${t.label}</button>`
@@ -3243,6 +3452,7 @@ function renderStatsBody() {
   if (statsTab === 'overview') body.innerHTML = buildOverviewHTML();
   else if (statsTab === 'monthly') body.innerHTML = buildPeriodHTML('monthly');
   else if (statsTab === 'yearly')  body.innerHTML = buildPeriodHTML('yearly');
+  else if (statsTab === 'profile') body.innerHTML = buildProfileHTML();
   else body.innerHTML = buildBestsHTML();
 }
 
@@ -3409,6 +3619,11 @@ function buildOverviewHTML() {
   }
   h += `<div class="section-label" style="margin-top:18px">Volume by day type</div>`;
   h += `<div class="stats-grid">
+    <div class="stat-tile wide">
+      <div class="stat-tile-label">Total volume</div>
+      <div class="stat-tile-value">${fmt(lbs)}</div>
+      <div class="stat-tile-unit">lbs across all sessions</div>
+    </div>
     <div class="stat-tile push-tint">
       <div class="stat-tile-label">Push volume</div>
       <div class="stat-tile-value">${fmt(totalLbs(pushS))}</div>
@@ -3707,10 +3922,11 @@ function renderDataScreen() {
 
 function exportData() {
   const payload = {
-    version: 2,
+    version: 3,
     exportDate: new Date().toISOString(),
     sessions,
-    pbs: computePBs()
+    pbs: computePBs(),
+    profile: loadProfile()
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -3740,7 +3956,7 @@ function handleImportFile(event) {
       const imported = data.sessions || (Array.isArray(data) ? data : []);
       if (!imported.length) { showToast('No sessions found in file'); return; }
 
-      // Merge by ID — keep both, deduplicate
+      // Merge sessions by ID — keep both, deduplicate
       const existingIds = new Set(sessions.map(s => String(s.id)));
       let added = 0;
       imported.forEach(s => {
@@ -3751,7 +3967,22 @@ function handleImportFile(event) {
       });
       sessions.sort((a, b) => new Date(a.date) - new Date(b.date));
       localStorage.setItem('ppl_sessions', JSON.stringify(sessions));
-      showToast(`Imported ${added} new session${added !== 1 ? 's' : ''} ✓`);
+
+      // Restore profile if present in backup (only if current profile is default/empty)
+      if (data.profile && typeof data.profile === 'object') {
+        const current = loadProfile();
+        // Only overwrite if no custom name has been set on this device yet
+        const isDefault = !current.name || current.name === 'Athlete';
+        if (isDefault) {
+          saveProfile(data.profile);
+          showToast(`Imported ${added} session${added !== 1 ? 's' : ''} + profile ✓`);
+        } else {
+          showToast(`Imported ${added} new session${added !== 1 ? 's' : ''} ✓ (profile kept)`);
+        }
+      } else {
+        showToast(`Imported ${added} new session${added !== 1 ? 's' : ''} ✓`);
+      }
+
       renderDataScreen();
       renderHome();
     } catch(err) {
@@ -3759,7 +3990,6 @@ function handleImportFile(event) {
     }
   };
   reader.readAsText(file);
-  // Reset input so same file can be re-imported if needed
   event.target.value = '';
 }
 
@@ -4354,6 +4584,770 @@ function renderGlossary(query) {
 
   html += '<div style="height:16px"></div>';
   body.innerHTML = html;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// RPG / PROFILE SYSTEM
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── Profile persistence ────────────────────────────────────────────────────
+const PROFILE_KEY = 'ppl_profile';
+function loadProfile() {
+  try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}'); } catch { return {}; }
+}
+function saveProfile(p) { localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); }
+function getProfile() {
+  const p = loadProfile();
+  return {
+    name: p.name || 'Athlete',
+    photo: p.photo || null,
+    equippedTitle: p.equippedTitle || 'Newcomer',
+    ...p
+  };
+}
+
+// ── Leveling curve: XP needed to reach level N from level N-1 ─────────────
+function xpForLevel(level) { return Math.round(1000 * Math.pow(level, 1.4)); }
+function totalXpForLevel(level) {
+  let t = 0; for (let i = 1; i < level; i++) t += xpForLevel(i); return t;
+}
+function levelFromXP(xp) {
+  let lvl = 1;
+  while (xp >= xpForLevel(lvl)) { xp -= xpForLevel(lvl); lvl++; }
+  return { level: lvl, xpIntoLevel: xp, xpNeeded: xpForLevel(lvl) };
+}
+
+// ── Attribute definitions ──────────────────────────────────────────────────
+const ATTRS = {
+  str: { name:'Strength',  icon:'⚔️',  color:'var(--str)', bg:'var(--str-bg)', text:'var(--str-text)', glow:'var(--str-glow)' },
+  end: { name:'Endurance', icon:'🏃',  color:'var(--end)', bg:'var(--end-bg)', text:'var(--end-text)', glow:'var(--end-glow)' },
+  agi: { name:'Agility',   icon:'⚡',  color:'var(--agi)', bg:'var(--agi-bg)', text:'var(--agi-text)', glow:'var(--agi-glow)' },
+  dex: { name:'Dexterity', icon:'🎯',  color:'var(--dex)', bg:'var(--dex-bg)', text:'var(--dex-text)', glow:'var(--dex-glow)' },
+};
+
+// ── XP awards per session type ─────────────────────────────────────────────
+// Each entry: { primary: [...attrs], minor: [...attrs] }
+const SESSION_ATTR_MAP = {
+  push:    { primary:['str'], minor:['dex'] },
+  pull:    { primary:['str'], minor:['dex'] },
+  legs:    { primary:['str'], minor:['end'] },
+  cardio:  { primary:['end'], minor:['agi'] },
+  core:    { primary:['str'], minor:['end'] },
+  general: { primary:['end'], minor:['agi'] },
+};
+// Activity-specific overrides (by customName)
+const ACTIVITY_ATTR_MAP = {
+  'Taekwondo (Sparring)':            { primary:['agi'], minor:['end','dex'] },
+  'Taekwondo (Small Target Training)': { primary:['dex'], minor:['agi'] },
+  'Taekwondo (Partner Drills)':      { primary:['dex'], minor:['agi'] },
+  'Taekwondo (Fitness)':             { primary:['end'], minor:['agi'] },
+  'Taekwondo (General)':             { primary:['agi'], minor:['end','dex'] },
+  'Running':                         { primary:['end'], minor:['agi'] },
+  'General Core Workout':            { primary:['str'], minor:['end'] },
+};
+
+function getSessionAttrMap(s) {
+  if (s.variationKey === CUSTOM_KEY && s.customName && ACTIVITY_ATTR_MAP[s.customName]) {
+    return ACTIVITY_ATTR_MAP[s.customName];
+  }
+  const vm = getVariationMeta(s.variationKey, s.customName, s.category);
+  return SESSION_ATTR_MAP[vm.type] || SESSION_ATTR_MAP.general;
+}
+
+// ── XP calculation for a single session ───────────────────────────────────
+function calcSessionXP(s, priorSessions, priorPBs) {
+  const map = getSessionAttrMap(s);
+  const BASE = 100;
+  const breakdown = { base: 0, duration: 0, volume: 0, pr: 0, total: 0 };
+  const attrGains = { str: 0, end: 0, agi: 0, dex: 0 };
+
+  const distribute = (xp, primary, minor) => {
+    primary.forEach(a => { attrGains[a] = (attrGains[a]||0) + xp; });
+    minor.forEach(a => { attrGains[a] = (attrGains[a]||0) + Math.round(xp * 0.5); });
+  };
+
+  // Base XP for showing up
+  breakdown.base = BASE;
+  distribute(BASE, map.primary, map.minor || []);
+
+  // Duration bonus: +2 XP/min
+  const dur = parseFloat(s.duration) || 0;
+  if (dur > 0) {
+    const dBonus = Math.round(dur * 2);
+    breakdown.duration = dBonus;
+    distribute(dBonus, map.primary, map.minor || []);
+  }
+
+  // Volume bonus (Strength sessions): +1 XP per 100 lbs
+  const vol = s.exercises.reduce((acc, e) =>
+    acc + e.sets.reduce((a, st) => a + ((parseFloat(st.reps)||0) * (parseFloat(st.weight)||0)), 0), 0);
+  if (vol > 0) {
+    const vBonus = Math.round(vol / 100);
+    breakdown.volume = vBonus;
+    distribute(vBonus, map.primary, map.minor || []);
+  }
+
+  // Distance bonus (running): +5 XP per mile
+  const dist = parseFloat(s.distance) || 0;
+  if (dist > 0) {
+    const distBonus = Math.round(dist * 5);
+    breakdown.volume += distBonus;
+    distribute(distBonus, map.primary, map.minor || []);
+  }
+
+  // PR bonus: +150 XP per new PB in this session
+  const currentPBs = priorPBs || {};
+  let prCount = 0;
+  s.exercises.forEach(ex => {
+    const prev = currentPBs[ex.name] || { weight: 0, reps: 0 };
+    ex.sets.forEach(st => {
+      const w = parseFloat(st.weight) || 0;
+      const r = parseFloat(st.reps) || 0;
+      if (w > prev.weight || r > prev.reps) prCount++;
+    });
+  });
+  if (prCount > 0) {
+    const prBonus = prCount * 150;
+    breakdown.pr = prBonus;
+    distribute(prBonus, map.primary, map.minor || []);
+  }
+
+  breakdown.total = Object.values(attrGains).reduce((a, b) => a + b, 0);
+  return { breakdown, attrGains };
+}
+
+// ── Exercise mastery ───────────────────────────────────────────────────────
+const MASTERY_VOLUME_PER_FILL = 500; // lbs
+
+function computeMastery(sessionList) {
+  // Per exercise: { totalVolume, fills, currentBar (0-1), xpBonus }
+  const mastery = {};
+  sessionList.forEach(s => {
+    s.exercises.forEach(ex => {
+      if (!ex.name) return;
+      if (!mastery[ex.name]) mastery[ex.name] = { totalVolume: 0, fills: 0, barProgress: 0 };
+      const vol = ex.sets.reduce((acc, st) => acc + ((parseFloat(st.reps)||0) * (parseFloat(st.weight)||0)), 0);
+      mastery[ex.name].totalVolume += vol;
+    });
+  });
+  // Compute fills and bar progress
+  Object.keys(mastery).forEach(name => {
+    const m = mastery[name];
+    m.fills = Math.floor(m.totalVolume / MASTERY_VOLUME_PER_FILL);
+    m.barProgress = (m.totalVolume % MASTERY_VOLUME_PER_FILL) / MASTERY_VOLUME_PER_FILL;
+  });
+  return mastery;
+}
+
+// ── Aggregate XP across all sessions ──────────────────────────────────────
+function computeAllXP(sessionList) {
+  const totalAttrXP = { str: 0, end: 0, agi: 0, dex: 0 };
+  let runningPBs = {};
+  sessionList.forEach(s => {
+    const { attrGains } = calcSessionXP(s, sessionList, runningPBs);
+    Object.keys(attrGains).forEach(a => { totalAttrXP[a] = (totalAttrXP[a]||0) + attrGains[a]; });
+    // Update running PBs
+    s.exercises.forEach(ex => {
+      if (!runningPBs[ex.name]) runningPBs[ex.name] = { weight:0, reps:0 };
+      ex.sets.forEach(st => {
+        const w = parseFloat(st.weight)||0, r = parseFloat(st.reps)||0;
+        if (w > runningPBs[ex.name].weight) runningPBs[ex.name].weight = w;
+        if (r > runningPBs[ex.name].reps) runningPBs[ex.name].reps = r;
+      });
+    });
+  });
+  // Mastery XP bonus: +50 per fill per exercise
+  const mastery = computeMastery(sessionList);
+  Object.values(mastery).forEach(m => { totalAttrXP.str = (totalAttrXP.str||0) + m.fills * 50; });
+  return { totalAttrXP, mastery };
+}
+
+// ── Character level from sum of all attr XP ────────────────────────────────
+function computeCharLevel(totalAttrXP) {
+  const total = Object.values(totalAttrXP).reduce((a,b)=>a+b, 0);
+  return { charXP: total, ...levelFromXP(total) };
+}
+
+// ── ACHIEVEMENTS ──────────────────────────────────────────────────────────
+const ACHIEVEMENTS = [
+  // Consistency
+  { id:'first_rep',    cat:'consistency', icon:'🌟', name:'First Rep',              desc:'Log your very first session.',                       repeatable: false, check: (s,_,m) => s.length >= 1,                         countFn: null,                                           title: null },
+  { id:'week_warrior', cat:'consistency', icon:'🗓️', name:'Weekly Warrior',         desc:'Log 3+ workouts in a week. Repeats for every 5 qualifying weeks.', repeatable: true,  check: (s,_,m) => weeksWith3Plus(s) >= 5,               countFn: (s,_,m) => Math.floor(weeksWith3Plus(s) / 5),   title: 'Consistent' },
+  { id:'iron_habit',   cat:'consistency', icon:'🔥', name:'Ironman',                desc:'Achieve a 30-day consecutive workout streak. Repeats for every 30-day streak reached.', repeatable: true, check: (s,_,m) => longestStreak().streak >= 30,        countFn: (s,_,m) => Math.floor(longestStreak().streak / 30), title: 'Iron Warrior' },
+  { id:'century',      cat:'consistency', icon:'💯', name:'Century Club',           desc:'Log 100 total sessions. Repeats every 100 sessions.', repeatable: true,  check: (s,_,m) => s.length >= 100,                      countFn: (s,_,m) => Math.floor(s.length / 100),          title: 'Centurion' },
+  // Volume
+  { id:'ton_moved',    cat:'volume',      icon:'🏋️', name:'A Ton of Effort',        desc:'Move 2,000 lbs total. Repeats every 2,000 lbs.', repeatable: true,  check: (s,_,m) => totalLbs(s) >= 2000,                  countFn: (s,_,m) => Math.floor(totalLbs(s) / 2000),      title: null },
+  { id:'freight',      cat:'volume',      icon:'🚂', name:'Freight Train',          desc:'Move 100,000 lbs total. Repeats every 100,000 lbs.', repeatable: true,  check: (s,_,m) => totalLbs(s) >= 100000,                countFn: (s,_,m) => Math.floor(totalLbs(s) / 100000),    title: 'Volume King' },
+  { id:'million',      cat:'volume',      icon:'💀', name:'A Million Pounds',       desc:'Move 1,000,000 lbs total. Repeats every million lbs.', repeatable: true, check: (s,_,m) => totalLbs(s) >= 1000000,               countFn: (s,_,m) => Math.floor(totalLbs(s) / 1000000),  title: 'The Immovable' },
+  // Running
+  { id:'first_mile',   cat:'running',     icon:'👟', name:'First Mile',             desc:'Log a 1-mile run.',                                  repeatable: false, check: (s,_,m) => maxRunDist(s) >= 1,                   countFn: null,                                           title: null },
+  { id:'five_k',       cat:'running',     icon:'🏃', name:'5K',                     desc:'Run 3.1+ miles in one session. Repeats for every time you hit 3.1+ miles.', repeatable: true, check: (s,_,m) => maxRunDist(s) >= 3.1,                countFn: (s,_,m) => runSessionsOver(s, 3.1),            title: null },
+  { id:'marathon',     cat:'running',     icon:'🏅', name:'Marathoner',             desc:'Run 26.2+ miles cumulative. Repeats every 26.2 miles.', repeatable: true, check: (s,_,m) => totalMiles(cardioSessions(s)) >= 26.2, countFn: (s,_,m) => Math.floor(totalMiles(cardioSessions(s)) / 26.2), title: 'The Marathoner' },
+  // PBs
+  { id:'first_pb',     cat:'pbs',         icon:'⭐', name:'Personal Best',          desc:'Set your first personal best.',                      repeatable: false, check: (s,_,m) => Object.keys(computePBs()).length >= 1, countFn: null,                                           title: null },
+  { id:'breakthrough', cat:'pbs',         icon:'💥', name:'Breakthrough',           desc:'Set 5+ PBs in one session. Repeats for each time you do it.', repeatable: true, check: (s,_,m) => hasManyPBsInOneSession(s, 5),         countFn: (s,_,m) => countBreakthroughSessions(s, 5),    title: null },
+  { id:'untouchable',  cat:'pbs',         icon:'👑', name:'Continuous Improvement', desc:'Set 50 total personal bests. Repeats every 50 PBs.', repeatable: true,  check: (s,_,m) => countAllTimePBEvents(s) >= 50,        countFn: (s,_,m) => Math.floor(countAllTimePBEvents(s) / 50), title: 'The Untouchable' },
+  // Martial arts
+  { id:'warrior',      cat:'martial',     icon:'🥋', name:'The Student',            desc:'Complete 10 Taekwondo sessions. Repeats every 10 sessions.', repeatable: true, check: (s,_,m) => tkdCount(s) >= 10,                   countFn: (s,_,m) => Math.floor(tkdCount(s) / 10),        title: 'Warrior' },
+  { id:'sparring',     cat:'martial',     icon:'🤺', name:'Sparring Spirit',        desc:'Complete 10 sparring sessions. Repeats every 10.', repeatable: true,   check: (s,_,m) => tkdTypeCount(s,'Sparring') >= 10,     countFn: (s,_,m) => Math.floor(tkdTypeCount(s,'Sparring') / 10), title: null },
+  { id:'striker',      cat:'martial',     icon:'🎯', name:'Precision Striker',      desc:'Complete 10 Small Target sessions. Repeats every 10.', repeatable: true, check: (s,_,m) => tkdTypeCount(s,'Small Target') >= 10, countFn: (s,_,m) => Math.floor(tkdTypeCount(s,'Small Target') / 10), title: 'The Striker' },
+  // Mastery
+  { id:'ex_initiate',  cat:'mastery',     icon:'📈', name:'Exercise Initiate',      desc:'Fill an exercise XP bar for the first time.',        repeatable: false, check: (s,_,m) => Object.values(m).some(x => x.fills >= 1), countFn: null,                                        title: null },
+  { id:'dedicated',    cat:'mastery',     icon:'🌊', name:'Dedicated',              desc:'Fill any exercise bar 10+ times. Repeats every 10 fills.', repeatable: true, check: (s,_,m) => Object.values(m).some(x => x.fills >= 10), countFn: (s,_,m) => Math.floor(Math.max(0,...Object.values(m).map(x=>x.fills)) / 10), title: null },
+  { id:'master',       cat:'mastery',     icon:'🏆', name:'True Mastery',           desc:'Fill any exercise bar 25+ times. Repeats every 25 fills.', repeatable: true, check: (s,_,m) => Object.values(m).some(x => x.fills >= 25), countFn: (s,_,m) => Math.floor(Math.max(0,...Object.values(m).map(x=>x.fills)) / 25), title: 'The Devoted' },
+];
+
+// ── Achievement helper functions ───────────────────────────────────────────
+function weeksWith3Plus(sessionList) {
+  const wc = {};
+  sessionList.forEach(s => {
+    const d = new Date(s.date); const day = d.getDay()||7;
+    const mon = new Date(d); mon.setDate(d.getDate()-(day-1));
+    const k = mon.toISOString().slice(0,10);
+    wc[k] = (wc[k]||0) + 1;
+  });
+  return Object.values(wc).filter(v => v >= 3).length;
+}
+function maxRunDist(sessionList) {
+  return Math.max(0, ...sessionList.map(s => parseFloat(s.distance)||0));
+}
+function runSessionsOver(sessionList, dist) {
+  return sessionList.filter(s => (parseFloat(s.distance)||0) >= dist).length;
+}
+function tkdCount(sessionList) {
+  return sessionList.filter(s => s.customName && s.customName.startsWith('Taekwondo')).length;
+}
+function tkdTypeCount(sessionList, type) {
+  return sessionList.filter(s => s.customName && s.customName.includes(type)).length;
+}
+function hasManyPBsInOneSession(sessionList, n) {
+  const pbs = {}; let found = false;
+  sessionList.forEach(s => {
+    if (found) return;
+    let count = 0;
+    s.exercises.forEach(ex => {
+      const prev = pbs[ex.name] || {weight:0, reps:0};
+      ex.sets.forEach(st => {
+        if ((parseFloat(st.weight)||0) > prev.weight || (parseFloat(st.reps)||0) > prev.reps) count++;
+      });
+    });
+    if (count >= n) found = true;
+    s.exercises.forEach(ex => {
+      if (!pbs[ex.name]) pbs[ex.name] = {weight:0, reps:0};
+      ex.sets.forEach(st => {
+        const w = parseFloat(st.weight)||0, r = parseFloat(st.reps)||0;
+        if (w > pbs[ex.name].weight) pbs[ex.name].weight = w;
+        if (r > pbs[ex.name].reps) pbs[ex.name].reps = r;
+      });
+    });
+  });
+  return found;
+}
+function countBreakthroughSessions(sessionList, n) {
+  const pbs = {}; let count = 0;
+  sessionList.forEach(s => {
+    let pbsThisSession = 0;
+    s.exercises.forEach(ex => {
+      const prev = pbs[ex.name] || {weight:0, reps:0};
+      ex.sets.forEach(st => {
+        if ((parseFloat(st.weight)||0) > prev.weight || (parseFloat(st.reps)||0) > prev.reps) pbsThisSession++;
+      });
+    });
+    if (pbsThisSession >= n) count++;
+    s.exercises.forEach(ex => {
+      if (!pbs[ex.name]) pbs[ex.name] = {weight:0, reps:0};
+      ex.sets.forEach(st => {
+        const w = parseFloat(st.weight)||0, r = parseFloat(st.reps)||0;
+        if (w > pbs[ex.name].weight) pbs[ex.name].weight = w;
+        if (r > pbs[ex.name].reps) pbs[ex.name].reps = r;
+      });
+    });
+  });
+  return count;
+}
+function countAllTimePBEvents(sessionList) {
+  const pbs = {}; let total = 0;
+  sessionList.forEach(s => {
+    s.exercises.forEach(ex => {
+      if (!pbs[ex.name]) pbs[ex.name] = {weight:0, reps:0};
+      ex.sets.forEach(st => {
+        const w = parseFloat(st.weight)||0, r = parseFloat(st.reps)||0;
+        if (w > pbs[ex.name].weight) { pbs[ex.name].weight = w; total++; }
+        if (r > pbs[ex.name].reps)   { pbs[ex.name].reps = r; total++; }
+      });
+    });
+  });
+  return total;
+}
+
+// Compute which achievements are earned, including repeat count for repeatable ones
+function computeAchievements(sessionList, mastery) {
+  return ACHIEVEMENTS.map(a => {
+    const earned = a.check(sessionList, null, mastery);
+    const count = (a.repeatable && a.countFn) ? a.countFn(sessionList, null, mastery) : (earned ? 1 : 0);
+    return { ...a, earned, count };
+  });
+}
+
+// All unlocked titles (from achievements + default)
+const ALL_TITLES = ['Newcomer', ...ACHIEVEMENTS.filter(a => a.title).map(a => a.title)];
+function getEarnedTitles(achievements) {
+  const earned = new Set(['Newcomer']);
+  achievements.filter(a => a.earned && a.title).forEach(a => earned.add(a.title));
+  return [...earned];
+}
+
+// ── Auto-generated tagline ─────────────────────────────────────────────────
+function generateTagline(sessionList) {
+  const pushC  = sessionList.filter(s => VARIATIONS[s.variationKey] && VARIATIONS[s.variationKey].type === 'push').length;
+  const pullC  = sessionList.filter(s => VARIATIONS[s.variationKey] && VARIATIONS[s.variationKey].type === 'pull').length;
+  const legsC  = sessionList.filter(s => VARIATIONS[s.variationKey] && VARIATIONS[s.variationKey].type === 'legs').length;
+  const cardioC= cardioSessions(sessionList).length;
+  const tkdC   = tkdCount(sessionList);
+  const runDist= totalMiles(cardioSessions(sessionList));
+  const lbs    = totalLbs(sessionList);
+
+  if (!sessionList.length) return 'Just getting started.';
+  if (tkdC > 20 && lbs > 10000) return `Warrior of iron and spirit — ${tkdC} mat sessions, ${fmt(lbs)} lbs moved.`;
+  if (tkdC > 10) return `Martial artist in training — ${tkdC} sessions on the mat and counting.`;
+  if (runDist > 50) return `${runDist.toFixed(1)} miles logged and still going.`;
+  if (lbs > 100000) return `${fmt(lbs)} lbs moved. The iron doesn't lie.`;
+  if (sessionList.length >= 50) return `${sessionList.length} sessions in. Consistency is the craft.`;
+  if (legsC > pushC && legsC > pullC) return 'Legs day enthusiast. The gains are real.';
+  if (cardioC > sessionList.length * 0.4) return 'Built on sweat and miles.';
+  return `${sessionList.length} sessions logged. The work continues.`;
+}
+
+// ── XP Summary overlay ────────────────────────────────────────────────────
+let pendingXPSummary = null;
+
+function showXPOverlay(summary) {
+  const body = document.getElementById('xp-overlay-body');
+  const vm = getVariationMeta(summary.session.variationKey, summary.session.customName, summary.session.category);
+  const totalXP = Object.values(summary.attrGains).reduce((a,b)=>a+b,0);
+  const bd = summary.breakdown;
+
+  let html = `<div class="xp-header">
+    <div class="xp-header-label">Session Complete</div>
+    <div class="xp-header-title">${vm.name}</div>
+  </div>
+  <div style="text-align:center">
+    <div class="xp-total">+${totalXP}</div>
+    <div class="xp-total-label">Experience Points Earned</div>
+  </div>
+  <div style="margin-top:24px">
+    <div class="xp-breakdown-row">
+      <div class="xp-breakdown-label">🏃 Showing up</div>
+      <div class="xp-breakdown-val">+${bd.base}</div>
+    </div>`;
+
+  if (bd.duration > 0) html += `<div class="xp-breakdown-row">
+    <div class="xp-breakdown-label">⏱ Duration bonus (${summary.session.duration} min)</div>
+    <div class="xp-breakdown-val">+${bd.duration}</div>
+  </div>`;
+
+  if (bd.volume > 0) html += `<div class="xp-breakdown-row">
+    <div class="xp-breakdown-label">💪 Volume bonus</div>
+    <div class="xp-breakdown-val">+${bd.volume}</div>
+  </div>`;
+
+  if (bd.pr > 0) html += `<div class="xp-breakdown-row" style="border-color:var(--str)">
+    <div class="xp-breakdown-label">⭐ Personal best bonus!</div>
+    <div class="xp-breakdown-val" style="color:var(--str-text)">+${bd.pr}</div>
+  </div>`;
+
+  if (summary.masteryFills > 0) html += `<div class="xp-breakdown-row" style="border-color:var(--str)">
+    <div class="xp-breakdown-label">📈 Exercise mastery fills ×${summary.masteryFills}</div>
+    <div class="xp-breakdown-val" style="color:var(--str-text)">+${summary.masteryFills * 50}</div>
+  </div>`;
+
+  html += `</div>`;
+
+  // Attr gains breakdown
+  html += `<div style="margin-top:16px">`;
+  Object.entries(summary.attrGains).forEach(([key, xp]) => {
+    if (!xp) return;
+    const a = ATTRS[key];
+    const before = levelFromXP(summary.attrXPBefore[key] || 0);
+    const after  = levelFromXP((summary.attrXPBefore[key]||0) + xp);
+    const leveled = after.level > before.level;
+    html += `<div class="xp-breakdown-row" style="border-color:${a.color}20">
+      <div class="xp-breakdown-label" style="color:${a.color}">${a.icon} ${a.name}${leveled ? ' ▲ LEVEL UP!' : ''}</div>
+      <div class="xp-breakdown-val" style="color:${a.color}">+${xp} XP</div>
+    </div>`;
+    if (leveled) {
+      html += `<div class="xp-levelup" style="border-color:${a.color};background:linear-gradient(135deg,${a.bg},#0A0A09)">
+        <div class="xp-levelup-label" style="color:${a.color}">${a.name}</div>
+        <div class="xp-levelup-title" style="color:${a.text}">Level ${after.level}</div>
+      </div>`;
+    }
+  });
+  html += `</div>`;
+
+  // New achievements
+  if (summary.newAchievements && summary.newAchievements.length) {
+    html += `<div style="margin-top:20px;font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--str);margin-bottom:10px">Achievement Unlocked!</div>`;
+    summary.newAchievements.forEach(a => {
+      html += `<div class="xp-achievement">
+        <div style="font-size:28px">${a.icon}</div>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text)">${a.name}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${a.desc}</div>
+          ${a.title ? `<div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--str);margin-top:4px">Title unlocked: "${a.title}"</div>` : ''}
+        </div>
+      </div>`;
+    });
+  }
+
+  body.innerHTML = html;
+  const overlay = document.getElementById('xp-overlay');
+  overlay.classList.add('show');
+  overlay.scrollTop = 0;
+}
+
+function dismissXPOverlay() {
+  document.getElementById('xp-overlay').classList.remove('show');
+  renderHome();
+}
+
+// ── Hook into saveSessions ─────────────────────────────────────────────────
+function saveSessions() {
+  localStorage.setItem('ppl_sessions', JSON.stringify(sessions));
+  computeAndShowXP();
+}
+
+function computeAndShowXP() {
+  if (!sessions.length) return;
+  const latest = sessions[sessions.length - 1];
+
+  // XP state before this session
+  const priorSessions = sessions.slice(0, -1);
+  const { totalAttrXP: priorAttrXP, mastery: priorMastery } = computeAllXP(priorSessions);
+  const priorAchievements_unused = computeAchievements(priorSessions, priorMastery).filter(a => a.earned).map(a => a.id);
+
+  // Build prior PBs for PR detection
+  const priorPBs = {};
+  priorSessions.forEach(s => s.exercises.forEach(ex => {
+    if (!priorPBs[ex.name]) priorPBs[ex.name] = {weight:0, reps:0};
+    ex.sets.forEach(st => {
+      const w = parseFloat(st.weight)||0, r = parseFloat(st.reps)||0;
+      if (w > priorPBs[ex.name].weight) priorPBs[ex.name].weight = w;
+      if (r > priorPBs[ex.name].reps) priorPBs[ex.name].reps = r;
+    });
+  }));
+
+  const { breakdown, attrGains } = calcSessionXP(latest, priorSessions, priorPBs);
+
+  // Mastery fills this session
+  const nowMastery = computeMastery(sessions);
+  let masteryFills = 0;
+  Object.keys(nowMastery).forEach(name => {
+    const before = priorMastery[name] ? priorMastery[name].fills : 0;
+    masteryFills += Math.max(0, nowMastery[name].fills - before);
+  });
+  if (masteryFills > 0) {
+    Object.keys(attrGains).forEach(k => { attrGains[k] = (attrGains[k]||0) + masteryFills * 50; });
+  }
+
+  // New achievements — earned for first time, or count increased for repeatable ones
+  const priorAchievementCounts = {};
+  computeAchievements(priorSessions, priorMastery).forEach(a => {
+    priorAchievementCounts[a.id] = a.count;
+  });
+  const nowAchievements = computeAchievements(sessions, nowMastery);
+  const newAchievements = nowAchievements.filter(a => {
+    const prev = priorAchievementCounts[a.id] || 0;
+    return a.count > prev;
+  });
+
+  checkAndAutoSyncPBs();
+
+  setTimeout(() => {
+    showXPOverlay({
+      session: latest,
+      breakdown,
+      attrGains,
+      attrXPBefore: priorAttrXP,
+      masteryFills,
+      newAchievements,
+    });
+  }, 1400); // show after the "Session saved" toast fades
+}
+
+// ── PROFILE SCREEN (tab on Stats) ─────────────────────────────────────────
+function buildProfileHTML() {
+  const profile = getProfile();
+  const { totalAttrXP, mastery } = computeAllXP(sessions);
+  const char = computeCharLevel(totalAttrXP);
+  const achievements = computeAchievements(sessions, mastery);
+  const earnedTitles = getEarnedTitles(achievements);
+  const tagline = generateTagline(sessions);
+
+  // Favourite workouts (top 3 by session count)
+  const favMap = {};
+  sessions.forEach(s => {
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category);
+    const k = vm.name;
+    favMap[k] = (favMap[k]||0) + 1;
+  });
+  const favs = Object.entries(favMap).sort((a,b)=>b[1]-a[1]).slice(0,3);
+
+  // Most recent PB
+  const pbs = computePBs();
+  const recentPB = Object.entries(pbs)
+    .filter(([,pb]) => pb.weightDate || pb.repsDate)
+    .sort(([,a],[,b]) => {
+      const da = new Date(Math.max(new Date(a.weightDate||0), new Date(a.repsDate||0)));
+      const db = new Date(Math.max(new Date(b.weightDate||0), new Date(b.repsDate||0)));
+      return db - da;
+    })[0];
+
+  let html = '<div style="height:12px"></div>';
+
+  // ── Trading card ──
+  const customTagline = profile.customTagline || null;
+  const displayTagline = customTagline !== null ? customTagline : tagline;
+
+  const avatarHtml = profile.photo
+    ? `<img class="profile-avatar" src="${profile.photo}" alt="profile">`
+    : `<div class="profile-avatar-placeholder">${(profile.name||'A')[0].toUpperCase()}</div>`;
+  const charPct = Math.round((char.xpIntoLevel / char.xpNeeded) * 100);
+
+  html += `<div class="profile-card">
+    <div class="profile-card-inner">
+      <div class="profile-top">
+        <div class="profile-avatar-wrap" onclick="document.getElementById('profile-photo-input').click()">
+          ${avatarHtml}
+          <div class="profile-avatar-edit">📷</div>
+        </div>
+        <div class="profile-info">
+          <div class="profile-name" onclick="editProfileName()" style="cursor:pointer" title="Tap to edit">${profile.name || 'Athlete'} ✎</div>
+          <div class="profile-title">${profile.equippedTitle || 'Newcomer'}</div>
+          <div class="profile-tagline" onclick="editTagline()" style="cursor:pointer" title="Tap to edit">
+            ${displayTagline}
+            <span style="font-size:10px;opacity:0.5;margin-left:4px">✎</span>
+          </div>
+          ${customTagline !== null ? `<button onclick="resetTagline()"
+            style="background:none;border:none;font-family:'DM Mono',monospace;
+              font-size:9px;color:var(--text-dim);cursor:pointer;padding:2px 0;
+              text-transform:uppercase;letter-spacing:0.5px;margin-top:3px">
+            ↺ Reset to auto
+          </button>` : ''}
+        </div>
+      </div>
+
+      <div class="profile-char-level">
+        <div class="profile-char-num">${char.level}</div>
+        <div class="profile-char-bar-wrap">
+          <div class="profile-char-label" style="color:var(--text-muted);font-size:11px">Character Level</div>
+          <div class="profile-char-bar-track">
+            <div class="profile-char-bar-fill" style="width:${charPct}%"></div>
+          </div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:3px">
+            ${char.xpIntoLevel.toLocaleString()} / ${char.xpNeeded.toLocaleString()} XP
+          </div>
+        </div>
+      </div>
+
+      ${Object.entries(ATTRS).map(([key, a]) => {
+        const xp = totalAttrXP[key] || 0;
+        const lvl = levelFromXP(xp);
+        const pct = Math.round((lvl.xpIntoLevel / lvl.xpNeeded) * 100);
+        return `<div class="attr-row">
+          <div class="attr-icon" style="background:${a.bg};border:1px solid ${a.color}20">
+            <span>${a.icon}</span>
+          </div>
+          <div class="attr-info">
+            <div class="attr-name" style="color:${a.color}">${a.name}</div>
+            <div class="attr-bar-track">
+              <div class="attr-bar-fill" style="width:${pct}%;background:${a.color};box-shadow:0 0 6px ${a.glow}"></div>
+            </div>
+          </div>
+          <div>
+            <div class="attr-level" style="color:${a.text};text-shadow:0 0 10px ${a.glow}">Lv ${lvl.level}</div>
+            <div class="attr-xp-label">${lvl.xpIntoLevel.toLocaleString()}/${lvl.xpNeeded.toLocaleString()}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+
+  // ── Title selector — always visible ──
+  html += `<div class="section-label" style="margin-top:18px">Your Titles</div>
+  <div style="padding:0 18px;display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px">
+    ${earnedTitles.map(t => `<button
+      style="padding:6px 12px;border-radius:20px;font-family:'DM Mono',monospace;font-size:10px;
+        font-weight:500;text-transform:uppercase;letter-spacing:0.5px;cursor:pointer;
+        border:1.5px solid ${t===profile.equippedTitle?'var(--str)':'var(--border)'};
+        background:${t===profile.equippedTitle?'var(--str-bg)':'none'};
+        color:${t===profile.equippedTitle?'var(--str-text)':'var(--text-muted)'}"
+      onclick="equipTitle('${t.replace(/'/g,"\\'")}')">
+      ${t}
+    </button>`).join('')}
+  </div>`;
+
+  // ── Highlights ──
+  if (favs.length || recentPB) {
+    html += `<div class="section-label" style="margin-top:18px">Highlights</div>`;
+    html += `<div class="data-section-card" style="margin:0 18px">`;
+    if (recentPB) {
+      const [exName, pb] = recentPB;
+      const pbDate = pb.weightDate || pb.repsDate;
+      html += `<div class="data-section-row">
+        <div><div class="data-row-label">Most Recent PB</div>
+          <div class="data-row-value">${exName} — ${pb.weight>0?pb.weight+' lbs':''}${pb.reps>0?' / '+pb.reps+' reps':''}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-top:2px">
+            ${pbDate ? new Date(pbDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''}
+          </div>
+        </div>
+      </div>`;
+    }
+    favs.forEach(([name, count], i) => {
+      html += `<div class="data-section-row">
+        <div><div class="data-row-label">${i===0?'Favourite Workout':'#'+( i+1)+' Workout'}</div>
+          <div class="data-row-value">${name}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-top:2px">${count} sessions</div>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // ── Achievements ──
+  const earned = achievements.filter(a => a.earned);
+  const inProgress = achievements.filter(a => !a.earned);
+
+  if (earned.length) {
+    html += `<div class="section-label" style="margin-top:18px">Achievements (${earned.length}/${achievements.length})</div>`;
+    earned.forEach(a => {
+      const countBadge = (a.repeatable && a.count > 1)
+        ? `<div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--str);margin-top:3px">×${a.count} completed</div>`
+        : '';
+      html += `<div class="achievement-card">
+        <div class="achievement-icon">${a.icon}</div>
+        <div class="achievement-info">
+          <div class="achievement-name">${a.name}</div>
+          <div class="achievement-desc">${a.desc}</div>
+          ${a.title ? `<div class="achievement-progress" style="color:var(--str)">Title: "${a.title}"</div>` : ''}
+          ${countBadge}
+        </div>
+        <div class="achievement-badge">${a.repeatable && a.count > 1 ? '×'+a.count : 'Earned'}</div>
+      </div>`;
+    });
+  }
+
+  if (inProgress.length) {
+    html += `<div class="section-label" style="margin-top:12px;color:var(--text-dim)">In Progress</div>`;
+    inProgress.forEach(a => {
+      html += `<div class="achievement-card locked">
+        <div class="achievement-icon">${a.icon}</div>
+        <div class="achievement-info">
+          <div class="achievement-name">${a.name}</div>
+          <div class="achievement-desc">${a.desc}</div>
+        </div>
+        <div class="achievement-badge locked">Locked</div>
+      </div>`;
+    });
+  }
+
+  html += `<div style="height:20px"></div>`;
+  return html;
+}
+
+// ── Profile actions ────────────────────────────────────────────────────────
+function editProfileName() {
+  const p = getProfile();
+  const name = prompt('Your name or nickname:', p.name || '');
+  if (name === null) return;
+  p.name = name.trim() || 'Athlete';
+  saveProfile(p);
+  renderStatsScreen();
+  renderHomeRPGWidget();
+}
+
+function editTagline() {
+  const p = getProfile();
+  const auto = generateTagline(sessions);
+  const current = p.customTagline !== undefined && p.customTagline !== null ? p.customTagline : auto;
+  const val = prompt('Edit your bio (leave blank to use the auto-generated one):', current);
+  if (val === null) return; // cancelled
+  p.customTagline = val.trim() === '' || val.trim() === auto ? null : val.trim();
+  saveProfile(p);
+  renderStatsScreen();
+}
+
+function resetTagline() {
+  const p = getProfile();
+  p.customTagline = null;
+  saveProfile(p);
+  renderStatsScreen();
+}
+
+function equipTitle(title) {
+  const p = getProfile();
+  p.equippedTitle = title;
+  saveProfile(p);
+  renderStatsScreen();
+}
+
+function handleProfilePhoto(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    // Compress to max 200px wide
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const size = Math.min(200, img.width, img.height);
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const scale = size / Math.min(img.width, img.height);
+      const sx = (img.width - size/scale)/2, sy = (img.height - size/scale)/2;
+      ctx.drawImage(img, sx, sy, size/scale, size/scale, 0, 0, size, size);
+      const p = getProfile();
+      p.photo = canvas.toDataURL('image/jpeg', 0.8);
+      saveProfile(p);
+      renderStatsScreen();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+// ── Home RPG widget ────────────────────────────────────────────────────────
+function renderHomeRPGWidget() {
+  const el = document.getElementById('home-rpg-widget');
+  if (!el) return;
+  const profile = getProfile();
+  const { totalAttrXP } = computeAllXP(sessions);
+  const char = computeCharLevel(totalAttrXP);
+
+  let html = `<div class="home-rpg-top">
+    <div>
+      <div class="home-rpg-name">${profile.name || 'Athlete'}</div>
+      <div class="home-rpg-level" style="margin-top:1px">${profile.equippedTitle || 'Newcomer'}</div>
+    </div>
+    <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--str)">Lv ${char.level}</div>
+  </div>
+  <div class="home-rpg-attrs">`;
+
+  Object.entries(ATTRS).forEach(([key, a]) => {
+    const xp = totalAttrXP[key] || 0;
+    const lvl = levelFromXP(xp);
+    const pct = Math.round((lvl.xpIntoLevel / lvl.xpNeeded) * 100);
+    html += `<div class="home-attr-mini">
+      <div class="home-attr-mini-label" style="color:${a.color}">${a.name.slice(0,3)}</div>
+      <div class="home-attr-mini-level" style="color:${a.text}">${lvl.level}</div>
+      <div class="home-attr-mini-bar">
+        <div class="home-attr-mini-fill" style="width:${pct}%;background:${a.color}"></div>
+      </div>
+    </div>`;
+  });
+
+  html += `</div>`;
+  el.innerHTML = html;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
