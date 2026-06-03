@@ -137,11 +137,9 @@ html, body {
   -webkit-user-select: none; user-select: none;
 }
 .nav-cell:active { transform: scale(0.95); }
-.nav-cell.suggested { border-color: #fff3; }
-.nav-cell.suggested::after {
-  content: ''; position: absolute; top: 6px; right: 6px;
-  width: 6px; height: 6px; border-radius: 50%; background: #fff;
-  box-shadow: 0 0 6px 2px #fff8;
+.nav-cell.suggested {
+  border-color: #fff6;
+  box-shadow: 0 0 0 1px #fff2, 0 0 16px 2px rgba(255,255,255,0.12);
 }
 .nav-cell.push { background: var(--push-bg); }
 .nav-cell.pull { background: var(--pull-bg); }
@@ -1233,7 +1231,37 @@ html, body {
 .home-attr-mini-bar { height: 3px; background: #2A2820; border-radius: 2px; overflow: hidden; }
 .home-attr-mini-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
 
-/* ── PB TOAST (already exists — keep) ── */
+/* ── STREAK WIDGET ── */
+.streak-widget {
+  margin: 0 18px 0;
+  border-radius: var(--radius);
+  border: 1px solid #2A2820;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #0F0E0C;
+  transition: box-shadow 0.4s ease, border-color 0.4s ease;
+}
+.streak-flame { font-size: 24px; flex-shrink: 0; }
+.streak-info { flex: 1; min-width: 0; }
+.streak-label {
+  font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-dim);
+  margin-bottom: 2px;
+}
+.streak-number {
+  font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800;
+  line-height: 1; color: var(--text);
+}
+.streak-unit {
+  font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-dim);
+  margin-top: 2px;
+}
+.streak-best {
+  font-family: 'DM Mono', monospace; font-size: 9px; color: var(--text-dim);
+  text-align: right; flex-shrink: 0;
+}
 .pb-toast {
   position: fixed; bottom: calc(var(--safe-bot) + 80px); left: 50%;
   transform: translateX(-50%) translateY(20px);
@@ -1258,11 +1286,12 @@ html, body {
     <div class="home-header">
       <div style="display:flex;align-items:baseline;gap:10px">
         <div class="home-logo">PPL<span>.</span></div>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:0.5px">v2.0</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:0.5px">v2.1</div>
       </div>
       <div class="home-date" id="home-date"></div>
     </div>
     <div class="home-rpg-widget" onclick="showBests('profile')" id="home-rpg-widget" style="margin-top:0;border-radius:0;border-left:none;border-right:none;border-top:none;border-bottom:1px solid var(--border)"></div>
+    <div id="streak-widget-container" style="padding:10px 0 0"></div>
     <div id="suggestion-container"></div>
     <div class="section-label">Workouts</div>
     <div class="nav-grid" id="nav-grid"></div>
@@ -1406,6 +1435,14 @@ html, body {
     </div>
   </div>
   <div class="scroll-body" id="detail-body"></div>
+</div>
+
+<!-- ── QUICK LOG SHEET ── -->
+<div id="quick-log-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:400;align-items:flex-end" onclick="closeQuickLog(event)">
+  <div id="quick-log-sheet" style="background:#141210;border-radius:16px 16px 0 0;border-top:1px solid #2A2820;width:100%;max-height:85vh;overflow-y:auto;padding:16px 18px 40px">
+    <div style="width:32px;height:3px;background:#3A3530;border-radius:2px;margin:0 auto 16px"></div>
+    <div id="quick-log-body"></div>
+  </div>
 </div>
 
 <!-- ── XP SUMMARY OVERLAY ── -->
@@ -1786,13 +1823,20 @@ function renderHome() {
   const sv = VARIATIONS[suggested];
   const container = document.getElementById('suggestion-container');
   container.innerHTML = `
-    <div class="suggestion-bar">
-      <div>
-        <div class="suggestion-label">Up next</div>
-        <div class="suggestion-name" style="color:${TYPE_COLOR[sv.type]}">${sv.label} — ${sv.name}</div>
-        <div class="suggestion-sub">${sv.focus.substring(0,60)}…</div>
-      </div>
-      <button class="suggestion-go" style="background:${TYPE_COLOR[sv.type]}" onclick="openVariation('${suggested}')">Start</button>
+    <div style="padding:10px 18px 0">
+      <button onclick="openQuickLog()"
+        style="width:100%;background:#1A1814;border:1.5px dashed #3A3530;border-radius:var(--radius);
+          padding:14px 18px;display:flex;align-items:center;justify-content:center;
+          gap:10px;cursor:pointer">
+        <div style="width:26px;height:26px;border-radius:50%;background:#2A2820;
+          border:1.5px solid var(--str);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <span style="color:var(--str);font-size:18px;font-weight:400;line-height:1;font-family:Arial,sans-serif">+</span>
+        </div>
+        <div style="text-align:left">
+          <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text-muted)">Quick Log</div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:1px">log a single exercise or activity</div>
+        </div>
+      </button>
     </div>`;
 
   const grid = document.getElementById('nav-grid');
@@ -1805,7 +1849,13 @@ function renderHome() {
       ? `Last: ${new Date(lastDone.date).toLocaleDateString('en-US',{month:'short',day:'numeric'})}`
       : '';
     grid.innerHTML += `
-      <div class="nav-cell ${v.type}${isSuggested?' suggested':''}" onclick="openVariation('${key}')">
+      <div class="nav-cell ${v.type}${isSuggested?' suggested':''}" onclick="openVariation('${key}')" style="${isSuggested?'position:relative':''}">
+        ${isSuggested ? `<div style="position:absolute;top:7px;right:8px;display:flex;align-items:center;gap:4px">
+          <span style="font-family:'DM Mono',monospace;font-size:8px;font-weight:500;
+            text-transform:uppercase;letter-spacing:0.8px;color:#fffb">Up next</span>
+          <div style="width:6px;height:6px;border-radius:50%;background:#fff;flex-shrink:0;
+            box-shadow:0 0 6px 2px #fffa,0 0 14px 4px #fff6"></div>
+        </div>` : ''}
         <div class="nav-cell-tag">${v.label}</div>
         <div class="nav-cell-name">${v.name}</div>
         <div class="nav-cell-sub">${v.focus.split(',')[0]}</div>
@@ -1837,7 +1887,95 @@ function renderHome() {
 
   renderCalendar();
   renderRecent();
+  renderStreakWidget();
   renderHomeRPGWidget();
+}
+
+function renderStreakWidget() {
+  const el = document.getElementById('streak-widget-container');
+  if (!el) return;
+
+  const { current, streak: best } = longestStreak();
+
+  // Check if streak is still active — last session must be today or yesterday
+  const today = new Date(); today.setHours(0,0,0,0);
+  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+  const lastSession = sessions.length ? new Date(sessions[sessions.length - 1].date) : null;
+  if (lastSession) lastSession.setHours(0,0,0,0);
+  const streakActive = lastSession && (lastSession >= yesterday);
+  const displayStreak = streakActive ? current : 0;
+
+  if (!sessions.length) { el.innerHTML = ''; return; }
+
+  // Glow intensity scales with streak length
+  // 0–2 days: no glow, 3–6: subtle, 7–13: warm, 14–29: strong, 30+: full blaze
+  const tier = displayStreak >= 30 ? 4 : displayStreak >= 14 ? 3 : displayStreak >= 7 ? 2 : displayStreak >= 3 ? 1 : 0;
+  const colors = [
+    { border: '#2A2820', glow: 'none',                              numColor: '#E8E4DC', flame: '🔥' },
+    { border: '#3A2510', glow: '0 0 8px rgba(196,115,42,0.15)',     numColor: '#F5C989', flame: '🔥' },
+    { border: '#4A3018', glow: '0 0 14px rgba(196,115,42,0.25)',    numColor: '#F5C989', flame: '🔥' },
+    { border: '#5A3A20', glow: '0 0 22px rgba(196,115,42,0.4)',     numColor: '#C4732A', flame: '🔥' },
+    { border: '#C4732A', glow: '0 0 32px rgba(196,115,42,0.6), 0 0 60px rgba(196,115,42,0.2)', numColor: '#C4732A', flame: '🔥' },
+  ];
+  const c = colors[tier];
+
+  const unit = displayStreak === 1 ? 'day' : 'days';
+  const lostMsg = !streakActive && current > 0
+    ? `<div style="font-family:'DM Mono',monospace;font-size:9px;color:#E05252;margin-top:3px">Log today to keep it going</div>` : '';
+
+  const weekly = weeklyStreak();
+
+  // Sessions logged this week (Mon–today)
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7)); // Monday
+  const daysThisWeek = Math.min(5, Math.floor((today - weekStart) / 86400000) + 1);
+  const sessionDaysThisWeek = new Set(
+    sessions
+      .filter(s => { const d = new Date(s.date); d.setHours(0,0,0,0); return d >= weekStart && d <= today; })
+      .map(s => new Date(s.date).toDateString())
+  ).size;
+
+  const dots = Array.from({length: 5}, (_, i) => {
+    if (i < sessionDaysThisWeek) return `<div style="width:11px;height:11px;border-radius:2px;background:${c.numColor}"></div>`;
+    if (i < daysThisWeek) return `<div style="width:11px;height:11px;border-radius:2px;background:#2A2820;border:1px solid #3A3530"></div>`;
+    return `<div style="width:11px;height:11px;border-radius:2px;background:#1A1814;border:1px solid #252320"></div>`;
+  }).join('');
+
+  el.innerHTML = `<div class="streak-widget" style="border-color:${c.border};box-shadow:${c.glow};padding:10px 16px;gap:0">
+
+    <!-- Left: Daily streak -->
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;text-align:center">
+      <div class="streak-label" style="margin-bottom:2px">Streak</div>
+      <div style="display:flex;align-items:baseline;gap:4px">
+        <div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:${c.numColor};line-height:1">${displayStreak}</div>
+        <div style="font-size:18px;line-height:1">${c.flame}</div>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text-dim);margin-top:1px">best ${best} days</div>
+      ${lostMsg}
+    </div>
+
+    <div style="width:1px;background:#2A2820;align-self:stretch;margin:0 12px"></div>
+
+    <!-- Center: This week dots -->
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center">
+      <div class="streak-label" style="margin-bottom:6px">This week</div>
+      <div style="display:flex;gap:4px;margin-bottom:4px">${dots}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted)">${sessionDaysThisWeek} of ${daysThisWeek} days</div>
+    </div>
+
+    <div style="width:1px;background:#2A2820;align-self:stretch;margin:0 12px"></div>
+
+    <!-- Right: Weekly streak -->
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;text-align:center">
+      <div class="streak-label" style="margin-bottom:2px">Weekly</div>
+      <div style="display:flex;align-items:baseline;gap:4px;justify-content:center">
+        <div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:${weekly.current>0?'var(--end)':'var(--text-dim)'};line-height:1">${weekly.current}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim)">wks</div>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text-dim);margin-top:1px">best ${weekly.best}</div>
+    </div>
+
+  </div>`;
 }
 
 function renderRecent() {
@@ -2569,7 +2707,7 @@ function saveBackfillSession() {
 
   sessions.push(session);
   sessions.sort((a, b) => new Date(a.date) - new Date(b.date));
-  saveSessions();
+  saveSessions(session.id);
   showToast('Workout saved ✓');
   setTimeout(() => { closeBackfill(); }, 1000);
 }
@@ -2960,7 +3098,7 @@ function finishSession() {
   elapsedInterval = null;
   sessionStartTime = null;
   sessions.push(activeSession);
-  saveSessions();
+  saveSessions(activeSession.id);
   activeSession = null;
   document.getElementById('finish-session-top').style.display = 'none';
   document.getElementById('timer-bar').classList.remove('visible');
@@ -3149,7 +3287,196 @@ function renderSessionDetail(s) {
     html += `</div>`;
   }
 
-  // ── XP breakdown ──────────────────────────────────────────────────────────
+  // ── Workout stats block ────────────────────────────────────────────────────
+  const vol = s.exercises.reduce((acc, e) =>
+    acc + e.sets.reduce((a, st) => a + ((parseFloat(st.reps)||0) * (parseFloat(st.weight)||0)), 0), 0);
+  const exCount = s.exercises.filter(e => e.sets.some(st => st.reps)).length;
+  const wpr = sessionWeightPerRep(s);
+
+  // PR count for this session
+  const priorPBsForStats = {};
+  priorSessions.forEach(ps => ps.exercises.forEach(ex => {
+    if (!priorPBsForStats[ex.name]) priorPBsForStats[ex.name] = {weight:0, reps:0};
+    ex.sets.forEach(st => {
+      const w = parseFloat(st.weight)||0, r = parseFloat(st.reps)||0;
+      if (w > priorPBsForStats[ex.name].weight) priorPBsForStats[ex.name].weight = w;
+      if (r > priorPBsForStats[ex.name].reps) priorPBsForStats[ex.name].reps = r;
+    });
+  }));
+  // Top exercise by volume
+  let topEx = null, topVol = 0;
+  s.exercises.forEach(ex => {
+    const v = ex.sets.reduce((a, st) => a + ((parseFloat(st.reps)||0)*(parseFloat(st.weight)||0)), 0);
+    if (v > topVol) { topVol = v; topEx = ex.name; }
+  });
+
+  // Heaviest lift with exercise name
+  let heaviest = 0, heaviestEx = null;
+  s.exercises.forEach(ex => {
+    ex.sets.forEach(st => {
+      const w = parseFloat(st.weight)||0;
+      if (st.reps && w > heaviest) { heaviest = w; heaviestEx = ex.name; }
+    });
+  });
+
+  // Most reps in a single set with exercise name
+  let mostReps = 0, mostRepsEx = null;
+  s.exercises.forEach(ex => {
+    ex.sets.forEach(st => {
+      const r = parseFloat(st.reps)||0;
+      if (r > mostReps) { mostReps = r; mostRepsEx = ex.name; }
+    });
+  });
+
+  // PRs with exercise names
+  const prList = [];
+  s.exercises.forEach(ex => {
+    const prev = priorPBsForStats[ex.name] || {weight:0, reps:0};
+    ex.sets.forEach(st => {
+      const w = parseFloat(st.weight)||0, r = parseFloat(st.reps)||0;
+      if (w > prev.weight || r > prev.reps) {
+        if (!prList.find(p => p.name === ex.name)) prList.push({ name: ex.name });
+      }
+    });
+  });
+  const prCount = prList.length;
+  const priorWithDur = priorSessions.filter(ps => parseFloat(ps.duration) > 0);
+  const avgDurStat = priorWithDur.length >= 3 ? priorWithDur.reduce((a, ps) => a + parseFloat(ps.duration), 0) / priorWithDur.length : null;
+  const vm2 = getVariationMeta(s.variationKey, s.customName, s.category);
+  const priorSameType = priorSessions.filter(ps => getVariationMeta(ps.variationKey, ps.customName, ps.category).type === vm2.type);
+  const priorVols = priorSameType.map(ps => ps.exercises.reduce((acc, e) => acc + e.sets.reduce((a, st) => a + ((parseFloat(st.reps)||0)*(parseFloat(st.weight)||0)), 0), 0)).filter(v => v > 0);
+  const avgVolStat = priorVols.length >= 3 ? priorVols.reduce((a,b)=>a+b,0)/priorVols.length : null;
+
+  const aboveAvgVol = avgVolStat !== null && vol > avgVolStat;
+  const aboveAvgDur = avgDurStat !== null && (parseFloat(s.duration)||0) > avgDurStat;
+
+  // ── Activity stats block (running, taekwondo, etc.) ───────────────────────
+  const isActivitySession = s.variationKey === CUSTOM_KEY && s.customName &&
+    PREDEFINED_ACTIVITIES.find(a => a.name === s.customName);
+
+  if (isActivitySession && exCount === 0) {
+    const actSessions = sessions.filter(ps =>
+      ps.variationKey === CUSTOM_KEY && ps.customName === s.customName
+    );
+    const hasDistance = parseFloat(s.distance) > 0;
+    const hasDuration = parseFloat(s.duration) > 0;
+
+    // Best duration for this activity
+    const bestDur = Math.max(0, ...actSessions.map(ps => parseFloat(ps.duration)||0));
+    const bestDist = Math.max(0, ...actSessions.map(ps => parseFloat(ps.distance)||0));
+
+    // Best pace
+    let bestPaceStr = null;
+    actSessions.forEach(ps => {
+      const d = parseFloat(ps.distance)||0, t = parseFloat(ps.duration)||0;
+      if (d > 0 && t > 0) {
+        const pace = t / d;
+        if (!bestPaceStr || pace < (bestPaceStr._val)) {
+          const m = Math.floor(pace), sec = Math.round((pace-m)*60);
+          bestPaceStr = { str: `${m}:${String(sec).padStart(2,'0')}`, _val: pace };
+        }
+      }
+    });
+
+    // Current session pace
+    const curDist = parseFloat(s.distance)||0, curDur = parseFloat(s.duration)||0;
+    const curPace = (curDist > 0 && curDur > 0) ? (() => {
+      const p = curDur/curDist, m = Math.floor(p), sec = Math.round((p-m)*60);
+      return { str: `${m}:${String(sec).padStart(2,'0')}`, _val: p };
+    })() : null;
+
+    const isBestDur  = hasDuration && curDur >= bestDur;
+    const isBestDist = hasDistance && curDist >= bestDist;
+    const isBestPace = curPace && bestPaceStr && curPace._val <= bestPaceStr._val;
+
+    html += `<div class="detail-section-label" style="margin-top:16px">Session stats</div>`;
+    html += `<div class="stats-grid" style="padding:0 18px;margin-bottom:0">`;
+
+    if (hasDuration) html += `<div class="stat-tile${isBestDur?' ':' '}">
+      <div class="stat-tile-label">Duration${isBestDur?' ⭐':''}</div>
+      <div class="stat-tile-value">${s.duration}</div>
+      <div class="stat-tile-unit">min${isBestDur?' · personal best':''}</div>
+    </div>`;
+
+    if (hasDistance) html += `<div class="stat-tile${isBestDist?' ':' '}">
+      <div class="stat-tile-label">Distance${isBestDist?' ⭐':''}</div>
+      <div class="stat-tile-value">${curDist.toFixed(2)}</div>
+      <div class="stat-tile-unit">mi${isBestDist?' · personal best':''}</div>
+    </div>`;
+
+    if (curPace) html += `<div class="stat-tile${isBestPace?' ':' '}">
+      <div class="stat-tile-label">Pace${isBestPace?' ⭐':''}</div>
+      <div class="stat-tile-value" style="font-size:20px">${curPace.str}</div>
+      <div class="stat-tile-unit">min/mi${isBestPace?' · personal best':''}</div>
+    </div>`;
+
+    html += `</div>`;
+  }
+
+  if (exCount > 0 || vol > 0) {
+    html += `<div class="detail-section-label" style="margin-top:16px">Workout stats</div>`;
+    html += `<div class="stats-grid" style="padding:0 18px;margin-bottom:0">`;
+
+    if (vol > 0) html += `<div class="stat-tile${aboveAvgVol?' ':' '}">
+      <div class="stat-tile-label">Total volume${aboveAvgVol?' 📈':''}</div>
+      <div class="stat-tile-value">${fmt(vol)}</div>
+      <div class="stat-tile-unit">lbs moved</div>
+    </div>`;
+
+    if (totalSets > 0) html += `<div class="stat-tile">
+      <div class="stat-tile-label">Sets</div>
+      <div class="stat-tile-value">${totalSets}</div>
+      <div class="stat-tile-unit">across ${exCount} exercise${exCount!==1?'s':''}</div>
+    </div>`;
+
+    if (heaviest > 0) html += `<div class="stat-tile">
+      <div class="stat-tile-label">Heaviest lift</div>
+      <div class="stat-tile-value">${heaviest}</div>
+      <div class="stat-tile-unit">lbs · ${heaviestEx}</div>
+    </div>`;
+
+    if (mostReps > 0) html += `<div class="stat-tile">
+      <div class="stat-tile-label">Most reps (set)</div>
+      <div class="stat-tile-value">${mostReps}</div>
+      <div class="stat-tile-unit">reps · ${mostRepsEx}</div>
+    </div>`;
+
+    if (prCount > 0) {
+      const pbId = `pb-tile-${s.id}`;
+      const showAll = prCount <= 3;
+      const previewNames = prList.slice(0, 3).map(p => p.name).join(', ');
+      const allNames = prList.map(p => p.name).join(', ');
+      html += `<div class="stat-tile wide" style="background:var(--str-bg);border-color:var(--str);margin-top:0">
+        <div class="stat-tile-label" style="color:var(--str-text);opacity:0.7">Personal best${prCount!==1?'s':''} ⭐</div>
+        <div id="${pbId}-names" style="font-family:'Syne',sans-serif;font-size:${prCount > 2?'13px':'16px'};font-weight:800;color:var(--str-text);line-height:1.4;margin:4px 0 2px">
+          ${showAll ? allNames : previewNames + `<span id="${pbId}-extra"> +${prCount - 3} more</span>`}
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div class="stat-tile-unit">${prCount} new PB${prCount!==1?'s':''}</div>
+          ${prCount > 3 ? `<button onclick="togglePBTile('${pbId}',${JSON.stringify(allNames)},${JSON.stringify(previewNames)},${prCount})"
+            id="${pbId}-btn"
+            style="background:none;border:none;font-family:'DM Mono',monospace;font-size:9px;
+              color:var(--str);cursor:pointer;padding:0;text-transform:uppercase;letter-spacing:0.5px">
+            Show all
+          </button>` : ''}
+        </div>
+      </div>`;
+    }
+
+    if (topEx && exCount > 1) html += `<div class="stat-tile wide">
+      <div class="stat-tile-label">Top exercise</div>
+      <div class="stat-tile-value" style="font-size:14px;line-height:1.2">${topEx}</div>
+      <div class="stat-tile-unit">${fmt(topVol)} lbs</div>
+    </div>`;
+
+    if (s.duration && aboveAvgDur) html += `<div class="stat-tile wide" style="background:var(--agi-bg);border-color:var(--agi)">
+      <div class="stat-tile-label" style="color:var(--agi-text);opacity:0.7">Duration</div>
+      <div class="stat-tile-value" style="color:var(--agi-text)">${s.duration} min</div>
+      <div class="stat-tile-unit">📈 above your average</div>
+    </div>`;
+
+    html += `</div>`;
+  }
   if (totalXP > 0) {
     html += `<div class="detail-section-label" style="margin-top:16px">
       Experience earned
@@ -3169,6 +3496,10 @@ function renderSessionDetail(s) {
     if (breakdown.duration > 0) html += `<div class="detail-meta-row">
       <div class="detail-meta-label">Duration</div>
       <div class="detail-meta-value" style="color:var(--text-muted)">+${breakdown.duration}</div>
+    </div>`;
+    if (breakdown.reps > 0) html += `<div class="detail-meta-row">
+      <div class="detail-meta-label">Reps</div>
+      <div class="detail-meta-value" style="color:var(--text-muted)">+${breakdown.reps}</div>
     </div>`;
     if (breakdown.volume > 0) html += `<div class="detail-meta-row">
       <div class="detail-meta-label">Volume</div>
@@ -3242,6 +3573,20 @@ function renderSessionDetail(s) {
   </button>`;
 
   document.getElementById('detail-body').innerHTML = html;
+}
+
+function togglePBTile(id, allNames, previewNames, total) {
+  const namesEl = document.getElementById(id + '-names');
+  const btn = document.getElementById(id + '-btn');
+  if (!namesEl || !btn) return;
+  const expanded = btn.textContent.trim() === 'Show less';
+  if (expanded) {
+    namesEl.innerHTML = previewNames + `<span id="${id}-extra"> +${total - 3} more</span>`;
+    btn.textContent = 'Show all';
+  } else {
+    namesEl.textContent = allNames;
+    btn.textContent = 'Show less';
+  }
 }
 
 function deleteSessionFromDetail(sessionId) {
@@ -3346,9 +3691,10 @@ function showToast(msg) {
 // ════════════════════════════════════════════════════════════════════════════
 
 // Compute PBs from all sessions. Returns map: exName -> { weight, reps, weightDate, repsDate, repsWeight }
-function computePBs() {
+function computePBs(sessionList) {
+  const sl = sessionList || sessions;
   const pbs = {};
-  sessions.forEach(s => {
+  sl.forEach(s => {
     s.exercises.forEach(ex => {
       if (!ex.name) return;
       ex.sets.forEach(set => {
@@ -3543,9 +3889,10 @@ function avg(val, count) {
 }
 
 // ── longest streak (consecutive calendar days with at least one session) ────
-function longestStreak() {
-  if (!sessions.length) return { streak: 0, last: null };
-  const days = [...new Set(sessions.map(s => {
+function longestStreak(sessionList) {
+  const sl = sessionList || sessions;
+  if (!sl.length) return { streak: 0, last: null, current: 0 };
+  const days = [...new Set(sl.map(s => {
     const d = new Date(s.date);
     return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
   }))].sort();
@@ -5078,8 +5425,7 @@ function getSessionAttrMap(s) {
 // ── XP calculation for a single session ───────────────────────────────────
 function calcSessionXP(s, priorSessions, priorPBs) {
   const map = getSessionAttrMap(s);
-  const BASE = 100;
-  const breakdown = { base: 0, duration: 0, volume: 0, pr: 0, aboveAvg: 0, total: 0 };
+  const breakdown = { base: 0, duration: 0, volume: 0, reps: 0, pr: 0, aboveAvg: 0, total: 0 };
   const attrGains = { str: 0, end: 0, agi: 0, dex: 0 };
 
   const distribute = (xp, primary, minor) => {
@@ -5087,103 +5433,104 @@ function calcSessionXP(s, priorSessions, priorPBs) {
     minor.forEach(a => { attrGains[a] = (attrGains[a]||0) + Math.round(xp * 0.5); });
   };
 
-  // ── Compute averages from prior sessions (need at least 3 to activate) ──
-  const ABOVE_AVG_MIN_SESSIONS = 3;
-
-  // Average duration across prior sessions that have duration logged
-  const priorWithDur = priorSessions.filter(ps => parseFloat(ps.duration) > 0);
-  const avgDur = priorWithDur.length >= ABOVE_AVG_MIN_SESSIONS
-    ? priorWithDur.reduce((a, ps) => a + parseFloat(ps.duration), 0) / priorWithDur.length
-    : null;
-
-  // Average volume across prior sessions of the same type that have volume
-  const vm = getVariationMeta(s.variationKey, s.customName, s.category);
-  const priorSameType = priorSessions.filter(ps => {
-    const pvm = getVariationMeta(ps.variationKey, ps.customName, ps.category);
-    return pvm.type === vm.type;
-  });
-  const priorVols = priorSameType.map(ps =>
-    ps.exercises.reduce((acc, e) =>
-      acc + e.sets.reduce((a, st) => a + ((parseFloat(st.reps)||0) * (parseFloat(st.weight)||0)), 0), 0)
-  ).filter(v => v > 0);
-  const avgVol = priorVols.length >= ABOVE_AVG_MIN_SESSIONS
-    ? priorVols.reduce((a, b) => a + b, 0) / priorVols.length
-    : null;
-
-  // Average distance across prior sessions that have distance logged
-  const priorWithDist = priorSessions.filter(ps => parseFloat(ps.distance) > 0);
-  const avgDist = priorWithDist.length >= ABOVE_AVG_MIN_SESSIONS
-    ? priorWithDist.reduce((a, ps) => a + parseFloat(ps.distance), 0) / priorWithDist.length
-    : null;
-
-  // Average weight-per-rep across prior sessions of the same type
-  // (total lbs ÷ total reps — a cleaner strength signal than raw volume)
-  const priorWPRs = priorSameType.map(ps => sessionWeightPerRep(ps)).filter(v => v > 0);
-  const avgWPR = priorWPRs.length >= ABOVE_AVG_MIN_SESSIONS
-    ? priorWPRs.reduce((a, b) => a + b, 0) / priorWPRs.length
-    : null;
-  const thisWPR = sessionWeightPerRep(s);
-
-  // ── Base XP for showing up ──────────────────────────────────────────────
-  breakdown.base = BASE;
-  distribute(BASE, map.primary, map.minor || []);
-
-  // ── Duration bonus: +2 XP/min + above-average bonus ────────────────────
-  const dur = parseFloat(s.duration) || 0;
-  if (dur > 0) {
-    const dBonus = Math.round(dur * 2);
-    breakdown.duration = dBonus;
-    distribute(dBonus, map.primary, map.minor || []);
-    // Above-average: +50 XP if duration > avg by any amount
-    if (avgDur !== null && dur > avgDur) {
-      breakdown.aboveAvg += 50;
-    }
+  // ── Daily base XP cap — showing up only earns 100 XP once per calendar day ─
+  const BASE = 100;
+  const sessionDay = new Date(s.date).toDateString();
+  const alreadyEarnedBase = priorSessions.some(ps =>
+    new Date(ps.date).toDateString() === sessionDay
+  );
+  if (!alreadyEarnedBase) {
+    breakdown.base = BASE;
+    distribute(BASE, map.primary, map.minor || []);
   }
 
-  // ── Volume bonus: +1 XP per 100 lbs + above-average bonus ──────────────
+  // ── Duration bonus — tiered by activity type ─────────────────────────────
+  // Taekwondo: +10/min | Running & General Core: +8/min | Other cardio/general: +6/min | Strength/core: +5/min
+  const dur = parseFloat(s.duration) || 0;
+  if (dur > 0) {
+    const name = s.customName || '';
+    let rate = 5; // default for Push/Pull/Legs/Core sessions
+    if (name.startsWith('Taekwondo')) {
+      rate = 10;
+    } else if (name === 'Running' || name === 'General Core Workout') {
+      rate = 8;
+    } else if (s.variationKey === CUSTOM_KEY) {
+      // Other custom activities (cardio or general)
+      const vm = getVariationMeta(s.variationKey, s.customName, s.category);
+      if (vm.type === 'cardio' || vm.type === 'general') rate = 6;
+    }
+    const dBonus = Math.round(dur * rate);
+    breakdown.duration = dBonus;
+    distribute(dBonus, map.primary, map.minor || []);
+  }
+
+  // ── Reps bonus: +1 XP per rep logged ─────────────────────────────────────
+  const totalReps = s.exercises.reduce((acc, e) =>
+    acc + e.sets.reduce((a, st) => a + (parseFloat(st.reps)||0), 0), 0);
+  if (totalReps > 0) {
+    breakdown.reps = totalReps;
+    distribute(totalReps, map.primary, map.minor || []);
+  }
+
+  // ── Volume bonus: +1 XP per 100 lbs ──────────────────────────────────────
   const vol = s.exercises.reduce((acc, e) =>
     acc + e.sets.reduce((a, st) => a + ((parseFloat(st.reps)||0) * (parseFloat(st.weight)||0)), 0), 0);
   if (vol > 0) {
     const vBonus = Math.round(vol / 100);
     breakdown.volume = vBonus;
     distribute(vBonus, map.primary, map.minor || []);
-    // Above-average: +50 XP if volume > avg for same workout type
-    if (avgVol !== null && vol > avgVol) {
-      breakdown.aboveAvg += 50;
-    }
   }
 
-  // ── Distance bonus: +5 XP per mile + above-average bonus ───────────────
+  // ── Distance bonus: +5 XP per mile ───────────────────────────────────────
   const dist = parseFloat(s.distance) || 0;
   if (dist > 0) {
     const distBonus = Math.round(dist * 5);
     breakdown.volume += distBonus;
     distribute(distBonus, map.primary, map.minor || []);
-    // Above-average: +50 XP if distance > avg
-    if (avgDist !== null && dist > avgDist) {
-      breakdown.aboveAvg += 50;
-    }
   }
 
-  // ── Weight-per-rep above-average bonus ──────────────────────────────────
-  // +50 XP if average weight/rep this session beats lifetime avg for this type
-  if (avgWPR !== null && thisWPR > avgWPR) {
-    breakdown.aboveAvg += 50;
-  }
+  // ── Above-average bonuses (require ≥3 prior sessions to activate) ─────────
+  const ABOVE_AVG_MIN = 3;
 
-  // Distribute above-average bonus
+  const priorWithDur = priorSessions.filter(ps => parseFloat(ps.duration) > 0);
+  const avgDur = priorWithDur.length >= ABOVE_AVG_MIN
+    ? priorWithDur.reduce((a, ps) => a + parseFloat(ps.duration), 0) / priorWithDur.length : null;
+
+  const vm = getVariationMeta(s.variationKey, s.customName, s.category);
+  const priorSameType = priorSessions.filter(ps =>
+    getVariationMeta(ps.variationKey, ps.customName, ps.category).type === vm.type);
+  const priorVols = priorSameType.map(ps =>
+    ps.exercises.reduce((acc, e) =>
+      acc + e.sets.reduce((a, st) => a + ((parseFloat(st.reps)||0)*(parseFloat(st.weight)||0)), 0), 0)
+  ).filter(v => v > 0);
+  const avgVol = priorVols.length >= ABOVE_AVG_MIN
+    ? priorVols.reduce((a,b)=>a+b,0)/priorVols.length : null;
+
+  const priorWithDist = priorSessions.filter(ps => parseFloat(ps.distance) > 0);
+  const avgDist = priorWithDist.length >= ABOVE_AVG_MIN
+    ? priorWithDist.reduce((a, ps) => a + parseFloat(ps.distance), 0) / priorWithDist.length : null;
+
+  const priorWPRs = priorSameType.map(ps => sessionWeightPerRep(ps)).filter(v => v > 0);
+  const avgWPR = priorWPRs.length >= ABOVE_AVG_MIN
+    ? priorWPRs.reduce((a,b)=>a+b,0)/priorWPRs.length : null;
+  const thisWPR = sessionWeightPerRep(s);
+
+  if (avgDur !== null && dur > avgDur)         breakdown.aboveAvg += 50;
+  if (avgVol !== null && vol > avgVol)         breakdown.aboveAvg += 50;
+  if (avgDist !== null && dist > avgDist)      breakdown.aboveAvg += 50;
+  if (avgWPR !== null && thisWPR > avgWPR)     breakdown.aboveAvg += 50;
+
   if (breakdown.aboveAvg > 0) {
     distribute(breakdown.aboveAvg, map.primary, map.minor || []);
   }
 
-  // ── PR bonus: +150 XP per new PB ───────────────────────────────────────
+  // ── PR bonus: +150 XP per new PB ─────────────────────────────────────────
   const currentPBs = priorPBs || {};
   let prCount = 0;
   s.exercises.forEach(ex => {
     const prev = currentPBs[ex.name] || { weight: 0, reps: 0 };
     ex.sets.forEach(st => {
-      const w = parseFloat(st.weight) || 0;
-      const r = parseFloat(st.reps) || 0;
+      const w = parseFloat(st.weight)||0, r = parseFloat(st.reps)||0;
       if (w > prev.weight || r > prev.reps) prCount++;
     });
   });
@@ -5193,7 +5540,7 @@ function calcSessionXP(s, priorSessions, priorPBs) {
     distribute(prBonus, map.primary, map.minor || []);
   }
 
-  breakdown.total = Object.values(attrGains).reduce((a, b) => a + b, 0);
+  breakdown.total = Object.values(attrGains).reduce((a,b)=>a+b,0);
   return { breakdown, attrGains };
 }
 
@@ -5224,8 +5571,9 @@ function computeMastery(sessionList) {
 function computeAllXP(sessionList) {
   const totalAttrXP = { str: 0, end: 0, agi: 0, dex: 0 };
   let runningPBs = {};
-  sessionList.forEach(s => {
-    const { attrGains } = calcSessionXP(s, sessionList, runningPBs);
+  sessionList.forEach((s, idx) => {
+    const priorSessions = sessionList.slice(0, idx);
+    const { attrGains } = calcSessionXP(s, priorSessions, runningPBs);
     Object.keys(attrGains).forEach(a => { totalAttrXP[a] = (totalAttrXP[a]||0) + attrGains[a]; });
     // Update running PBs
     s.exercises.forEach(ex => {
@@ -5252,31 +5600,31 @@ function computeCharLevel(totalAttrXP) {
 // ── ACHIEVEMENTS ──────────────────────────────────────────────────────────
 const ACHIEVEMENTS = [
   // Consistency
-  { id:'first_rep',    cat:'consistency', icon:'🌟', name:'First Rep',              desc:'Log your very first session.',                       repeatable: false, check: (s,_,m) => s.length >= 1,                         countFn: null,                                           title: null },
-  { id:'week_warrior', cat:'consistency', icon:'🗓️', name:'Weekly Warrior',         desc:'Log 3+ workouts in a week. Repeats for every 5 qualifying weeks.', repeatable: true,  check: (s,_,m) => weeksWith3Plus(s) >= 5,               countFn: (s,_,m) => Math.floor(weeksWith3Plus(s) / 5),   title: 'Consistent' },
-  { id:'iron_habit',   cat:'consistency', icon:'🔥', name:'Ironman',                desc:'Achieve a 30-day consecutive workout streak. Repeats for every 30-day streak reached.', repeatable: true, check: (s,_,m) => longestStreak().streak >= 30,        countFn: (s,_,m) => Math.floor(longestStreak().streak / 30), title: 'Iron Warrior' },
-  { id:'century',      cat:'consistency', icon:'💯', name:'Century Club',           desc:'Log 100 total sessions. Repeats every 100 sessions.', repeatable: true,  check: (s,_,m) => s.length >= 100,                      countFn: (s,_,m) => Math.floor(s.length / 100),          title: 'Centurion' },
+  { id:'first_rep',    cat:'consistency', icon:'🌟', name:'First Rep',              desc:'Log your very first session.',                       repeatable: false, check: (s,_,m) => s.length >= 1,                         countFn: null,                                           progressFn: (s,_,m) => Math.min(1, s.length / 1),                          title: null },
+  { id:'week_warrior', cat:'consistency', icon:'🗓️', name:'Weekly Warrior',         desc:'Log 3+ workouts in a week. Repeats for every 5 qualifying weeks.', repeatable: true,  check: (s,_,m) => weeksWith3Plus(s) >= 5,               countFn: (s,_,m) => Math.floor(weeksWith3Plus(s) / 5),   progressFn: (s,_,m) => { const c=weeksWith3Plus(s); return (c%5)/5; },      title: 'Consistent' },
+  { id:'iron_habit',   cat:'consistency', icon:'🔥', name:'Ironman',                desc:'Achieve a 30-day consecutive workout streak. Repeats for every 30-day streak reached.', repeatable: true, check: (s,_,m) => longestStreak(s).streak >= 30,        countFn: (s,_,m) => Math.floor(longestStreak(s).streak / 30), progressFn: (s,_,m) => { const v=longestStreak(s).streak; return Math.min(1,(v%30||v)/30); }, title: 'Iron Warrior' },
+  { id:'century',      cat:'consistency', icon:'💯', name:'Century Club',           desc:'Log 100 total sessions. Repeats every 100 sessions.', repeatable: true,  check: (s,_,m) => s.length >= 100,                      countFn: (s,_,m) => Math.floor(s.length / 100),          progressFn: (s,_,m) => (s.length % 100) / 100,                             title: 'Centurion' },
   // Volume
-  { id:'ton_moved',    cat:'volume',      icon:'🏋️', name:'A Ton of Effort',        desc:'Move 2,000 lbs total. Repeats every 2,000 lbs.', repeatable: true,  check: (s,_,m) => totalLbs(s) >= 2000,                  countFn: (s,_,m) => Math.floor(totalLbs(s) / 2000),      title: null },
-  { id:'freight',      cat:'volume',      icon:'🚂', name:'Freight Train',          desc:'Move 100,000 lbs total. Repeats every 100,000 lbs.', repeatable: true,  check: (s,_,m) => totalLbs(s) >= 100000,                countFn: (s,_,m) => Math.floor(totalLbs(s) / 100000),    title: 'Volume King' },
-  { id:'million',      cat:'volume',      icon:'💀', name:'A Million Pounds',       desc:'Move 1,000,000 lbs total. Repeats every million lbs.', repeatable: true, check: (s,_,m) => totalLbs(s) >= 1000000,               countFn: (s,_,m) => Math.floor(totalLbs(s) / 1000000),  title: 'The Immovable' },
+  { id:'ton_moved',    cat:'volume',      icon:'🏋️', name:'A Ton of Effort',        desc:'Move 2,000 lbs total. Repeats every 2,000 lbs.', repeatable: true,  check: (s,_,m) => totalLbs(s) >= 2000,                  countFn: (s,_,m) => Math.floor(totalLbs(s) / 2000),      progressFn: (s,_,m) => (totalLbs(s) % 2000) / 2000,                        title: null },
+  { id:'freight',      cat:'volume',      icon:'🚂', name:'Freight Train',          desc:'Move 100,000 lbs total. Repeats every 100,000 lbs.', repeatable: true,  check: (s,_,m) => totalLbs(s) >= 100000,                countFn: (s,_,m) => Math.floor(totalLbs(s) / 100000),    progressFn: (s,_,m) => (totalLbs(s) % 100000) / 100000,                    title: 'Volume King' },
+  { id:'million',      cat:'volume',      icon:'💀', name:'A Million Pounds',       desc:'Move 1,000,000 lbs total. Repeats every million lbs.', repeatable: true, check: (s,_,m) => totalLbs(s) >= 1000000,               countFn: (s,_,m) => Math.floor(totalLbs(s) / 1000000),  progressFn: (s,_,m) => (totalLbs(s) % 1000000) / 1000000,                  title: 'The Immovable' },
   // Running
-  { id:'first_mile',   cat:'running',     icon:'👟', name:'First Mile',             desc:'Log a 1-mile run.',                                  repeatable: false, check: (s,_,m) => maxRunDist(s) >= 1,                   countFn: null,                                           title: null },
-  { id:'five_k',       cat:'running',     icon:'🏃', name:'5K',                     desc:'Run 3.1+ miles in one session. Repeats for every time you hit 3.1+ miles.', repeatable: true, check: (s,_,m) => maxRunDist(s) >= 3.1,                countFn: (s,_,m) => runSessionsOver(s, 3.1),            title: null },
-  { id:'marathon',     cat:'running',     icon:'🏅', name:'Marathoner',             desc:'Run 26.2+ miles cumulative. Repeats every 26.2 miles.', repeatable: true, check: (s,_,m) => totalMiles(cardioSessions(s)) >= 26.2, countFn: (s,_,m) => Math.floor(totalMiles(cardioSessions(s)) / 26.2), title: 'The Marathoner' },
+  { id:'first_mile',   cat:'running',     icon:'👟', name:'First Mile',             desc:'Log a 1-mile run.',                                  repeatable: false, check: (s,_,m) => maxRunDist(s) >= 1,                   countFn: null,                                           progressFn: (s,_,m) => Math.min(1, maxRunDist(s) / 1),                      title: null },
+  { id:'five_k',       cat:'running',     icon:'🏃', name:'5K',                     desc:'Run 3.1+ miles in one session. Repeats for every time you hit 3.1+ miles.', repeatable: true, check: (s,_,m) => maxRunDist(s) >= 3.1,                countFn: (s,_,m) => runSessionsOver(s, 3.1),            progressFn: (s,_,m) => Math.min(1, maxRunDist(s) / 3.1),                   title: null },
+  { id:'marathon',     cat:'running',     icon:'🏅', name:'Marathoner',             desc:'Run 26.2+ miles cumulative. Repeats every 26.2 miles.', repeatable: true, check: (s,_,m) => totalMiles(cardioSessions(s)) >= 26.2, countFn: (s,_,m) => Math.floor(totalMiles(cardioSessions(s)) / 26.2), progressFn: (s,_,m) => (totalMiles(cardioSessions(s)) % 26.2) / 26.2, title: 'The Marathoner' },
   // PBs
-  { id:'first_pb',     cat:'pbs',         icon:'⭐', name:'Personal Best',          desc:'Set your first personal best.',                      repeatable: false, check: (s,_,m) => Object.keys(computePBs()).length >= 1, countFn: null,                                           title: null },
-  { id:'breakthrough', cat:'pbs',         icon:'💥', name:'Breakthrough',           desc:'Set 5+ PBs in one session. Repeats for each time you do it.', repeatable: true, check: (s,_,m) => hasManyPBsInOneSession(s, 5),         countFn: (s,_,m) => countBreakthroughSessions(s, 5),    title: null },
-  { id:'untouchable',  cat:'pbs',         icon:'👑', name:'Continuous Improvement', desc:'Set 50 total personal bests. Repeats every 50 PBs.', repeatable: true,  check: (s,_,m) => countAllTimePBEvents(s) >= 50,        countFn: (s,_,m) => Math.floor(countAllTimePBEvents(s) / 50), title: 'The Untouchable' },
+  { id:'first_pb',     cat:'pbs',         icon:'⭐', name:'Personal Best',          desc:'Set your first personal best.',                      repeatable: false, check: (s,_,m) => Object.keys(computePBs(s)).length >= 1, countFn: null,                                           progressFn: (s,_,m) => Math.min(1, Object.keys(computePBs(s)).length),       title: null },
+  { id:'breakthrough', cat:'pbs',         icon:'💥', name:'Breakthrough',           desc:'Set 5+ PBs in one session. Repeats for each time you do it.', repeatable: true, check: (s,_,m) => hasManyPBsInOneSession(s, 5),         countFn: (s,_,m) => countBreakthroughSessions(s, 5),    progressFn: (s,_,m) => hasManyPBsInOneSession(s,5) ? 1 : 0,                title: null },
+  { id:'untouchable',  cat:'pbs',         icon:'👑', name:'Continuous Improvement', desc:'Set 50 total personal bests. Repeats every 50 PBs.', repeatable: true,  check: (s,_,m) => countAllTimePBEvents(s) >= 50,        countFn: (s,_,m) => Math.floor(countAllTimePBEvents(s) / 50), progressFn: (s,_,m) => (countAllTimePBEvents(s) % 50) / 50,           title: 'The Untouchable' },
   // Martial arts
-  { id:'warrior',      cat:'martial',     icon:'🥋', name:'The Student',            desc:'Complete 10 Taekwondo sessions. Repeats every 10 sessions.', repeatable: true, check: (s,_,m) => tkdCount(s) >= 10,                   countFn: (s,_,m) => Math.floor(tkdCount(s) / 10),        title: 'Warrior' },
-  { id:'sparring',     cat:'martial',     icon:'🤺', name:'Sparring Spirit',        desc:'Complete 10 sparring sessions. Repeats every 10.', repeatable: true,   check: (s,_,m) => tkdTypeCount(s,'Sparring') >= 10,     countFn: (s,_,m) => Math.floor(tkdTypeCount(s,'Sparring') / 10), title: null },
-  { id:'striker',      cat:'martial',     icon:'🎯', name:'Precision Striker',      desc:'Complete 10 Small Target sessions. Repeats every 10.', repeatable: true, check: (s,_,m) => tkdTypeCount(s,'Small Target') >= 10, countFn: (s,_,m) => Math.floor(tkdTypeCount(s,'Small Target') / 10), title: 'The Striker' },
+  { id:'warrior',      cat:'martial',     icon:'🥋', name:'The Student',            desc:'Complete 10 Taekwondo sessions. Repeats every 10 sessions.', repeatable: true, check: (s,_,m) => tkdCount(s) >= 10,                   countFn: (s,_,m) => Math.floor(tkdCount(s) / 10),        progressFn: (s,_,m) => (tkdCount(s) % 10) / 10,                            title: 'Warrior' },
+  { id:'sparring',     cat:'martial',     icon:'🤺', name:'Sparring Spirit',        desc:'Complete 10 sparring sessions. Repeats every 10.', repeatable: true,   check: (s,_,m) => tkdTypeCount(s,'Sparring') >= 10,     countFn: (s,_,m) => Math.floor(tkdTypeCount(s,'Sparring') / 10), progressFn: (s,_,m) => (tkdTypeCount(s,'Sparring') % 10) / 10,       title: null },
+  { id:'striker',      cat:'martial',     icon:'🎯', name:'Precision Striker',      desc:'Complete 10 Small Target sessions. Repeats every 10.', repeatable: true, check: (s,_,m) => tkdTypeCount(s,'Small Target') >= 10, countFn: (s,_,m) => Math.floor(tkdTypeCount(s,'Small Target') / 10), progressFn: (s,_,m) => (tkdTypeCount(s,'Small Target') % 10) / 10, title: 'The Striker' },
   // Mastery
-  { id:'ex_initiate',  cat:'mastery',     icon:'📈', name:'Exercise Initiate',      desc:'Fill an exercise XP bar for the first time.',        repeatable: false, check: (s,_,m) => Object.values(m).some(x => x.fills >= 1), countFn: null,                                        title: null },
-  { id:'dedicated',    cat:'mastery',     icon:'🌊', name:'Dedicated',              desc:'Fill any exercise bar 10+ times. Repeats every 10 fills.', repeatable: true, check: (s,_,m) => Object.values(m).some(x => x.fills >= 10), countFn: (s,_,m) => Math.floor(Math.max(0,...Object.values(m).map(x=>x.fills)) / 10), title: null },
-  { id:'master',       cat:'mastery',     icon:'🏆', name:'True Mastery',           desc:'Fill any exercise bar 25+ times. Repeats every 25 fills.', repeatable: true, check: (s,_,m) => Object.values(m).some(x => x.fills >= 25), countFn: (s,_,m) => Math.floor(Math.max(0,...Object.values(m).map(x=>x.fills)) / 25), title: 'The Devoted' },
-  { id:'rising_tide',  cat:'performance', icon:'🌊', name:'Rising Tide',            desc:'Beat your personal average for duration, volume, or distance. Repeats every 10 times.', repeatable: true, check: (s,_,m) => countAboveAvgSessions(s) >= 1, countFn: (s,_,m) => Math.floor(countAboveAvgSessions(s) / 10), title: null },
+  { id:'ex_initiate',  cat:'mastery',     icon:'📈', name:'Exercise Initiate',      desc:'Fill an exercise XP bar for the first time.',        repeatable: false, check: (s,_,m) => Object.values(m).some(x => x.fills >= 1), countFn: null,                                        progressFn: (s,_,m) => { const best=Math.max(0,...Object.values(m).map(x=>x.fills)); return Math.min(1,best); }, title: null },
+  { id:'dedicated',    cat:'mastery',     icon:'🌊', name:'Dedicated',              desc:'Fill any exercise bar 10+ times. Repeats every 10 fills.', repeatable: true, check: (s,_,m) => Object.values(m).some(x => x.fills >= 10), countFn: (s,_,m) => Math.floor(Math.max(0,...Object.values(m).map(x=>x.fills)) / 10), progressFn: (s,_,m) => (Math.max(0,...Object.values(m).map(x=>x.fills)) % 10) / 10, title: null },
+  { id:'master',       cat:'mastery',     icon:'🏆', name:'True Mastery',           desc:'Fill any exercise bar 25+ times. Repeats every 25 fills.', repeatable: true, check: (s,_,m) => Object.values(m).some(x => x.fills >= 25), countFn: (s,_,m) => Math.floor(Math.max(0,...Object.values(m).map(x=>x.fills)) / 25), progressFn: (s,_,m) => (Math.max(0,...Object.values(m).map(x=>x.fills)) % 25) / 25, title: 'The Devoted' },
+  { id:'rising_tide',  cat:'performance', icon:'🌊', name:'Rising Tide',            desc:'Beat your personal average for duration, volume, or distance. Repeats every 10 times.', repeatable: true, check: (s,_,m) => countAboveAvgSessions(s) >= 1, countFn: (s,_,m) => Math.floor(countAboveAvgSessions(s) / 10), progressFn: (s,_,m) => (countAboveAvgSessions(s) % 10) / 10, title: null },
 ];
 
 // ── Achievement helper functions ───────────────────────────────────────────
@@ -5423,7 +5771,9 @@ function computeAchievements(sessionList, mastery) {
   return ACHIEVEMENTS.map(a => {
     const earned = a.check(sessionList, null, mastery);
     const count = (a.repeatable && a.countFn) ? a.countFn(sessionList, null, mastery) : (earned ? 1 : 0);
-    return { ...a, earned, count };
+    // Progress toward next threshold (0–1). Earned non-repeatables show 1.
+    const progress = a.progressFn ? Math.min(1, Math.max(0, a.progressFn(sessionList, null, mastery))) : (earned ? 1 : 0);
+    return { ...a, earned, count, progress };
   });
 }
 
@@ -5482,6 +5832,11 @@ function showXPOverlay(summary) {
   if (bd.duration > 0) html += `<div class="xp-breakdown-row">
     <div class="xp-breakdown-label">⏱ Duration bonus (${summary.session.duration} min)</div>
     <div class="xp-breakdown-val">+${bd.duration}</div>
+  </div>`;
+
+  if (bd.reps > 0) html += `<div class="xp-breakdown-row">
+    <div class="xp-breakdown-label">🔁 Reps bonus (${bd.reps} reps)</div>
+    <div class="xp-breakdown-val">+${bd.reps}</div>
   </div>`;
 
   if (bd.volume > 0) html += `<div class="xp-breakdown-row">
@@ -5560,17 +5915,25 @@ function dismissXPOverlay() {
 }
 
 // ── Hook into saveSessions ─────────────────────────────────────────────────
-function saveSessions() {
+function saveSessions(savedSessionId) {
   localStorage.setItem('ppl_sessions', JSON.stringify(sessions));
-  computeAndShowXP();
+  if (savedSessionId != null) {
+    computeAndShowXP(savedSessionId);
+  } else {
+    checkAndAutoSyncPBs();
+  }
 }
 
-function computeAndShowXP() {
+function computeAndShowXP(savedSessionId) {
   if (!sessions.length) return;
-  const latest = sessions[sessions.length - 1];
 
-  // XP state before this session
-  const priorSessions = sessions.slice(0, -1);
+  // Find the session that was just saved by its ID — it may not be last if retroactively logged
+  const latestIdx = sessions.findIndex(s => String(s.id) === String(savedSessionId));
+  if (latestIdx < 0) return; // session not found — bail out safely
+  const latest = sessions[latestIdx];
+
+  // XP state before this session — all sessions that precede it chronologically
+  const priorSessions = sessions.slice(0, latestIdx);
   const { totalAttrXP: priorAttrXP, mastery: priorMastery } = computeAllXP(priorSessions);
   const priorAchievements_unused = computeAchievements(priorSessions, priorMastery).filter(a => a.earned).map(a => a.id);
 
@@ -5587,37 +5950,43 @@ function computeAndShowXP() {
 
   const { breakdown, attrGains } = calcSessionXP(latest, priorSessions, priorPBs);
 
-  // Mastery fills this session
-  const nowMastery = computeMastery(sessions);
+  // Sessions up to and including this one — used for achievement/mastery comparison
+  const sessionsUpToNow = sessions.slice(0, latestIdx + 1);
+
+  // Mastery fills this session — distribute through session attr map not all 4
+  const nowMastery = computeMastery(sessionsUpToNow);
+  const aMap = getSessionAttrMap(latest);
   let masteryFills = 0;
   Object.keys(nowMastery).forEach(name => {
     const before = priorMastery[name] ? priorMastery[name].fills : 0;
     masteryFills += Math.max(0, nowMastery[name].fills - before);
   });
   if (masteryFills > 0) {
-    Object.keys(attrGains).forEach(k => { attrGains[k] = (attrGains[k]||0) + masteryFills * 50; });
+    const masteryXP = masteryFills * 50;
+    const allAttrs = [...(aMap.primary||[]), ...(aMap.minor||[])];
+    const perAttr = Math.round(masteryXP / Math.max(1, allAttrs.length));
+    allAttrs.forEach(k => { attrGains[k] = (attrGains[k]||0) + perAttr; });
   }
 
-  // New achievements — earned for first time, or count increased for repeatable ones
+  // New achievements — compare prior vs up-to-and-including this session only
   const priorAchievementCounts = {};
   computeAchievements(priorSessions, priorMastery).forEach(a => {
     priorAchievementCounts[a.id] = a.count;
   });
-  const nowAchievements = computeAchievements(sessions, nowMastery);
+  const nowAchievements = computeAchievements(sessionsUpToNow, nowMastery);
   const newAchievements = nowAchievements.filter(a => {
     const prev = priorAchievementCounts[a.id] || 0;
     return a.count > prev;
   });
 
-  // Achievement XP bonus: flat 200 XP per unlock (including repeatable re-triggers)
+  // Achievement XP bonus — distribute through session attr map not all 4
   const ACHIEVEMENT_XP = 200;
   const achievementXP = newAchievements.length * ACHIEVEMENT_XP;
   if (achievementXP > 0) {
-    // Distribute evenly across all attributes
-    const perAttr = Math.round(achievementXP / Object.keys(attrGains).length);
-    Object.keys(attrGains).forEach(k => { attrGains[k] = (attrGains[k]||0) + perAttr; });
-    // Store on session so detail screen can show it
-    sessions[sessions.length - 1].achievementXP = achievementXP;
+    const allAttrs = [...(aMap.primary||[]), ...(aMap.minor||[])];
+    const perAttr = Math.round(achievementXP / Math.max(1, allAttrs.length));
+    allAttrs.forEach(k => { attrGains[k] = (attrGains[k]||0) + perAttr; });
+    latest.achievementXP = achievementXP;
     localStorage.setItem('ppl_sessions', JSON.stringify(sessions));
   }
 
@@ -5785,6 +6154,9 @@ function buildProfileHTML() {
       const countBadge = (a.repeatable && a.count > 1)
         ? `<div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--str);margin-top:3px">×${a.count} completed</div>`
         : '';
+      // For repeatables show progress toward next trigger; for one-time show full bar
+      const pct = a.repeatable ? Math.round(a.progress * 100) : 100;
+      const barColor = a.cat === 'volume' ? 'var(--str)' : a.cat === 'running' ? 'var(--end)' : a.cat === 'martial' ? 'var(--agi)' : a.cat === 'mastery' ? 'var(--dex)' : 'var(--str)';
       html += `<div class="achievement-card">
         <div class="achievement-icon">${a.icon}</div>
         <div class="achievement-info">
@@ -5792,6 +6164,12 @@ function buildProfileHTML() {
           <div class="achievement-desc">${a.desc}</div>
           ${a.title ? `<div class="achievement-progress" style="color:var(--str)">Title: "${a.title}"</div>` : ''}
           ${countBadge}
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+            <div style="flex:1;height:3px;background:#2A2820;border-radius:2px;overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:${barColor};border-radius:2px;transition:width 0.4s ease"></div>
+            </div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);white-space:nowrap">${a.repeatable ? pct+'% → next' : '✓'}</div>
+          </div>
         </div>
         <div class="achievement-badge">${a.repeatable && a.count > 1 ? '×'+a.count : 'Earned'}</div>
       </div>`;
@@ -5801,11 +6179,19 @@ function buildProfileHTML() {
   if (inProgress.length) {
     html += `<div class="section-label" style="margin-top:12px;color:var(--text-dim)">In Progress</div>`;
     inProgress.forEach(a => {
+      const pct = Math.round(a.progress * 100);
+      const barColor = a.cat === 'volume' ? 'var(--str)' : a.cat === 'running' ? 'var(--end)' : a.cat === 'martial' ? 'var(--agi)' : a.cat === 'mastery' ? 'var(--dex)' : 'var(--str)';
       html += `<div class="achievement-card locked">
         <div class="achievement-icon">${a.icon}</div>
         <div class="achievement-info">
           <div class="achievement-name">${a.name}</div>
           <div class="achievement-desc">${a.desc}</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+            <div style="flex:1;height:3px;background:#2A2820;border-radius:2px;overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:${barColor};border-radius:2px;opacity:0.6;transition:width 0.4s ease"></div>
+            </div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);white-space:nowrap">${pct}%</div>
+          </div>
         </div>
         <div class="achievement-badge locked">Locked</div>
       </div>`;
@@ -5913,8 +6299,260 @@ function renderHomeRPGWidget() {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// INIT
+// QUICK LOG
 // ════════════════════════════════════════════════════════════════════════════
+
+let qlSelectedExercise = null;  // { name, isActivity, category, supportsDistance }
+let qlSets = [{ reps:'', weight:'' }];
+let qlDuration = '';
+let qlDistance = '';
+
+function openQuickLog() {
+  qlSelectedExercise = null;
+  qlSets = [{ reps:'', weight:'' }];
+  qlDuration = '';
+  qlDistance = '';
+  const overlay = document.getElementById('quick-log-overlay');
+  overlay.style.display = 'flex';
+  renderQuickLogSheet();
+  // Focus search after short delay for sheet animation
+  setTimeout(() => {
+    const input = document.getElementById('ql-search');
+    if (input) input.focus();
+  }, 100);
+}
+
+function closeQuickLog(e) {
+  if (e && e.target !== document.getElementById('quick-log-overlay')) return;
+  document.getElementById('quick-log-overlay').style.display = 'none';
+}
+
+function closeQuickLogSheet() {
+  document.getElementById('quick-log-overlay').style.display = 'none';
+}
+
+function renderQuickLogSheet() {
+  const body = document.getElementById('quick-log-body');
+  let html = '';
+
+  if (!qlSelectedExercise) {
+    // ── Search phase ──────────────────────────────────────────────────────
+    html += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--text)">Quick Log</div>
+      <button onclick="closeQuickLogSheet()" style="background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;padding:0">×</button>
+    </div>`;
+    html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+      display:flex;align-items:center;gap:8px;padding:10px 12px;margin-bottom:12px">
+      <span style="color:var(--text-dim);font-size:14px">⌕</span>
+      <input id="ql-search" type="text" placeholder="Search exercises and activities…"
+        autocomplete="off" autocorrect="off" spellcheck="false"
+        oninput="renderQLSearchResults(this.value)"
+        style="flex:1;background:none;border:none;outline:none;font-size:14px;
+          color:var(--text);font-family:'DM Sans',sans-serif">
+    </div>`;
+    html += `<div id="ql-results"></div>`;
+    body.innerHTML = html;
+    renderQLSearchResults('');
+  } else {
+    // ── Log phase ─────────────────────────────────────────────────────────
+    const ex = qlSelectedExercise;
+    const isCardio = ex.supportsDistance;
+    const isDuration = ex.isActivity;
+
+    html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <button onclick="qlBack()" style="background:none;border:none;color:var(--text-muted);
+        font-size:20px;cursor:pointer;padding:0;line-height:1">‹</button>
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--text)">${ex.name}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px">
+          ${ex.isActivity ? (ex.category||'activity') : 'exercise'} · today
+        </div>
+      </div>
+      <button onclick="closeQuickLogSheet()" style="background:none;border:none;color:var(--text-dim);
+        font-size:20px;cursor:pointer;padding:0;margin-left:auto">×</button>
+    </div>`;
+
+    if (isDuration) {
+      // Activity — show duration (+ distance for running)
+      html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:10px">
+        <div style="padding:12px 14px;border-bottom:${isCardio?'1px solid var(--border)':'none'}">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Duration</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <input type="number" inputmode="decimal" placeholder="0"
+              value="${qlDuration}"
+              oninput="qlDuration=this.value"
+              style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+                padding:10px 12px;font-size:24px;font-weight:800;color:var(--text);
+                font-family:'Syne',sans-serif;text-align:center">
+            <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">min</span>
+          </div>
+        </div>
+        ${isCardio ? `<div style="padding:12px 14px">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Distance</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <input type="number" inputmode="decimal" placeholder="0.0"
+              value="${qlDistance}"
+              oninput="qlDistance=this.value"
+              style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+                padding:10px 12px;font-size:24px;font-weight:800;color:var(--text);
+                font-family:'Syne',sans-serif;text-align:center">
+            <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">mi</span>
+          </div>
+        </div>` : ''}
+      </div>`;
+    } else {
+      // Exercise — show set rows
+      qlSets.forEach((s, si) => {
+        html += `<div style="background:var(--surface);border:1px solid var(--border);
+          border-radius:var(--radius);padding:12px 14px;margin-bottom:8px">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);
+            text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">
+            Set ${si+1}${qlSets.length > 1 ? ` <button onclick="qlRemoveSet(${si})" style="background:none;border:none;color:var(--text-dim);font-size:11px;cursor:pointer;float:right">Remove</button>` : ''}
+          </div>
+          <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px">
+            <div>
+              <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);text-transform:uppercase;margin-bottom:6px">Reps</div>
+              <input type="number" inputmode="decimal" placeholder="0"
+                value="${s.reps}"
+                oninput="qlSets[${si}].reps=this.value"
+                style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+                  padding:10px 8px;font-size:22px;font-weight:800;color:var(--text);
+                  font-family:'Syne',sans-serif;text-align:center;box-sizing:border-box">
+            </div>
+            <div style="font-size:16px;color:var(--text-dim);margin-top:16px">×</div>
+            <div>
+              <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);text-transform:uppercase;margin-bottom:6px">Weight (lbs)</div>
+              <input type="number" inputmode="decimal" placeholder="0"
+                value="${s.weight}"
+                oninput="qlSets[${si}].weight=this.value"
+                style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+                  padding:10px 8px;font-size:22px;font-weight:800;color:var(--text);
+                  font-family:'Syne',sans-serif;text-align:center;box-sizing:border-box">
+            </div>
+          </div>
+        </div>`;
+      });
+      html += `<button onclick="qlAddSet()"
+        style="width:100%;padding:10px;background:none;border:1px dashed var(--border);
+          border-radius:var(--radius);color:var(--text-dim);font-family:'DM Sans',sans-serif;
+          font-size:13px;cursor:pointer;margin-bottom:10px">
+        + Add another set
+      </button>`;
+    }
+
+    // Save button
+    html += `<button onclick="saveQuickLog()"
+      style="width:100%;padding:14px;background:var(--str);border:none;border-radius:30px;
+        color:#fff;font-family:'Syne',sans-serif;font-size:16px;font-weight:700;
+        cursor:pointer;box-shadow:0 4px 16px var(--str-glow);margin-top:4px">
+      Log it
+    </button>`;
+
+    body.innerHTML = html;
+  }
+}
+
+function renderQLSearchResults(q) {
+  const container = document.getElementById('ql-results');
+  if (!container) return;
+  const seen = new Set();
+  const groups = { push:[], pull:[], legs:[], core:[], activity:[] };
+  const gc = { push: TYPE_COLOR.push, pull: TYPE_COLOR.pull, legs: TYPE_COLOR.legs, core: 'var(--core)', activity: 'var(--cardio)' };
+  const gl = { push:'Push', pull:'Pull', legs:'Legs', core:'Core', activity:'Activities' };
+
+  ORDER.forEach(key => {
+    const v = VARIATIONS[key];
+    [...v.exercises, ...v.core].forEach((ex, i) => {
+      if (seen.has(ex.name)) return; seen.add(ex.name);
+      const type = i < v.exercises.length ? v.type : 'core';
+      groups[type].push({ name: ex.name, isActivity: false, category: type });
+    });
+  });
+  PREDEFINED_ACTIVITIES.forEach(act => {
+    if (seen.has(act.name)) return; seen.add(act.name);
+    groups.activity.push({ name: act.name, isActivity: true, category: act.category||'general', supportsDistance: !!act.supportsDistance });
+  });
+
+  const lq = q.toLowerCase().trim();
+  let html = ''; let total = 0;
+  ['push','pull','legs','core','activity'].forEach(type => {
+    const items = lq ? groups[type].filter(n => n.name.toLowerCase().includes(lq)) : groups[type];
+    if (!items.length) return;
+    html += `<div style="font-family:'DM Mono',monospace;font-size:9px;font-weight:500;
+      text-transform:uppercase;letter-spacing:0.8px;color:${gc[type]};
+      padding:6px 0 4px">${gl[type]}</div>`;
+    items.forEach(item => {
+      const safe = item.name.replace(/'/g,"\\'");
+      html += `<button onclick="qlSelectExercise('${safe}',${item.isActivity},'${item.category}',${!!item.supportsDistance})"
+        style="width:100%;text-align:left;padding:10px 12px;background:var(--surface);
+          border:1px solid var(--border);border-radius:var(--radius-sm);
+          color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;
+          cursor:pointer;margin-bottom:4px;display:block">
+        ${item.name}
+      </button>`;
+    });
+    total += items.length;
+  });
+  if (!total) html = `<div style="padding:20px;text-align:center;color:var(--text-dim);font-size:13px">No results for "${q}"</div>`;
+  container.innerHTML = html;
+}
+
+function qlSelectExercise(name, isActivity, category, supportsDistance) {
+  qlSelectedExercise = { name, isActivity, category, supportsDistance };
+  qlSets = [{ reps:'', weight:'' }];
+  qlDuration = '';
+  qlDistance = '';
+  renderQuickLogSheet();
+}
+
+function qlBack() {
+  qlSelectedExercise = null;
+  renderQuickLogSheet();
+  setTimeout(() => { const i = document.getElementById('ql-search'); if(i) i.focus(); }, 50);
+}
+
+function qlAddSet() {
+  qlSets.push({ reps:'', weight:'' });
+  renderQuickLogSheet();
+}
+
+function qlRemoveSet(idx) {
+  qlSets.splice(idx, 1);
+  renderQuickLogSheet();
+}
+
+function saveQuickLog() {
+  if (!qlSelectedExercise) return;
+  const ex = qlSelectedExercise;
+  const today = new Date().toISOString();
+
+  let exercises = [];
+  if (!ex.isActivity) {
+    const validSets = qlSets.filter(s => s.reps);
+    if (!validSets.length) { showToast('Enter at least one rep to log'); return; }
+    exercises = [{ key: 'ql_0', name: ex.name, sets: validSets }];
+  }
+
+  const session = {
+    id: Date.now(),
+    date: today,
+    loggedAt: today,
+    variationKey: CUSTOM_KEY,
+    customName: ex.name,
+    category: ex.category || 'general',
+    tab: 'main',
+    exercises,
+    notes: '',
+    duration: qlDuration.trim(),
+    distance: qlDistance.trim(),
+    isQuickLog: true,
+  };
+
+  sessions.push(session);
+  closeQuickLogSheet();
+  saveSessions(session.id);
+  showToast(`${ex.name} logged ✓`);
+}
 updateTimerDisplay();
 showHome();
 </script>
