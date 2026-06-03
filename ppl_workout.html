@@ -146,6 +146,7 @@ html, body {
 .nav-cell.push { background: var(--push-bg); }
 .nav-cell.pull { background: var(--pull-bg); }
 .nav-cell.legs { background: var(--legs-bg); }
+.nav-cell.core { background: var(--core-bg); border-color: var(--core); }
 
 .nav-cell-tag {
   font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 500;
@@ -154,6 +155,7 @@ html, body {
 .nav-cell.push .nav-cell-tag { color: var(--push-text); }
 .nav-cell.pull .nav-cell-tag { color: var(--pull-text); }
 .nav-cell.legs .nav-cell-tag { color: var(--legs-text); }
+.nav-cell.core .nav-cell-tag { color: var(--core-text); }
 
 .nav-cell-name {
   font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; line-height: 1.2;
@@ -161,6 +163,7 @@ html, body {
 .nav-cell.push .nav-cell-name { color: var(--push-text); }
 .nav-cell.pull .nav-cell-name { color: var(--pull-text); }
 .nav-cell.legs .nav-cell-name { color: var(--legs-text); }
+.nav-cell.core .nav-cell-name { color: var(--core-text); }
 
 .nav-cell-sub { font-size: 10px; margin-top: 4px; opacity: 0.6; line-height: 1.3; }
 .nav-cell.push .nav-cell-sub { color: var(--push-text); }
@@ -349,6 +352,13 @@ html, body {
   background: var(--bg);
   z-index: 90;
 }
+
+.timer-bar-sticky-anchor {
+  position: sticky;
+  top: calc(var(--safe-top) + 51px + 57px); /* topbar + tabs height */
+  z-index: 80;
+  background: var(--bg);
+}
 .workout-tab {
   flex: 1; padding: 8px; border-radius: var(--radius-sm);
   border: 1.5px solid var(--border); background: none;
@@ -444,11 +454,12 @@ html, body {
 
 /* ── TIMER ── */
 .timer-bar {
-  position: fixed; bottom: 64px; left: 0; right: 0;
-  background: var(--surface); border-top: 1px solid var(--border);
-  padding: 10px 18px calc(var(--safe-bot) + 10px);
+  position: sticky;
+  top: calc(var(--safe-top) + 108px); /* topbar ~51px + tabs ~57px */
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 10px 18px;
   display: none; align-items: center; justify-content: space-between;
-  z-index: 100;
+  z-index: 80;
 }
 .timer-bar.visible { display: flex; }
 .timer-display {
@@ -847,11 +858,14 @@ html, body {
 
 /* ── STATS SCREEN ── */
 .stats-tabs {
+  position: sticky;
+  top: calc(var(--safe-top) + 51px);
   display: flex; gap: 0;
   border-bottom: 1px solid var(--border);
   background: var(--bg);
   overflow-x: auto; -webkit-overflow-scrolling: touch;
   scrollbar-width: none; flex-shrink: 0;
+  z-index: 90;
 }
 .stats-tabs::-webkit-scrollbar { display: none; }
 .stats-tab {
@@ -1149,7 +1163,7 @@ html, body {
   overflow-y: auto;
 }
 .xp-overlay.show { transform: translateY(0); }
-.xp-overlay-body { padding: 40px 24px 120px; flex: 1; }
+.xp-overlay-body { padding: 40px 24px 20px; }
 .xp-header {
   text-align: center; margin-bottom: 28px;
 }
@@ -1192,10 +1206,12 @@ html, body {
   border-radius: 10px;
 }
 .xp-continue-btn {
-  position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+  display: block;
+  width: calc(100% - 48px);
+  margin: 24px 24px 48px;
   background: var(--str); color: #fff;
   font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700;
-  padding: 15px 48px; border: none; border-radius: 30px; cursor: pointer;
+  padding: 15px; border: none; border-radius: 30px; cursor: pointer;
   box-shadow: 0 4px 24px var(--str-glow);
 }
 
@@ -1279,7 +1295,6 @@ html, body {
   </div>
   <div class="workout-header" id="workout-header"></div>
   <div class="workout-tabs" id="workout-tabs"></div>
-  <div class="scroll-body" id="workout-body" ></div>
   <div class="timer-bar" id="timer-bar">
     <div>
       <div style="font-size:10px;color:var(--text-dim);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Rest</div>
@@ -1295,6 +1310,7 @@ html, body {
       <button class="timer-btn primary" id="timer-play-btn" onclick="toggleTimer()">▶</button>
     </div>
   </div>
+  <div class="scroll-body" id="workout-body" ></div>
 </div>
 
 <!-- ── HISTORY SCREEN ── -->
@@ -1395,7 +1411,6 @@ html, body {
 <!-- ── XP SUMMARY OVERLAY ── -->
 <div id="xp-overlay" class="xp-overlay">
   <div class="xp-overlay-body" id="xp-overlay-body"></div>
-  <button class="xp-continue-btn" onclick="dismissXPOverlay()">Continue ›</button>
 </div>
 
 <input type="file" id="profile-photo-input" accept="image/*" onchange="handleProfilePhoto(event)" style="display:none">
@@ -1571,6 +1586,48 @@ const VARIATIONS = {
     ]
   }
 };
+
+// ── Core variations — standalone sessions, outside the PPL rotation ────────
+const CORE_VARIATIONS = {
+  core_a: {
+    key:'core_a', type:'core', label:'Core A', name:'Anti-Extension',
+    focus:'Builds the ability to resist spinal extension under load — the foundation of a strong, stable core.',
+    exercises:[
+      {name:'Plank',sets:'3 × 30–45 sec',desc:'Forearms on the floor, body in a straight line from head to heels. Squeeze your glutes and brace your abs hard — don\'t let your hips sag or pike.'},
+      {name:'Ab wheel rollout (or bench walkout)',sets:'3 × 8–10',desc:'Kneel and grip an ab wheel, or place hands on the bench edge and walk them forward. Roll or walk out slowly until nearly parallel to the floor, then pull back in using your abs.'},
+      {name:'Dead bug',sets:'3 × 8/side',desc:'Lie on your back, arms up, knees at 90 degrees. Lower one arm overhead and the opposite leg toward the floor simultaneously, keeping lower back pressed into the ground. Return and alternate.'},
+      {name:'Hollow body hold',sets:'3 × 20–30 sec',desc:'Lie on back, arms overhead, legs straight a few inches off floor. Press lower back firmly into ground and hold. If back arches, raise legs higher. The foundational anti-extension position in gymnastics.'},
+      {name:'Plank with shoulder taps',sets:'3 × 10/side',desc:'High plank, hands under shoulders. Lift one hand to tap opposite shoulder, return before switching. Resist any hip rotation throughout. Wider feet makes stabilising easier.'},
+    ]
+  },
+  core_b: {
+    key:'core_b', type:'core', label:'Core B', name:'Flexion Focus',
+    focus:'Targets the rectus abdominis through full range flexion — the classic six-pack work.',
+    exercises:[
+      {name:'Bench-assisted leg raises',sets:'3 × 12–15',desc:'Lie flat on bench, hands gripping sides above head. Raise straight legs from hanging to perpendicular, then lower slowly. Bench allows greater range than floor raises with a full hip flexor stretch at bottom.'},
+      {name:'Crunches',sets:'3 × 15–20',desc:'On back, knees bent, feet flat. Hands lightly behind head. Curl upper back off floor contracting abs, hold briefly, then lower. Short-range movement — focus on the contraction.'},
+      {name:'Reverse crunch',sets:'3 × 12–15',desc:'On back, legs raised to 90 degrees. Curl hips off floor toward chest using abs. Pause at top, then lower slowly. Shifts emphasis to lower abs compared to a standard crunch.'},
+      {name:'Decline crunches',sets:'3 × 15–20',desc:'Bench set to decline, feet hooked at elevated end. Crunch from declined position — the angle increases the abs load compared to flat by increasing range of motion against gravity.'},
+      {name:'Seated knee tucks',sets:'3 × 12–15',desc:'Sit on bench edge, hands gripping sides, legs extended in front, feet off floor. Draw knees toward chest contracting abs, then extend back out without feet touching floor. Constant tension throughout.'},
+    ]
+  },
+  core_c: {
+    key:'core_c', type:'core', label:'Core C', name:'Rotation & Lateral',
+    focus:'Trains the obliques and lateral stabilisers — the rotational power behind every athletic movement.',
+    exercises:[
+      {name:'Side plank',sets:'3 × 25–35 sec/side',desc:'On your side, forearm on floor, elbow under shoulder. Lift hips so only forearm and side of foot contact floor, forming a straight line head to feet. Keep hips stacked — resist letting them drop.'},
+      {name:'Side plank with hip dip',sets:'3 × 10/side',desc:'Hold a side plank, then lower your hip toward floor in a controlled descent and raise it back up past neutral as high as you can. Adds dynamic demand on obliques. Control both directions.'},
+      {name:'Seated Russian twist',sets:'3 × 12–15/side',desc:'Sit on floor or bench edge leaning back at 45 degrees. Feet slightly raised or lightly touching. Hold one dumbbell with both hands and rotate torso to one side tapping dumbbell to floor, then rotate to other side.'},
+      {name:'Pallof press (band or DB hold)',sets:'3 × 10/side',desc:'Stand sideways to a band anchor or hold a light dumbbell with both hands at chest. Press straight out and hold for a beat, then return. Resistance pulls you into rotation — your job is to resist.'},
+      {name:'Dead bug with rotation',sets:'3 × 8/side',desc:'On back, arms up, knees at 90 degrees. As you lower one arm and opposite leg, add a slight torso rotation toward the working side. Keep lower back pressed into ground. Adds anti-rotation to the standard dead bug.'},
+    ]
+  }
+};
+
+// Merge CORE_VARIATIONS into VARIATIONS for unified lookups
+Object.assign(VARIATIONS, CORE_VARIATIONS);
+
+const CORE_ORDER = ['core_a', 'core_b', 'core_c'];
 
 const ORDER = ['push_a','pull_a','legs_a','push_b','pull_b','legs_b','push_c','pull_c','legs_c'];
 const TYPE_COLOR = { push:'var(--push)', pull:'var(--pull)', legs:'var(--legs)' };
@@ -1754,6 +1811,28 @@ function renderHome() {
         <div class="nav-cell-sub">${v.focus.split(',')[0]}</div>
         ${doneText ? `<div class="nav-cell-done">${doneText}</div>` : ''}
       </div>`;
+  });
+
+  // Core row — separate section below the PPL grid
+  const coreSection = document.createElement('div');
+  coreSection.style.cssText = 'grid-column:1/-1;padding:14px 0 6px;font-family:"DM Mono",monospace;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.8px;color:var(--core);';
+  coreSection.textContent = 'Core';
+  grid.appendChild(coreSection);
+  CORE_ORDER.forEach(key => {
+    const v = VARIATIONS[key];
+    const lastDone = sessions.filter(s => s.variationKey === key).slice(-1)[0];
+    const doneText = lastDone
+      ? `Last: ${new Date(lastDone.date).toLocaleDateString('en-US',{month:'short',day:'numeric'})}`
+      : '';
+    const cell = document.createElement('div');
+    cell.className = `nav-cell core`;
+    cell.onclick = () => openVariation(key);
+    cell.innerHTML = `
+      <div class="nav-cell-tag">${v.label}</div>
+      <div class="nav-cell-name">${v.name}</div>
+      <div class="nav-cell-sub">${v.focus.split('.')[0]}</div>
+      ${doneText ? `<div class="nav-cell-done" style="color:var(--core-text)">${doneText}</div>` : ''}`;
+    grid.appendChild(cell);
   });
 
   renderCalendar();
@@ -1983,6 +2062,23 @@ function renderBackfillScreen(existingSessions) {
     });
     html += `</div>`;
 
+    // Core row
+    html += `<div style="font-family:'DM Mono',monospace;font-size:10px;font-weight:500;
+      text-transform:uppercase;letter-spacing:0.8px;color:var(--core);
+      padding:10px 18px 6px">Core</div>`;
+    html += `<div class="backfill-grid">`;
+    CORE_ORDER.forEach(key => {
+      const v = VARIATIONS[key];
+      const isSelected = backfillSelectedKey === key;
+      html += `<div class="backfill-cell core${isSelected?' selected':''}"
+        style="background:var(--core-bg);border-color:${isSelected?'var(--core)':'var(--border)'}"
+        onclick="selectBackfillVariation('${key}')">
+        <div class="backfill-cell-tag" style="color:var(--core-text)">${v.label}</div>
+        <div class="backfill-cell-name" style="color:var(--core-text)">${v.name}</div>
+      </div>`;
+    });
+    html += `</div>`;
+
     // Log sets toggle
     html += `<div class="backfill-log-toggle" onclick="toggleBackfillLog()">
       <div>
@@ -1992,10 +2088,11 @@ function renderBackfillScreen(existingSessions) {
       <div class="toggle-switch${backfillLogSets?' on':''}" id="backfill-toggle-sw"></div>
     </div>`;
 
-    // Set logging area
+    // Set logging area — for core sessions use v.exercises directly
     if (backfillLogSets && backfillSelectedKey) {
       const v = VARIATIONS[backfillSelectedKey];
-      const allEx = [...v.exercises, ...v.core];
+      const isCore = CORE_ORDER.includes(backfillSelectedKey);
+      const allEx = isCore ? v.exercises : [...v.exercises, ...v.core];
       html += `<div style="margin-top:4px">`;
       allEx.forEach((ex, i) => {
         const bfEx = backfillExercises.find(e => e.idx === i) || null;
@@ -2504,23 +2601,30 @@ function openVariation(key) {
 
 function renderWorkoutScreen() {
   const v = currentVariation;
-  const tc = TYPE_COLOR[v.type], bg = TYPE_BG[v.type], tt = TYPE_TEXT[v.type];
+  const isCore = CORE_ORDER.includes(v.key);
+  const tc = isCore ? 'var(--core)' : (TYPE_COLOR[v.type] || 'var(--text)');
+  const bg = isCore ? 'var(--core-bg)' : (TYPE_BG[v.type] || 'var(--surface)');
+  const tt = isCore ? 'var(--core-text)' : (TYPE_TEXT[v.type] || 'var(--text)');
 
   document.getElementById('workout-topbar-title').textContent = v.label;
 
   document.getElementById('workout-header').innerHTML = `
-    <div class="workout-badge" style="background:${bg};color:${tt}">${v.label} — ${v.type.toUpperCase()}</div>
+    <div class="workout-badge" style="background:${bg};color:${tt}">${v.label} — ${isCore ? 'CORE' : v.type.toUpperCase()}</div>
     <div class="workout-title">${v.name}</div>
     <div class="workout-focus">${v.focus}</div>`;
 
-  // Tabs
-  document.getElementById('workout-tabs').innerHTML = `
-    <button class="workout-tab ${currentTab==='main'?'active':''}" 
-      style="${currentTab==='main'?`color:${tc};border-color:${tc}`:'color:var(--text-muted)'}"
-      onclick="switchTab('main')">Main Lifts</button>
-    <button class="workout-tab ${currentTab==='core'?'active':''}"
-      style="${currentTab==='core'?'color:var(--core-text);border-color:var(--core)':''}"
-      onclick="switchTab('core')">Core Finisher</button>`;
+  // Hide tab bar for core sessions — they have no Main Lifts / Core Finisher split
+  if (isCore) {
+    document.getElementById('workout-tabs').innerHTML = '';
+  } else {
+    document.getElementById('workout-tabs').innerHTML = `
+      <button class="workout-tab ${currentTab==='main'?'active':''}" 
+        style="${currentTab==='main'?`color:${tc};border-color:${tc}`:'color:var(--text-muted)'}"
+        onclick="switchTab('main')">Main Lifts</button>
+      <button class="workout-tab ${currentTab==='core'?'active':''}"
+        style="${currentTab==='core'?'color:var(--core-text);border-color:var(--core)':''}"
+        onclick="switchTab('core')">Core Finisher</button>`;
+  }
 
   renderExercises();
 }
@@ -2571,13 +2675,15 @@ function getExerciseHistory(exName) {
 function renderExercises() {
   const v = currentVariation;
   const body = document.getElementById('workout-body');
-  const exercises = currentTab === 'main' ? v.exercises : v.core;
+  const isCore = CORE_ORDER.includes(v.key);
+  // Core sessions use their exercises array directly; PPL uses main or core tab
+  const exercises = isCore ? v.exercises : (currentTab === 'main' ? v.exercises : v.core);
   const isLogging = !!activeSession;
-  const tc = TYPE_COLOR[v.type];
+  const tc = isCore ? 'var(--core)' : (TYPE_COLOR[v.type] || 'var(--core)');
 
   let html = '';
 
-  if (currentTab === 'core') {
+  if (!isCore && currentTab === 'core') {
     html += `<div class="core-section-head">
       <div class="core-badge">Core Finisher</div>
       <div class="core-focus-txt">${v.coreFocus}</div>
@@ -2587,9 +2693,9 @@ function renderExercises() {
   if (!isLogging) {
     html += `<div class="start-session-wrap">
       <button class="start-session-btn" 
-        style="background:${currentTab==='main'?tc:'var(--core)'};color:#fff"
+        style="background:${tc};color:#fff"
         onclick="startSession()">
-        Start ${currentTab==='main'?'Workout':'Core Finisher'}
+        Start ${isCore ? 'Core Session' : currentTab==='main' ? 'Workout' : 'Core Finisher'}
       </button>
     </div>`;
   } else {
@@ -2598,7 +2704,7 @@ function renderExercises() {
   }
 
   exercises.forEach((ex, i) => {
-    const exKey = (currentTab === 'main' ? 'main_' : 'core_') + i;
+    const exKey = (isCore ? 'core_session_' : currentTab === 'main' ? 'main_' : 'core_') + i;
     const sessionEx = isLogging
       ? (activeSession.exercises.find(e => e.key === exKey) || null)
       : null;
@@ -2753,24 +2859,28 @@ function toggleEx(key) {
 // SESSION LOGGING
 // ════════════════════════════════════════════════════════════════════════════
 function startSession() {
-  const exercises = (currentTab === 'main' ? currentVariation.exercises : currentVariation.core)
-    .map((ex, i) => ({
-      key: (currentTab==='main'?'main_':'core_') + i,
-      name: ex.name,
-      sets: [{reps:'', weight:''}]
-    }));
+  const isCore = CORE_ORDER.includes(currentVariation.key);
+  const exerciseList = isCore
+    ? currentVariation.exercises
+    : (currentTab === 'main' ? currentVariation.exercises : currentVariation.core);
+  const keyPrefix = isCore ? 'core_session_' : (currentTab === 'main' ? 'main_' : 'core_');
+  const exercises = exerciseList.map((ex, i) => ({
+    key: keyPrefix + i,
+    name: ex.name,
+    sets: [{reps:'', weight:''}]
+  }));
   sessionStartTime = Date.now();
   activeSession = {
     id: sessionStartTime,
     date: new Date().toISOString(),
-    loggedAt: null,  // set when session is saved in finishSession
+    loggedAt: null,
     variationKey: currentVariation.key,
-    tab: currentTab,
+    tab: isCore ? 'core' : currentTab,
     exercises,
     notes: '',
     duration: '',
     distance: '',
-    category: ''
+    category: isCore ? 'core' : ''
   };
   clearInterval(elapsedInterval);
   elapsedInterval = setInterval(updateElapsedDisplay, 10000);
@@ -2866,6 +2976,8 @@ function toggleTimer() {
         updateTimerDisplay();
       } else {
         stopTimer();
+        timerSeconds = timerMax; // reset to last used duration ready for next set
+        updateTimerDisplay();
         if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
         showToast('Rest time up!');
       }
@@ -2929,6 +3041,9 @@ function showSessionDetail(sessionId, referrer) {
   }
   renderSessionDetail(s);
   document.getElementById('detail-body').scrollTop = 0;
+  // Always show edit button when opening a fresh session detail
+  const editBtn = document.getElementById('detail-edit-btn');
+  if (editBtn) editBtn.style.display = 'block';
 }
 
 function showBackfillFromDetail() {
@@ -3045,6 +3160,10 @@ function renderSessionDetail(s) {
     if (breakdown.pr > 0) html += `<div class="detail-meta-row">
       <div class="detail-meta-label">PB bonus</div>
       <div class="detail-meta-value" style="color:var(--str-text)">+${breakdown.pr} ⭐</div>
+    </div>`;
+    if (breakdown.aboveAvg > 0) html += `<div class="detail-meta-row">
+      <div class="detail-meta-label">Above avg</div>
+      <div class="detail-meta-value" style="color:var(--agi-text)">+${breakdown.aboveAvg} 📈</div>
     </div>`;
 
     html += `</div>`;
@@ -3568,13 +3687,15 @@ function buildOverviewHTML() {
   const pullS = sessions.filter(s => s.variationKey !== CUSTOM_KEY && VARIATIONS[s.variationKey] && VARIATIONS[s.variationKey].type === 'pull');
   const legsS = sessions.filter(s => s.variationKey !== CUSTOM_KEY && VARIATIONS[s.variationKey] && VARIATIONS[s.variationKey].type === 'legs');
   const cardioS = cardioSessions(sessions);
+  const coreS = sessions.filter(s => s.variationKey !== CUSTOM_KEY && VARIATIONS[s.variationKey] && VARIATIONS[s.variationKey].type === 'core');
   const total = sessions.length;
   const pplTotal = pushS.length + pullS.length + legsS.length;
   const pushPct  = total ? Math.round(pushS.length/total*100) : 0;
   const pullPct  = total ? Math.round(pullS.length/total*100) : 0;
   const legsPct  = total ? Math.round(legsS.length/total*100) : 0;
   const cardioPct = total ? Math.round(cardioS.length/total*100) : 0;
-  const otherPct = Math.max(0, 100 - pushPct - pullPct - legsPct - cardioPct);
+  const corePct  = total ? Math.round(coreS.length/total*100) : 0;
+  const otherPct = Math.max(0, 100 - pushPct - pullPct - legsPct - cardioPct - corePct);
 
   // Months active
   const months = new Set(sessions.map(s => { const d=new Date(s.date); return `${d.getFullYear()}-${d.getMonth()}`; })).size;
@@ -3665,6 +3786,7 @@ function buildOverviewHTML() {
       <div class="type-bar-seg" style="width:${pullPct}%;background:var(--pull)"></div>
       <div class="type-bar-seg" style="width:${legsPct}%;background:var(--legs)"></div>
       <div class="type-bar-seg" style="width:${cardioPct}%;background:var(--cardio)"></div>
+      <div class="type-bar-seg" style="width:${corePct}%;background:var(--core)"></div>
       <div class="type-bar-seg" style="width:${otherPct}%;background:var(--general)"></div>
     </div>
     <div class="type-legend">
@@ -3672,7 +3794,8 @@ function buildOverviewHTML() {
       <div class="type-legend-item"><div class="type-legend-dot" style="background:var(--pull)"></div>Pull ${pullS.length} (${pullPct}%)</div>
       <div class="type-legend-item"><div class="type-legend-dot" style="background:var(--legs)"></div>Legs ${legsS.length} (${legsPct}%)</div>
       ${cardioS.length ? `<div class="type-legend-item"><div class="type-legend-dot" style="background:var(--cardio)"></div>Cardio ${cardioS.length} (${cardioPct}%)</div>` : ''}
-      ${otherPct > 0 ? `<div class="type-legend-item"><div class="type-legend-dot" style="background:var(--general)"></div>General ${total - pushS.length - pullS.length - legsS.length - cardioS.length} (${otherPct}%)</div>` : ''}
+      ${coreS.length ? `<div class="type-legend-item"><div class="type-legend-dot" style="background:var(--core)"></div>Core ${coreS.length} (${corePct}%)</div>` : ''}
+      ${otherPct > 0 ? `<div class="type-legend-item"><div class="type-legend-dot" style="background:var(--general)"></div>General ${total - pushS.length - pullS.length - legsS.length - cardioS.length - coreS.length} (${otherPct}%)</div>` : ''}
     </div>
   </div>`;
 
@@ -3740,6 +3863,11 @@ function buildOverviewHTML() {
       <div class="stat-tile-value">${fmt(totalLbs(legsS))}</div>
       <div class="stat-tile-unit">lbs</div>
     </div>
+    ${coreS.length ? `<div class="stat-tile" style="background:var(--core-bg);border-color:var(--core)">
+      <div class="stat-tile-label" style="color:var(--core-text);opacity:0.7">Core volume</div>
+      <div class="stat-tile-value" style="color:var(--core-text)">${fmt(totalLbs(coreS))}</div>
+      <div class="stat-tile-unit">lbs</div>
+    </div>` : ''}
   </div>`;
 
   // Variation breakdown
@@ -3775,6 +3903,7 @@ function buildPeriodHTML(mode) {
   const pullS = ss.filter(s => s.variationKey !== CUSTOM_KEY && VARIATIONS[s.variationKey] && VARIATIONS[s.variationKey].type === 'pull');
   const legsS = ss.filter(s => s.variationKey !== CUSTOM_KEY && VARIATIONS[s.variationKey] && VARIATIONS[s.variationKey].type === 'legs');
   const cardioS = cardioSessions(ss);
+  const coreS = ss.filter(s => s.variationKey !== CUSTOM_KEY && VARIATIONS[s.variationKey] && VARIATIONS[s.variationKey].type === 'core');
   const sessionsWithTime = ss.filter(s => s.duration && parseFloat(s.duration) > 0);
   const avgDur = sessionsWithTime.length ? Math.round(mins / sessionsWithTime.length) : 0;
   const total = ss.length;
@@ -3782,7 +3911,8 @@ function buildPeriodHTML(mode) {
   const pullPct   = total ? Math.round(pullS.length/total*100) : 0;
   const legsPct   = total ? Math.round(legsS.length/total*100) : 0;
   const cardioPct = total ? Math.round(cardioS.length/total*100) : 0;
-  const otherPct  = Math.max(0, 100 - pushPct - pullPct - legsPct - cardioPct);
+  const corePct   = total ? Math.round(coreS.length/total*100) : 0;
+  const otherPct  = Math.max(0, 100 - pushPct - pullPct - legsPct - cardioPct - corePct);
   const periodMiles = totalMiles(cardioS);
   const periodPace  = avgPace(cardioS);
 
@@ -3838,6 +3968,7 @@ function buildPeriodHTML(mode) {
         <div class="type-bar-seg" style="width:${pullPct}%;background:var(--pull)"></div>
         <div class="type-bar-seg" style="width:${legsPct}%;background:var(--legs)"></div>
         <div class="type-bar-seg" style="width:${cardioPct}%;background:var(--cardio)"></div>
+        <div class="type-bar-seg" style="width:${corePct}%;background:var(--core)"></div>
         <div class="type-bar-seg" style="width:${otherPct}%;background:var(--general)"></div>
       </div>
       <div class="type-legend">
@@ -3845,7 +3976,8 @@ function buildPeriodHTML(mode) {
         <div class="type-legend-item"><div class="type-legend-dot" style="background:var(--pull)"></div>Pull ${pullS.length}</div>
         <div class="type-legend-item"><div class="type-legend-dot" style="background:var(--legs)"></div>Legs ${legsS.length}</div>
         ${cardioS.length ? `<div class="type-legend-item"><div class="type-legend-dot" style="background:var(--cardio)"></div>Cardio ${cardioS.length}</div>` : ''}
-        ${otherPct > 0 ? `<div class="type-legend-item"><div class="type-legend-dot" style="background:var(--general)"></div>General ${total - pushS.length - pullS.length - legsS.length - cardioS.length}</div>` : ''}
+        ${coreS.length ? `<div class="type-legend-item"><div class="type-legend-dot" style="background:var(--core)"></div>Core ${coreS.length}</div>` : ''}
+        ${otherPct > 0 ? `<div class="type-legend-item"><div class="type-legend-dot" style="background:var(--general)"></div>General ${total - pushS.length - pullS.length - legsS.length - cardioS.length - coreS.length}</div>` : ''}
       </div>
     </div>`;
 
@@ -3881,6 +4013,7 @@ function buildPeriodHTML(mode) {
       <div class="stat-tile push-tint"><div class="stat-tile-label">Push</div><div class="stat-tile-value">${fmt(totalLbs(pushS))}</div><div class="stat-tile-unit">lbs</div></div>
       <div class="stat-tile pull-tint"><div class="stat-tile-label">Pull</div><div class="stat-tile-value">${fmt(totalLbs(pullS))}</div><div class="stat-tile-unit">lbs</div></div>
       <div class="stat-tile legs-tint wide"><div class="stat-tile-label">Legs</div><div class="stat-tile-value">${fmt(totalLbs(legsS))}</div><div class="stat-tile-unit">lbs</div></div>
+      ${coreS.length ? `<div class="stat-tile" style="background:var(--core-bg);border-color:var(--core)"><div class="stat-tile-label" style="color:var(--core-text);opacity:0.7">Core</div><div class="stat-tile-value" style="color:var(--core-text)">${fmt(totalLbs(coreS))}</div><div class="stat-tile-unit">lbs</div></div>` : ''}
     </div>`;
   }
 
@@ -3950,7 +4083,127 @@ function buildBestsHTML() {
       html += `</div></div>`;
     });
   });
+
+  // ── Activity bests — auto-generated from PREDEFINED_ACTIVITIES ──────────
+  // Any activity with supportsDuration or supportsDistance appears here
+  // automatically. No manual additions needed — just set the flags on the
+  // activity in PREDEFINED_ACTIVITIES and it will show up.
+
+  // Group activities by name prefix (e.g. all "Taekwondo (...)" together)
+  const activityGroups = {};
+  PREDEFINED_ACTIVITIES.forEach(act => {
+    if (!act.supportsDuration && !act.supportsDistance) return;
+    const records = computeActivityBests(act.name);
+    if (!records) return; // no sessions logged yet
+    // Derive group label from prefix before first '(' or use the full name
+    const groupLabel = act.name.includes('(')
+      ? act.name.split('(')[0].trim()
+      : act.name;
+    if (!activityGroups[groupLabel]) activityGroups[groupLabel] = [];
+    activityGroups[groupLabel].push({ act, records });
+  });
+
+  Object.entries(activityGroups).forEach(([groupLabel, items]) => {
+    // Pick a color for the group header based on the first activity's category
+    const firstCat = items[0].act.category;
+    const groupColor = firstCat === 'cardio' ? 'var(--end)'
+      : firstCat === 'core' ? 'var(--core)'
+      : 'var(--agi)';
+
+    html += `<div class="section-label" style="color:${groupColor}">${groupLabel}</div>`;
+
+    items.forEach(({ act, records }) => {
+      // Card color based on attribute mapping
+      const attrMap = ACTIVITY_ATTR_MAP[act.name];
+      const primaryAttr = attrMap ? attrMap.primary[0] : 'end';
+      const cardColor = ATTRS[primaryAttr] ? ATTRS[primaryAttr].color : groupColor;
+      const cardBg    = ATTRS[primaryAttr] ? ATTRS[primaryAttr].bg    : 'var(--surface)';
+      const cardText  = ATTRS[primaryAttr] ? ATTRS[primaryAttr].text  : 'var(--text)';
+
+      // Display name — strip the group prefix for cleaner sub-cards
+      const displayName = items.length > 1 && act.name.includes('(')
+        ? act.name.match(/\(([^)]+)\)/)?.[1] || act.name
+        : act.name;
+
+      html += buildActivityPBCard(displayName, cardColor, cardBg, cardText, records);
+    });
+  });
+
   html += `<div style="height:20px"></div>`;
+  return html;
+}
+
+// ── Helpers for activity PB records ───────────────────────────────────────
+function computeActivityBests(activityName) {
+  const actSessions = sessions.filter(s =>
+    s.variationKey === CUSTOM_KEY && s.customName === activityName
+  );
+  if (!actSessions.length) return null;
+
+  let bestDuration = 0, bestDurationDate = null;
+  let bestDist = 0, bestDistDate = null;
+  let bestPaceVal = Infinity, bestPaceStr = null, bestPaceDate = null;
+
+  actSessions.forEach(s => {
+    const dur = parseFloat(s.duration) || 0;
+    const dist = parseFloat(s.distance) || 0;
+    if (dur > bestDuration) { bestDuration = dur; bestDurationDate = s.date; }
+    if (dist > bestDist) { bestDist = dist; bestDistDate = s.date; }
+    if (dist > 0 && dur > 0) {
+      const pace = dur / dist;
+      if (pace < bestPaceVal) {
+        bestPaceVal = pace;
+        const m = Math.floor(pace), sec = Math.round((pace - m) * 60);
+        bestPaceStr = `${m}:${String(sec).padStart(2,'0')}`;
+        bestPaceDate = s.date;
+      }
+    }
+  });
+
+  return {
+    totalSessions: actSessions.length,
+    lastSession: actSessions[actSessions.length - 1],
+    bestDuration: bestDuration > 0 ? { value: bestDuration, date: bestDurationDate } : null,
+    bestDistance: bestDist > 0 ? { value: bestDist, date: bestDistDate } : null,
+    bestPace: bestPaceStr ? { str: bestPaceStr, date: bestPaceDate } : null,
+  };
+}
+
+function buildActivityPBCard(name, color, bg, text, records) {
+  const fmtDate = d => d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+  let html = `<div class="pb-exercise-card">
+    <div class="pb-ex-header">
+      <div class="pb-ex-name">${name}</div>
+      <div class="pb-ex-tag" style="color:${color}">${records.totalSessions} session${records.totalSessions!==1?'s':''}</div>
+    </div>
+    <div class="pb-records">`;
+
+  if (records.bestDuration) {
+    html += `<div class="pb-record">
+      <div class="pb-record-label">Best duration</div>
+      <div class="pb-record-value" style="color:${color}">${records.bestDuration.value}</div>
+      <div class="pb-record-unit">min</div>
+      <div class="pb-record-date">${fmtDate(records.bestDuration.date)}</div>
+    </div>`;
+  }
+  if (records.bestDistance) {
+    html += `<div class="pb-record">
+      <div class="pb-record-label">Best distance</div>
+      <div class="pb-record-value" style="color:${color}">${records.bestDistance.value.toFixed(2)}</div>
+      <div class="pb-record-unit">miles</div>
+      <div class="pb-record-date">${fmtDate(records.bestDistance.date)}</div>
+    </div>`;
+  }
+  if (records.bestPace) {
+    html += `<div class="pb-record">
+      <div class="pb-record-label">Best pace</div>
+      <div class="pb-record-value" style="color:${color};font-size:16px">${records.bestPace.str}</div>
+      <div class="pb-record-unit">min / mile</div>
+      <div class="pb-record-date">${fmtDate(records.bestPace.date)}</div>
+    </div>`;
+  }
+
+  html += `</div></div>`;
   return html;
 }
 
@@ -4136,7 +4389,11 @@ function renderEditSession() {
     <button class="detail-edit-cancel" onclick="cancelEditSession()">Cancel</button>
   </div>`;
 
-  // Duration + notes
+  // Duration, distance, notes
+  const isActivity = s.variationKey === CUSTOM_KEY && s.customName &&
+    PREDEFINED_ACTIVITIES.find(a => a.name === s.customName);
+  const showDistance = isActivity && isCardioSession(s.variationKey, s.category, s.customName);
+
   html += `<div class="edit-section-head">Session info</div>`;
   html += `<div class="session-meta-block">
     <div class="session-meta-row">
@@ -4147,6 +4404,14 @@ function renderEditSession() {
         oninput="editingSession.duration=this.value">
       <div class="duration-unit">min</div>
     </div>
+    ${showDistance ? `<div class="session-meta-row">
+      <div class="session-meta-label">Distance</div>
+      <input class="session-meta-input" type="number" inputmode="decimal"
+        placeholder="optional" style="max-width:80px;text-align:right"
+        value="${s.distance || ''}"
+        oninput="editingSession.distance=this.value">
+      <div class="duration-unit">mi</div>
+    </div>` : ''}
     <div class="session-meta-row">
       <div class="session-meta-label">Notes</div>
       <textarea class="session-meta-input" rows="3"
@@ -4229,6 +4494,30 @@ function renderEditSession() {
           <div style="font-family:'DM Mono',monospace;font-size:8px;
             color:${TYPE_TEXT[v.type]};opacity:0.5;margin-top:3px">
             ${exCount} exercises incl. core
+          </div>
+        </button>`;
+      }).join('')}
+    </div>
+    <div style="font-family:'DM Mono',monospace;font-size:9px;font-weight:500;
+      text-transform:uppercase;letter-spacing:0.5px;color:var(--core);
+      margin:14px 0 8px;border-top:1px solid var(--border);padding-top:12px">
+      Core sessions
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+      ${CORE_ORDER.map(key => {
+        const v = VARIATIONS[key];
+        return `<button onclick="editImportWorkout('${key}')"
+          style="padding:10px 6px;border-radius:var(--radius-sm);
+            border:1px solid var(--core);background:var(--core-bg);
+            cursor:pointer;text-align:left">
+          <div style="font-family:'DM Mono',monospace;font-size:8px;font-weight:500;
+            text-transform:uppercase;letter-spacing:0.5px;color:var(--core-text);
+            margin-bottom:3px;opacity:0.8">${v.label}</div>
+          <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;
+            color:var(--core-text);line-height:1.2">${v.name}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:8px;
+            color:var(--core-text);opacity:0.5;margin-top:3px">
+            ${v.exercises.length} exercises
           </div>
         </button>`;
       }).join('')}
@@ -4495,24 +4784,26 @@ function buildGlossary() {
       exList.forEach(ex => {
         if (seen.has(ex.name)) return;
         seen.add(ex.name);
-        // Find which variations include this exercise
         const appearsIn = [];
         ORDER.forEach(k => {
           const vv = VARIATIONS[k];
           const combined = [...vv.exercises, ...vv.core];
           if (combined.find(e => e.name === ex.name)) appearsIn.push(vv.label);
         });
-        items.push({
-          name: ex.name,
-          desc: ex.desc,
-          type: g.type,
-          typeLabel: g.label,
-          color: g.color,
-          textColor: g.textColor,
-          appearsIn,
-        });
+        items.push({ name: ex.name, desc: ex.desc, type: g.type, typeLabel: g.label, color: g.color, textColor: g.textColor, appearsIn });
       });
     });
+    // Also include any exercises unique to standalone core sessions
+    if (g.type === 'core') {
+      CORE_ORDER.forEach(key => {
+        const v = VARIATIONS[key];
+        v.exercises.forEach(ex => {
+          if (seen.has(ex.name)) return;
+          seen.add(ex.name);
+          items.push({ name: ex.name, desc: ex.desc, type: 'core', typeLabel: 'Core', color: g.color, textColor: g.textColor, appearsIn: [v.label] });
+        });
+      });
+    }
   });
 
   // Add predefined activities as a group
@@ -4767,7 +5058,7 @@ function getSessionAttrMap(s) {
 function calcSessionXP(s, priorSessions, priorPBs) {
   const map = getSessionAttrMap(s);
   const BASE = 100;
-  const breakdown = { base: 0, duration: 0, volume: 0, pr: 0, total: 0 };
+  const breakdown = { base: 0, duration: 0, volume: 0, pr: 0, aboveAvg: 0, total: 0 };
   const attrGains = { str: 0, end: 0, agi: 0, dex: 0 };
 
   const distribute = (xp, primary, minor) => {
@@ -4775,36 +5066,96 @@ function calcSessionXP(s, priorSessions, priorPBs) {
     minor.forEach(a => { attrGains[a] = (attrGains[a]||0) + Math.round(xp * 0.5); });
   };
 
-  // Base XP for showing up
+  // ── Compute averages from prior sessions (need at least 3 to activate) ──
+  const ABOVE_AVG_MIN_SESSIONS = 3;
+
+  // Average duration across prior sessions that have duration logged
+  const priorWithDur = priorSessions.filter(ps => parseFloat(ps.duration) > 0);
+  const avgDur = priorWithDur.length >= ABOVE_AVG_MIN_SESSIONS
+    ? priorWithDur.reduce((a, ps) => a + parseFloat(ps.duration), 0) / priorWithDur.length
+    : null;
+
+  // Average volume across prior sessions of the same type that have volume
+  const vm = getVariationMeta(s.variationKey, s.customName, s.category);
+  const priorSameType = priorSessions.filter(ps => {
+    const pvm = getVariationMeta(ps.variationKey, ps.customName, ps.category);
+    return pvm.type === vm.type;
+  });
+  const priorVols = priorSameType.map(ps =>
+    ps.exercises.reduce((acc, e) =>
+      acc + e.sets.reduce((a, st) => a + ((parseFloat(st.reps)||0) * (parseFloat(st.weight)||0)), 0), 0)
+  ).filter(v => v > 0);
+  const avgVol = priorVols.length >= ABOVE_AVG_MIN_SESSIONS
+    ? priorVols.reduce((a, b) => a + b, 0) / priorVols.length
+    : null;
+
+  // Average distance across prior sessions that have distance logged
+  const priorWithDist = priorSessions.filter(ps => parseFloat(ps.distance) > 0);
+  const avgDist = priorWithDist.length >= ABOVE_AVG_MIN_SESSIONS
+    ? priorWithDist.reduce((a, ps) => a + parseFloat(ps.distance), 0) / priorWithDist.length
+    : null;
+
+  // Average weight-per-rep across prior sessions of the same type
+  // (total lbs ÷ total reps — a cleaner strength signal than raw volume)
+  const priorWPRs = priorSameType.map(ps => sessionWeightPerRep(ps)).filter(v => v > 0);
+  const avgWPR = priorWPRs.length >= ABOVE_AVG_MIN_SESSIONS
+    ? priorWPRs.reduce((a, b) => a + b, 0) / priorWPRs.length
+    : null;
+  const thisWPR = sessionWeightPerRep(s);
+
+  // ── Base XP for showing up ──────────────────────────────────────────────
   breakdown.base = BASE;
   distribute(BASE, map.primary, map.minor || []);
 
-  // Duration bonus: +2 XP/min
+  // ── Duration bonus: +2 XP/min + above-average bonus ────────────────────
   const dur = parseFloat(s.duration) || 0;
   if (dur > 0) {
     const dBonus = Math.round(dur * 2);
     breakdown.duration = dBonus;
     distribute(dBonus, map.primary, map.minor || []);
+    // Above-average: +50 XP if duration > avg by any amount
+    if (avgDur !== null && dur > avgDur) {
+      breakdown.aboveAvg += 50;
+    }
   }
 
-  // Volume bonus (Strength sessions): +1 XP per 100 lbs
+  // ── Volume bonus: +1 XP per 100 lbs + above-average bonus ──────────────
   const vol = s.exercises.reduce((acc, e) =>
     acc + e.sets.reduce((a, st) => a + ((parseFloat(st.reps)||0) * (parseFloat(st.weight)||0)), 0), 0);
   if (vol > 0) {
     const vBonus = Math.round(vol / 100);
     breakdown.volume = vBonus;
     distribute(vBonus, map.primary, map.minor || []);
+    // Above-average: +50 XP if volume > avg for same workout type
+    if (avgVol !== null && vol > avgVol) {
+      breakdown.aboveAvg += 50;
+    }
   }
 
-  // Distance bonus (running): +5 XP per mile
+  // ── Distance bonus: +5 XP per mile + above-average bonus ───────────────
   const dist = parseFloat(s.distance) || 0;
   if (dist > 0) {
     const distBonus = Math.round(dist * 5);
     breakdown.volume += distBonus;
     distribute(distBonus, map.primary, map.minor || []);
+    // Above-average: +50 XP if distance > avg
+    if (avgDist !== null && dist > avgDist) {
+      breakdown.aboveAvg += 50;
+    }
   }
 
-  // PR bonus: +150 XP per new PB in this session
+  // ── Weight-per-rep above-average bonus ──────────────────────────────────
+  // +50 XP if average weight/rep this session beats lifetime avg for this type
+  if (avgWPR !== null && thisWPR > avgWPR) {
+    breakdown.aboveAvg += 50;
+  }
+
+  // Distribute above-average bonus
+  if (breakdown.aboveAvg > 0) {
+    distribute(breakdown.aboveAvg, map.primary, map.minor || []);
+  }
+
+  // ── PR bonus: +150 XP per new PB ───────────────────────────────────────
   const currentPBs = priorPBs || {};
   let prCount = 0;
   s.exercises.forEach(ex => {
@@ -4904,6 +5255,7 @@ const ACHIEVEMENTS = [
   { id:'ex_initiate',  cat:'mastery',     icon:'📈', name:'Exercise Initiate',      desc:'Fill an exercise XP bar for the first time.',        repeatable: false, check: (s,_,m) => Object.values(m).some(x => x.fills >= 1), countFn: null,                                        title: null },
   { id:'dedicated',    cat:'mastery',     icon:'🌊', name:'Dedicated',              desc:'Fill any exercise bar 10+ times. Repeats every 10 fills.', repeatable: true, check: (s,_,m) => Object.values(m).some(x => x.fills >= 10), countFn: (s,_,m) => Math.floor(Math.max(0,...Object.values(m).map(x=>x.fills)) / 10), title: null },
   { id:'master',       cat:'mastery',     icon:'🏆', name:'True Mastery',           desc:'Fill any exercise bar 25+ times. Repeats every 25 fills.', repeatable: true, check: (s,_,m) => Object.values(m).some(x => x.fills >= 25), countFn: (s,_,m) => Math.floor(Math.max(0,...Object.values(m).map(x=>x.fills)) / 25), title: 'The Devoted' },
+  { id:'rising_tide',  cat:'performance', icon:'🌊', name:'Rising Tide',            desc:'Beat your personal average for duration, volume, or distance. Repeats every 10 times.', repeatable: true, check: (s,_,m) => countAboveAvgSessions(s) >= 1, countFn: (s,_,m) => Math.floor(countAboveAvgSessions(s) / 10), title: null },
 ];
 
 // ── Achievement helper functions ───────────────────────────────────────────
@@ -4952,6 +5304,62 @@ function hasManyPBsInOneSession(sessionList, n) {
   });
   return found;
 }
+// Returns average weight per rep across all weighted sets in a session
+function sessionWeightPerRep(s) {
+  let totalWeight = 0, totalReps = 0;
+  s.exercises.forEach(ex => {
+    ex.sets.forEach(st => {
+      const w = parseFloat(st.weight) || 0;
+      const r = parseFloat(st.reps) || 0;
+      if (w > 0 && r > 0) { totalWeight += w * r; totalReps += r; }
+    });
+  });
+  return totalReps > 0 ? totalWeight / totalReps : 0;
+}
+
+function countAboveAvgSessions(sessionList) {
+  // Count sessions where the above-average bonus fired (duration, volume, distance, or weight/rep)
+  const MIN = 3;
+  let count = 0;
+  sessionList.forEach((s, idx) => {
+    const prior = sessionList.slice(0, idx);
+
+    // Duration above average
+    const priorWithDur = prior.filter(ps => parseFloat(ps.duration) > 0);
+    if (priorWithDur.length >= MIN) {
+      const avg = priorWithDur.reduce((a, ps) => a + parseFloat(ps.duration), 0) / priorWithDur.length;
+      if ((parseFloat(s.duration) || 0) > avg) { count++; return; }
+    }
+
+    // Volume above average (same type)
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category);
+    const priorSameType = prior.filter(ps => getVariationMeta(ps.variationKey, ps.customName, ps.category).type === vm.type);
+    const priorVols = priorSameType.map(ps =>
+      ps.exercises.reduce((acc, e) => acc + e.sets.reduce((a, st) => a + ((parseFloat(st.reps)||0)*(parseFloat(st.weight)||0)), 0), 0)
+    ).filter(v => v > 0);
+    if (priorVols.length >= MIN) {
+      const avgVol = priorVols.reduce((a, b) => a + b, 0) / priorVols.length;
+      const vol = s.exercises.reduce((acc, e) => acc + e.sets.reduce((a, st) => a + ((parseFloat(st.reps)||0)*(parseFloat(st.weight)||0)), 0), 0);
+      if (vol > avgVol) { count++; return; }
+    }
+
+    // Distance above average
+    const priorWithDist = prior.filter(ps => parseFloat(ps.distance) > 0);
+    if (priorWithDist.length >= MIN) {
+      const avgDist = priorWithDist.reduce((a, ps) => a + parseFloat(ps.distance), 0) / priorWithDist.length;
+      if ((parseFloat(s.distance) || 0) > avgDist) { count++; return; }
+    }
+
+    // Weight-per-rep above average (same type)
+    const priorWPRs = priorSameType.map(ps => sessionWeightPerRep(ps)).filter(v => v > 0);
+    if (priorWPRs.length >= MIN) {
+      const avgWPR = priorWPRs.reduce((a, b) => a + b, 0) / priorWPRs.length;
+      if (sessionWeightPerRep(s) > avgWPR) { count++; return; }
+    }
+  });
+  return count;
+}
+
 function countBreakthroughSessions(sessionList, n) {
   const pbs = {}; let count = 0;
   sessionList.forEach(s => {
@@ -5065,6 +5473,11 @@ function showXPOverlay(summary) {
     <div class="xp-breakdown-val" style="color:var(--str-text)">+${bd.pr}</div>
   </div>`;
 
+  if (bd.aboveAvg > 0) html += `<div class="xp-breakdown-row" style="border-color:var(--agi)">
+    <div class="xp-breakdown-label">📈 Above your average!</div>
+    <div class="xp-breakdown-val" style="color:var(--agi-text)">+${bd.aboveAvg}</div>
+  </div>`;
+
   if (summary.masteryFills > 0) html += `<div class="xp-breakdown-row" style="border-color:var(--str)">
     <div class="xp-breakdown-label">📈 Exercise mastery fills ×${summary.masteryFills}</div>
     <div class="xp-breakdown-val" style="color:var(--str-text)">+${summary.masteryFills * 50}</div>
@@ -5109,6 +5522,7 @@ function showXPOverlay(summary) {
   }
 
   body.innerHTML = html;
+  body.innerHTML += `<button class="xp-continue-btn" onclick="dismissXPOverlay()">Continue ›</button>`;
   const overlay = document.getElementById('xp-overlay');
   overlay.classList.add('show');
   overlay.scrollTop = 0;
