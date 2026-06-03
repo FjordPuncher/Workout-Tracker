@@ -2795,6 +2795,13 @@ function renderExercises() {
             <div class="set-unit">lbs</div>
             <button class="del-set-btn" onclick="deleteSet('${exKey}',${si})">×</button>
           </div>`).join('')}
+        <button onclick="removeExerciseFromSession('${exKey}','${ex.name.replace(/'/g,"\\'")}')"
+          style="display:block;width:100%;margin-top:8px;padding:8px;
+            background:none;border:1px solid var(--border);border-radius:var(--radius-sm);
+            color:var(--text-dim);font-family:'DM Sans',sans-serif;font-size:12px;
+            cursor:pointer;text-align:center">
+          Remove exercise from session
+        </button>
       </div>`;
     }
 
@@ -2903,6 +2910,16 @@ function updateSet(exKey, setIdx, field, value) {
   if (!ex) { ex = {key:exKey, name:'', sets:[]}; activeSession.exercises.push(ex); }
   if (!ex.sets[setIdx]) ex.sets[setIdx] = {reps:'',weight:''};
   ex.sets[setIdx][field] = value;
+}
+
+function removeExerciseFromSession(exKey, exName) {
+  if (!activeSession) return;
+  const confirmed = confirm(`Remove "${exName}" from this session?`);
+  if (!confirmed) return;
+  activeSession.exercises = activeSession.exercises.filter(e => e.key !== exKey);
+  // Remove the card from DOM directly for instant feedback, then re-render
+  const card = document.getElementById('ex-card-' + exKey);
+  if (card) card.remove();
 }
 
 function addSet(exKey) {
@@ -3164,6 +3181,10 @@ function renderSessionDetail(s) {
     if (breakdown.aboveAvg > 0) html += `<div class="detail-meta-row">
       <div class="detail-meta-label">Above avg</div>
       <div class="detail-meta-value" style="color:var(--agi-text)">+${breakdown.aboveAvg} 📈</div>
+    </div>`;
+    if (s.achievementXP > 0) html += `<div class="detail-meta-row">
+      <div class="detail-meta-label">Achievement</div>
+      <div class="detail-meta-value" style="color:var(--str-text)">+${s.achievementXP} 🏆</div>
     </div>`;
 
     html += `</div>`;
@@ -5483,6 +5504,11 @@ function showXPOverlay(summary) {
     <div class="xp-breakdown-val" style="color:var(--str-text)">+${summary.masteryFills * 50}</div>
   </div>`;
 
+  if (summary.achievementXP > 0) html += `<div class="xp-breakdown-row" style="border-color:var(--str)">
+    <div class="xp-breakdown-label">🏆 Achievement bonus ×${summary.newAchievements.length}</div>
+    <div class="xp-breakdown-val" style="color:var(--str-text)">+${summary.achievementXP}</div>
+  </div>`;
+
   html += `</div>`;
 
   // Attr gains breakdown
@@ -5583,6 +5609,18 @@ function computeAndShowXP() {
     return a.count > prev;
   });
 
+  // Achievement XP bonus: flat 200 XP per unlock (including repeatable re-triggers)
+  const ACHIEVEMENT_XP = 200;
+  const achievementXP = newAchievements.length * ACHIEVEMENT_XP;
+  if (achievementXP > 0) {
+    // Distribute evenly across all attributes
+    const perAttr = Math.round(achievementXP / Object.keys(attrGains).length);
+    Object.keys(attrGains).forEach(k => { attrGains[k] = (attrGains[k]||0) + perAttr; });
+    // Store on session so detail screen can show it
+    sessions[sessions.length - 1].achievementXP = achievementXP;
+    localStorage.setItem('ppl_sessions', JSON.stringify(sessions));
+  }
+
   checkAndAutoSyncPBs();
 
   setTimeout(() => {
@@ -5593,6 +5631,7 @@ function computeAndShowXP() {
       attrXPBefore: priorAttrXP,
       masteryFills,
       newAchievements,
+      achievementXP,
     });
   }, 1400); // show after the "Session saved" toast fades
 }
