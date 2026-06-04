@@ -5608,19 +5608,20 @@ function renderGlossary(query) {
       ? item.appearsIn.slice(0, 4).join(', ') + (item.appearsIn.length > 4 ? '…' : '')
       : item.typeLabel;
 
-    return `<div class="glossary-card" id="gcard-${cardId}">
+    return `<div class="glossary-card" id="gcard-${cardId}" style="position:relative">
       <button class="glossary-card-header" onclick="toggleGlossaryCard('${cardId}')">
         <div class="glossary-card-left">
           <div class="glossary-ex-name">${item.name}</div>
           <div class="glossary-ex-tag" style="color:${item.color}">${tagLine}</div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;padding-right:4px">
-          <button onclick="event.stopPropagation();showProgressionScreen('${item.name.replace(/'/g,"\\'")}','glossary')"
-            style="background:none;border:none;font-size:14px;cursor:pointer;padding:2px 4px;opacity:0.6"
-            title="View progress">📈</button>
+        <div style="display:flex;align-items:center;gap:24px;padding-right:4px">
           <span class="glossary-chevron">⌄</span>
         </div>
       </button>
+      <button onclick="showProgressionScreen('${item.name.replace(/'/g,"\\'")}','glossary')"
+        style="position:absolute;top:0;right:36px;height:52px;background:none;border:none;
+          font-size:14px;cursor:pointer;padding:0 8px;opacity:0.5;z-index:1"
+        title="View progress">📈</button>
       <div class="glossary-detail">
         <div class="glossary-desc">${item.desc}</div>
         ${statsHtml}
