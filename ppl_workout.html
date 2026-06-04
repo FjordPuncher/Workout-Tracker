@@ -1806,6 +1806,9 @@ function setActiveNav(id) {
     const el = document.getElementById(b);
     if (el) el.classList.toggle('active', b === id);
   });
+  // Reset scroll on all scroll bodies on every screen transition
+  document.querySelectorAll('.scroll-body').forEach(el => { el.scrollTop = 0; });
+  window.scrollTo(0, 0);
 }
 
 function showHome() {
