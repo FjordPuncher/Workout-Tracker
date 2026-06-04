@@ -7118,9 +7118,10 @@ function durToMinSec(decimalMins) {
   return { min: m > 0 ? String(m) : '', sec: s > 0 ? String(s) : '' };
 }
 function fmtDuration(decimalMins) {
-  if (!decimalMins) return '';
+  if (decimalMins == null || isNaN(decimalMins)) return '';
   const val = parseFloat(decimalMins);
-  if (isNaN(val) || val <= 0) return '';
+  if (val < 0) return '';
+  if (val === 0) return '0m';
   const m = Math.floor(val);
   const s = Math.round((val - m) * 60);
   if (s === 0) return `${m} min`;
