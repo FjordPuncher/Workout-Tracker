@@ -1287,11 +1287,11 @@ html, body {
     <div class="home-header">
       <div style="display:flex;align-items:baseline;gap:10px">
         <div class="home-logo">PPL<span>.</span></div>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:0.5px">v2.1</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:0.5px">v2.2</div>
       </div>
       <div class="home-date" id="home-date"></div>
     </div>
-    <div class="home-rpg-widget" onclick="showBests('profile')" id="home-rpg-widget" style="margin-top:0;border-radius:0;border-left:none;border-right:none;border-top:none;border-bottom:1px solid var(--border)"></div>
+    <div class="home-rpg-widget" onclick="showProfile()" id="home-rpg-widget" style="margin-top:0;border-radius:0;border-left:none;border-right:none;border-top:none;border-bottom:1px solid var(--border)"></div>
     <div id="streak-widget-container" style="padding:10px 0 0"></div>
     <div id="suggestion-container"></div>
     <div class="section-label">Workouts</div>
@@ -1420,6 +1420,19 @@ html, body {
   <div class="scroll-body" id="glossary-body" style="padding-top:4px"></div>
 </div>
 
+<!-- ── EXERCISE PROGRESSION SCREEN ── -->
+<div id="screen-progression" class="screen">
+  <div class="topbar">
+    <button class="back-btn" id="progression-back-btn" onclick="closeProgressionScreen()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg>
+      <span id="progression-back-label">Back</span>
+    </button>
+    <div class="topbar-title" id="progression-topbar-title"></div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="scroll-body" id="progression-body"></div>
+</div>
+
 <!-- ── SESSION DETAIL SCREEN ── -->
 <div id="screen-session-detail" class="screen">
   <div class="topbar">
@@ -1474,7 +1487,7 @@ const VARIATIONS = {
       {name:'Push-ups (finisher)',sets:'2 × max',desc:'Standard push-up, hands shoulder-width apart. Keep a rigid plank from head to heels and lower your chest to the floor. Go to or near failure. Elevate hands on bench to reduce difficulty.'},
     ],
     core:[
-      {name:'Plank',sets:'3 × 30–45 sec',desc:'Forearms on the floor, body in a straight line from head to heels. Squeeze your glutes and brace your abs hard — don\'t let your hips sag or pike.'},
+      {name:'Plank',sets:'3 × 30–45 sec',desc:'Forearms on the floor, body in a straight line from head to heels. Squeeze your glutes and brace your abs hard — don\'t let your hips sag or pike. 📝 Log as seconds held per set (e.g. 45 reps × 0 lbs = 45 sec hold).'},
       {name:'Ab wheel rollout (or bench walkout)',sets:'3 × 8–10',desc:'Kneel and grip an ab wheel, or place hands on the bench edge and walk them forward. Roll or walk out slowly until nearly parallel to the floor, then pull back in using your abs.'},
       {name:'Dead bug',sets:'3 × 8/side',desc:'Lie on your back, arms up, knees at 90 degrees. Lower one arm overhead and the opposite leg toward the floor simultaneously, keeping lower back pressed into the ground. Return and alternate.'},
     ]
@@ -1631,7 +1644,7 @@ const CORE_VARIATIONS = {
     key:'core_a', type:'core', label:'Core A', name:'Anti-Extension',
     focus:'Builds the ability to resist spinal extension under load — the foundation of a strong, stable core.',
     exercises:[
-      {name:'Plank',sets:'3 × 30–45 sec',desc:'Forearms on the floor, body in a straight line from head to heels. Squeeze your glutes and brace your abs hard — don\'t let your hips sag or pike.'},
+      {name:'Plank',sets:'3 × 30–45 sec',desc:'Forearms on the floor, body in a straight line from head to heels. Squeeze your glutes and brace your abs hard — don\'t let your hips sag or pike. 📝 Log as seconds held per set (e.g. 45 reps × 0 lbs = 45 sec hold).'},
       {name:'Ab wheel rollout (or bench walkout)',sets:'3 × 8–10',desc:'Kneel and grip an ab wheel, or place hands on the bench edge and walk them forward. Roll or walk out slowly until nearly parallel to the floor, then pull back in using your abs.'},
       {name:'Dead bug',sets:'3 × 8/side',desc:'Lie on your back, arms up, knees at 90 degrees. Lower one arm overhead and the opposite leg toward the floor simultaneously, keeping lower back pressed into the ground. Return and alternate.'},
       {name:'Hollow body hold',sets:'3 × 20–30 sec',desc:'Lie on back, arms overhead, legs straight a few inches off floor. Press lower back firmly into ground and hold. If back arches, raise legs higher. The foundational anti-extension position in gymnastics.'},
@@ -1714,6 +1727,13 @@ const PREDEFINED_ACTIVITIES = [
     category: 'cardio',
     supportsDistance: true,
     desc: 'Cardiovascular endurance training on foot. Log distance and duration to track pace over time. Distance and pace totals appear on the Stats screen. Works as a standalone session or as active recovery between strength training days.'
+  },
+  {
+    key: 'biking',
+    name: 'Biking',
+    category: 'cardio',
+    supportsDistance: true,
+    desc: 'Cardiovascular endurance training on a bicycle. Log distance and duration to track pace over time. Works outdoors, on a trail, or on a stationary/spin bike. Distance and pace totals appear on the Stats screen alongside Running.'
   },
   {
     key: 'general_core',
@@ -1802,7 +1822,7 @@ function getSuggested() {
 // ════════════════════════════════════════════════════════════════════════════
 // ── Nav active state ─────────────────────────────────────────────────────────
 function setActiveNav(id) {
-  ['bnav-home','bnav-history','bnav-data','bnav-bests','bnav-glossary'].forEach(b => {
+  ['bnav-home','bnav-history','bnav-profile','bnav-bests','bnav-glossary'].forEach(b => {
     const el = document.getElementById(b);
     if (el) el.classList.toggle('active', b === id);
   });
@@ -1931,20 +1951,40 @@ function renderStreakWidget() {
 
   const weekly = weeklyStreak();
 
-  // Sessions logged this week (Mon–today)
+  // Sessions logged this week (Mon–Sun), all 7 days
   const weekStart = new Date(today);
   weekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7)); // Monday
-  const daysThisWeek = Math.min(5, Math.floor((today - weekStart) / 86400000) + 1);
-  const sessionDaysThisWeek = new Set(
+  weekStart.setHours(0,0,0,0);
+  const dayOfWeek = (today.getDay() + 6) % 7; // 0=Mon, 6=Sun
+  const daysThisWeek = dayOfWeek + 1; // days elapsed including today
+
+  const sessionDaySet = new Set(
     sessions
       .filter(s => { const d = new Date(s.date); d.setHours(0,0,0,0); return d >= weekStart && d <= today; })
-      .map(s => new Date(s.date).toDateString())
-  ).size;
+      .map(s => {
+        const d = new Date(s.date); d.setHours(0,0,0,0);
+        return Math.floor((d - weekStart) / 86400000); // day index 0-6
+      })
+  );
 
-  const dots = Array.from({length: 5}, (_, i) => {
-    if (i < sessionDaysThisWeek) return `<div style="width:11px;height:11px;border-radius:2px;background:${c.numColor}"></div>`;
-    if (i < daysThisWeek) return `<div style="width:11px;height:11px;border-radius:2px;background:#2A2820;border:1px solid #3A3530"></div>`;
-    return `<div style="width:11px;height:11px;border-radius:2px;background:#1A1814;border:1px solid #252320"></div>`;
+  const dayLabels = ['M','T','W','T','F','S','S'];
+  const dots = Array.from({length: 7}, (_, i) => {
+    const logged = sessionDaySet.has(i);
+    const isPast = i < daysThisWeek;
+    const isToday = i === dayOfWeek;
+    let bg, border;
+    if (logged) {
+      bg = c.numColor; border = 'none';
+    } else if (isPast) {
+      bg = '#2A2820'; border = '1px solid #3A3530';
+    } else {
+      bg = '#1A1814'; border = '1px solid #252320';
+    }
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+      <div style="width:11px;height:11px;border-radius:2px;background:${bg};border:${border};
+        ${isToday ? 'box-shadow:0 0 4px '+c.numColor+'80' : ''}"></div>
+      <div style="font-family:'DM Mono',monospace;font-size:7px;color:${logged?c.numColor:'#444240'}">${dayLabels[i]}</div>
+    </div>`;
   }).join('');
 
   el.innerHTML = `<div class="streak-widget" style="border-color:${c.border};box-shadow:${c.glow};padding:10px 16px;gap:0">
@@ -1966,7 +2006,7 @@ function renderStreakWidget() {
     <div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center">
       <div class="streak-label" style="margin-bottom:6px">This week</div>
       <div style="display:flex;gap:4px;margin-bottom:4px">${dots}</div>
-      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted)">${sessionDaysThisWeek} of ${daysThisWeek} days</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted)">${sessionDaySet.size} of ${daysThisWeek} days</div>
     </div>
 
     <div style="width:1px;background:#2A2820;align-self:stretch;margin:0 12px"></div>
@@ -3423,6 +3463,7 @@ function renderSessionDetail(s) {
       <div class="stat-tile-label">Distance${isBestDist?' ⭐':''}</div>
       <div class="stat-tile-value">${curDist.toFixed(2)}</div>
       <div class="stat-tile-unit">mi${isBestDist?' · personal best':''}</div>
+      ${(() => { const dc = distanceComparisonPair(curDist, s.id); return `<div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--end);margin-top:3px;opacity:0.9;line-height:1.5">≈ ${dc.local}<br>≈ ${dc.national}</div>`; })()}
     </div>`;
 
     if (curPace) html += `<div class="stat-tile${isBestPace?' ':' '}">
@@ -3432,6 +3473,17 @@ function renderSessionDetail(s) {
     </div>`;
 
     html += `</div>`;
+
+    // View progress link for activities
+    const safeActName = s.customName.replace(/'/g,"\\'");
+    html += `<div style="padding:8px 18px 0">
+      <button onclick="showProgressionScreen('${safeActName}','detail')"
+        style="width:100%;padding:8px;background:none;border:1px solid var(--border);
+          border-radius:var(--radius);color:var(--text-dim);font-family:'DM Sans',sans-serif;
+          font-size:12px;cursor:pointer;text-align:center">
+        📈 View ${s.customName} progress
+      </button>
+    </div>`;
   }
 
   if (exCount > 0 || vol > 0) {
@@ -3442,6 +3494,7 @@ function renderSessionDetail(s) {
       <div class="stat-tile-label">Total volume${aboveAvgVol?' 📈':''}</div>
       <div class="stat-tile-value">${fmt(vol)}</div>
       <div class="stat-tile-unit">lbs moved</div>
+      <div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--str);margin-top:3px;opacity:0.8;line-height:1.5">≈ ${volumeComparisons(vol, s.id)}<br>≈ ${volumeComparisonScaled(vol, s.id)}</div>
     </div>`;
 
     if (totalSets > 0) html += `<div class="stat-tile">
@@ -3578,7 +3631,12 @@ function renderSessionDetail(s) {
     loggedExercises.forEach(ex => {
       const validSets = ex.sets.filter(st => st.reps);
       html += `<div class="detail-ex-card">
-        <div class="detail-ex-name">${ex.name}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;padding-right:4px">
+          <div class="detail-ex-name">${ex.name}</div>
+          <button onclick="showProgressionScreen('${ex.name.replace(/'/g,"\\'")}','detail')"
+            style="background:none;border:none;font-size:12px;cursor:pointer;opacity:0.5;padding:0 4px"
+            title="View progress">📈</button>
+        </div>
         ${validSets.map((st, i) => {
           const reps = st.reps;
           const hasWeight = st.weight && parseFloat(st.weight) > 0;
@@ -4044,7 +4102,6 @@ function renderStatsTabs() {
     { id: 'monthly',  label: 'Monthly' },
     { id: 'yearly',   label: 'Yearly' },
     { id: 'bests',    label: 'Bests' },
-    { id: 'profile',  label: 'Profile' },
   ];
   document.getElementById('stats-tabs').innerHTML = tabs.map(t =>
     `<button class="stats-tab${statsTab===t.id?' active':''}" onclick="switchStatsTab('${t.id}')">${t.label}</button>`
@@ -4052,6 +4109,7 @@ function renderStatsTabs() {
 }
 
 function switchStatsTab(tab) {
+  if (tab === 'profile') { showProfile(); return; }
   statsTab = tab;
   statsPeriodIdx = 0;
   renderStatsTabs();
@@ -4107,6 +4165,8 @@ function buildOverviewHTML() {
   // Volume averages
   const avgLbsPerMonth = months ? Math.round(lbs / months) : lbs;
   const avgLbsPerYear  = years  ? Math.round(lbs / years)  : lbs;
+  const sessionsWithVol = sessions.filter(s => s.exercises.some(e => e.sets.some(st => parseFloat(st.reps) > 0 && parseFloat(st.weight) > 0)));
+  const avgLbsPerSession = sessionsWithVol.length ? Math.round(lbs / sessionsWithVol.length) : 0;
 
   // Time averages
   const avgMinsPerMonth = months ? Math.round(mins / months) : mins;
@@ -4159,7 +4219,8 @@ function buildOverviewHTML() {
     <div class="stat-tile wide">
       <div class="stat-tile-label">Total volume</div>
       <div class="stat-tile-value">${fmt(lbs)}</div>
-      <div class="stat-tile-unit">lbs moved · avg ${fmt(avgLbsPerMonth)} / month · ${fmt(avgLbsPerYear)} / year</div>
+      <div class="stat-tile-unit">lbs moved · avg ${fmt(avgLbsPerSession)} / session · ${fmt(avgLbsPerMonth)} / month · ${fmt(avgLbsPerYear)} / year</div>
+      ${lbs > 0 ? `<div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--str);margin-top:4px;opacity:0.9;line-height:1.6">≈ ${volumeComparisons(lbs, sessions.length)}<br>≈ ${volumeComparisonScaled(lbs, sessions.length)}</div>` : ''}
     </div>
     <div class="stat-tile">
       <div class="stat-tile-label">Total sets</div>
@@ -4198,13 +4259,13 @@ function buildOverviewHTML() {
     </div>
   </div>`;
 
-  // Cardio section
+  // Cardio section — split Running and Biking
   if (cardioS.length) {
-    const cardioMiles = totalMiles(cardioS);
-    const cardioMins  = totalMinutes(cardioS);
-    const pace = avgPace(cardioS);
-    const best = bestDistance(cardioS);
-    const fastPace = bestPace(cardioS);
+    const runningSessions = cardioS.filter(s => s.customName === 'Running');
+    const bikingSessions  = cardioS.filter(s => s.customName === 'Biking');
+    const otherCardio     = cardioS.filter(s => s.customName !== 'Running' && s.customName !== 'Biking');
+    const cardioMins = totalMinutes(cardioS);
+
     h += `<div class="section-label" style="margin-top:18px;color:var(--cardio)">Cardio</div>`;
     h += `<div class="stats-grid">
       <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
@@ -4217,28 +4278,71 @@ function buildOverviewHTML() {
         <div class="stat-tile-value" style="color:var(--cardio-text)">${fmtTime(cardioMins)}</div>
         <div class="stat-tile-unit">total cardio</div>
       </div>
-      ${cardioMiles > 0 ? `
-      <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
-        <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Distance</div>
-        <div class="stat-tile-value" style="color:var(--cardio-text)">${cardioMiles.toFixed(1)}</div>
-        <div class="stat-tile-unit">total miles</div>
-      </div>
-      <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
-        <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Avg pace</div>
-        <div class="stat-tile-value" style="color:var(--cardio-text);font-size:20px">${pace || '—'}</div>
-        <div class="stat-tile-unit">min / mile</div>
-      </div>
-      <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
-        <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Best distance</div>
-        <div class="stat-tile-value" style="color:var(--cardio-text);font-size:20px">${best ? best.dist.toFixed(1) : '—'}</div>
-        <div class="stat-tile-unit">${best ? 'mi · ' + new Date(best.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : 'miles'}</div>
-      </div>
-      <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
-        <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Best pace</div>
-        <div class="stat-tile-value" style="color:var(--cardio-text);font-size:20px">${fastPace ? fastPace.paceStr : '—'}</div>
-        <div class="stat-tile-unit">${fastPace ? 'min/mi · ' + new Date(fastPace.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : 'min / mile'}</div>
-      </div>` : ''}
     </div>`;
+
+    // Running subsection
+    if (runningSessions.length) {
+      const runMiles = totalMiles(runningSessions);
+      const runPace = avgPace(runningSessions);
+      const runBestDist = bestDistance(runningSessions);
+      const runFastPace = bestPace(runningSessions);
+      h += `<div class="section-label" style="margin-top:12px;font-size:10px;color:var(--end)">🏃 Running</div>`;
+      h += `<div class="stats-grid">
+        ${runMiles > 0 ? `<div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
+          <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Distance</div>
+          <div class="stat-tile-value" style="color:var(--cardio-text)">${runMiles.toFixed(1)}</div>
+          <div class="stat-tile-unit">total miles</div>
+          ${(() => { const dc = distanceComparisonPair(runMiles, sessions.length); return `<div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--end);margin-top:4px;opacity:0.9;line-height:1.5">≈ ${dc.local}<br>≈ ${dc.national}</div>`; })()}
+        </div>` : ''}
+        <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
+          <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Avg pace</div>
+          <div class="stat-tile-value" style="color:var(--cardio-text);font-size:20px">${runPace || '—'}</div>
+          <div class="stat-tile-unit">min / mile</div>
+        </div>
+        <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
+          <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Best distance</div>
+          <div class="stat-tile-value" style="color:var(--cardio-text);font-size:20px">${runBestDist ? runBestDist.dist.toFixed(1) : '—'}</div>
+          <div class="stat-tile-unit">${runBestDist ? 'mi · ' + new Date(runBestDist.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : 'miles'}</div>
+        </div>
+        <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
+          <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Best pace</div>
+          <div class="stat-tile-value" style="color:var(--cardio-text);font-size:20px">${runFastPace ? runFastPace.paceStr : '—'}</div>
+          <div class="stat-tile-unit">${runFastPace ? 'min/mi · ' + new Date(runFastPace.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : 'min / mile'}</div>
+        </div>
+      </div>`;
+    }
+
+    // Biking subsection
+    if (bikingSessions.length) {
+      const bikeMiles = totalMiles(bikingSessions);
+      const bikePace = avgPace(bikingSessions);
+      const bikeBestDist = bestDistance(bikingSessions);
+      const bikeFastPace = bestPace(bikingSessions);
+      h += `<div class="section-label" style="margin-top:12px;font-size:10px;color:var(--end)">🚴 Biking</div>`;
+      h += `<div class="stats-grid">
+        ${bikeMiles > 0 ? `<div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
+          <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Distance</div>
+          <div class="stat-tile-value" style="color:var(--cardio-text)">${bikeMiles.toFixed(1)}</div>
+          <div class="stat-tile-unit">total miles</div>
+          ${(() => { const dc = distanceComparisonPair(bikeMiles, sessions.length + 1); return `<div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--end);margin-top:4px;opacity:0.9;line-height:1.5">≈ ${dc.local}<br>≈ ${dc.national}</div>`; })()}
+        </div>` : ''}
+        <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
+          <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Avg pace</div>
+          <div class="stat-tile-value" style="color:var(--cardio-text);font-size:20px">${bikePace || '—'}</div>
+          <div class="stat-tile-unit">min / mile</div>
+        </div>
+        <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
+          <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Best distance</div>
+          <div class="stat-tile-value" style="color:var(--cardio-text);font-size:20px">${bikeBestDist ? bikeBestDist.dist.toFixed(1) : '—'}</div>
+          <div class="stat-tile-unit">${bikeBestDist ? 'mi · ' + new Date(bikeBestDist.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : 'miles'}</div>
+        </div>
+        <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
+          <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Best pace</div>
+          <div class="stat-tile-value" style="color:var(--cardio-text);font-size:20px">${bikeFastPace ? bikeFastPace.paceStr : '—'}</div>
+          <div class="stat-tile-unit">${bikeFastPace ? 'min/mi · ' + new Date(bikeFastPace.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : 'min / mile'}</div>
+        </div>
+      </div>`;
+    }
   }
   h += `<div class="section-label" style="margin-top:18px">Volume by day type</div>`;
   h += `<div class="stats-grid">
@@ -4246,6 +4350,7 @@ function buildOverviewHTML() {
       <div class="stat-tile-label">Total volume</div>
       <div class="stat-tile-value">${fmt(lbs)}</div>
       <div class="stat-tile-unit">lbs across all sessions</div>
+      ${lbs > 0 ? `<div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--str);margin-top:4px;opacity:0.9;line-height:1.6">≈ ${volumeComparisons(lbs, sessions.length)}<br>≈ ${volumeComparisonScaled(lbs, sessions.length)}</div>` : ''}
     </div>
     <div class="stat-tile push-tint">
       <div class="stat-tile-label">Push volume</div>
@@ -4465,7 +4570,12 @@ function buildBestsHTML() {
       html += `<div class="pb-exercise-card">
         <div class="pb-ex-header">
           <div class="pb-ex-name">${name}</div>
-          <div class="pb-ex-tag" style="color:${g.color}">${g.label}</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button onclick="showProgressionScreen('${name.replace(/'/g,"\\'")}','bests')"
+              style="background:none;border:none;font-size:13px;cursor:pointer;opacity:0.6;padding:0"
+              title="View progress">📈</button>
+            <div class="pb-ex-tag" style="color:${g.color}">${g.label}</div>
+          </div>
         </div>
         <div class="pb-records">`;
       if (hasWeight) {
@@ -4524,7 +4634,7 @@ function buildBestsHTML() {
         ? act.name.match(/\(([^)]+)\)/)?.[1] || act.name
         : act.name;
 
-      html += buildActivityPBCard(displayName, cardColor, cardBg, cardText, records);
+      html += buildActivityPBCard(act.name, displayName, cardColor, cardBg, cardText, records);
     });
   });
 
@@ -4626,12 +4736,18 @@ function computeActivityBests(activityName) {
   };
 }
 
-function buildActivityPBCard(name, color, bg, text, records) {
+function buildActivityPBCard(fullName, displayName, color, bg, text, records) {
   const fmtDate = d => d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+  const safeName = fullName.replace(/'/g,"\\'");
   let html = `<div class="pb-exercise-card">
     <div class="pb-ex-header">
-      <div class="pb-ex-name">${name}</div>
-      <div class="pb-ex-tag" style="color:${color}">${records.totalSessions} session${records.totalSessions!==1?'s':''}</div>
+      <div class="pb-ex-name">${displayName}</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button onclick="showProgressionScreen('${safeName}','bests')"
+          style="background:none;border:none;font-size:13px;cursor:pointer;opacity:0.6;padding:0"
+          title="View progress">📈</button>
+        <div class="pb-ex-tag" style="color:${color}">${records.totalSessions} session${records.totalSessions!==1?'s':''}</div>
+      </div>
     </div>
     <div class="pb-records">`;
 
@@ -4667,13 +4783,44 @@ function buildActivityPBCard(name, color, bg, text, records) {
 // ════════════════════════════════════════════════════════════════════════════
 // DATA & BACKUP SCREEN
 // ════════════════════════════════════════════════════════════════════════════
-function showData() {
+function showProfile() {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-data').classList.add('active');
-  setActiveNav('bnav-data');
+  setActiveNav('bnav-profile');
   window.scrollTo(0, 0);
-  document.getElementById('data-body').scrollTop = 0;
-  renderDataScreen();
+  const body = document.getElementById('data-body');
+  body.innerHTML = buildProfileHTML();
+  body.scrollTop = 0;
+  // Append data & backup section below profile
+  const totalSets = sessions.reduce((acc, s) =>
+    acc + s.exercises.reduce((a, e) => a + e.sets.filter(st => st.reps).length, 0), 0);
+  const firstSession = sessions.length
+    ? new Date(sessions[0].date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+  const pbCount = Object.keys(computePBs()).length;
+  body.innerHTML += `
+    <div class="section-label" style="margin-top:24px">Data &amp; Backup</div>
+    <div class="data-section-card">
+      <div class="data-section-row"><div><div class="data-row-label">Total sessions</div><div class="data-row-value">${sessions.length}</div></div></div>
+      <div class="data-section-row"><div><div class="data-row-label">Total sets logged</div><div class="data-row-value">${totalSets}</div></div></div>
+      <div class="data-section-row"><div><div class="data-row-label">Exercises with PBs</div><div class="data-row-value">${pbCount}</div></div></div>
+      <div class="data-section-row"><div><div class="data-row-label">Tracking since</div><div class="data-row-value">${firstSession}</div></div></div>
+    </div>
+    <div class="data-info-box" style="margin-top:16px">
+      <strong>Export</strong> saves all sessions and profile to a .json file.
+      <strong>Import</strong> merges a backup with your current data.
+    </div>
+    <div style="padding:0 18px 32px;margin-top:12px;display:flex;flex-direction:column;gap:10px">
+      <button class="data-action-btn export" onclick="exportData()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export data
+      </button>
+      <label class="data-action-btn" style="cursor:pointer;justify-content:center;display:flex;align-items:center;gap:8px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Import data
+        <input type="file" accept=".json" onchange="importData(event)" style="display:none">
+      </label>
+      <button class="data-action-btn danger" onclick="confirmClearData()">Clear all data</button>
+    </div>`;
 }
 
 function renderDataScreen() {
@@ -5410,25 +5557,49 @@ function renderGlossary(query) {
       if (rows) statsHtml = `<div class="glossary-stats">${rows}</div>`;
     }
 
-    // Mastery bar — only for weight-based exercises
+    // Mastery bar — reps-based for exercises, duration-based for activities
     let masteryHtml = '';
     if (!item.isActivity) {
       const m = mastery[item.name];
-      const totalVolume = m ? m.totalVolume : 0;
+      const totalReps = m ? m.totalReps : 0;
       const fills = m ? m.fills : 0;
-      const withinCycle = totalVolume % MASTERY_VOLUME_PER_FILL;
-      const pct = Math.round((withinCycle / MASTERY_VOLUME_PER_FILL) * 100);
+      const threshold = m ? m.threshold : getMasteryThreshold(item.name);
+      const withinCycle = totalReps % threshold;
+      const pct = Math.round((withinCycle / threshold) * 100);
       const fillLabel = fills > 0 ? `×${fills} filled` : 'not yet filled';
+      const tierLabel = MASTERY_TIERS.heavy.exercises.has(item.name) ? 'heavy compound' :
+                        MASTERY_TIERS.moderate.exercises.has(item.name) ? 'compound' : 'isolation';
       masteryHtml = `<div style="margin:10px 12px 4px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px">Mastery</div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px">Mastery <span style="opacity:0.5">· ${tierLabel}</span></div>
           <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dex);${fills>0?'':'opacity:0.5'}">${fillLabel}</div>
         </div>
         <div style="height:4px;background:#2A2820;border-radius:2px;overflow:hidden">
           <div style="height:100%;width:${pct}%;background:var(--dex);border-radius:2px;transition:width 0.4s ease"></div>
         </div>
         <div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text-dim);margin-top:3px">
-          ${fmt(withinCycle)} / ${fmt(MASTERY_VOLUME_PER_FILL)} lbs to next fill
+          ${withinCycle} / ${threshold} reps to next fill
+        </div>
+      </div>`;
+    } else if (ACTIVITY_MASTERY_THRESHOLDS[item.name]) {
+      const m = mastery[item.name];
+      const totalMins = m ? Math.round(m.totalMinutes) : 0;
+      const fills = m ? m.fills : 0;
+      const threshold = getActivityMasteryThreshold(item.name);
+      const withinCycle = Math.round(totalMins % threshold);
+      const pct = Math.round((withinCycle / threshold) * 100);
+      const fillLabel = fills > 0 ? `×${fills} filled` : 'not yet filled';
+      const barColor = (item.name === 'Running' || item.name === 'Biking') ? 'var(--end)' : 'var(--agi)';
+      masteryHtml = `<div style="margin:10px 12px 4px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px">Mastery <span style="opacity:0.5">· duration</span></div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:${barColor};${fills>0?'':'opacity:0.5'}">${fillLabel}</div>
+        </div>
+        <div style="height:4px;background:#2A2820;border-radius:2px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${barColor};border-radius:2px;transition:width 0.4s ease"></div>
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text-dim);margin-top:3px">
+          ${fmtDuration(withinCycle)} / ${fmtDuration(threshold)} to next fill
         </div>
       </div>`;
     }
@@ -5443,7 +5614,12 @@ function renderGlossary(query) {
           <div class="glossary-ex-name">${item.name}</div>
           <div class="glossary-ex-tag" style="color:${item.color}">${tagLine}</div>
         </div>
-        <span class="glossary-chevron">⌄</span>
+        <div style="display:flex;align-items:center;gap:8px;padding-right:4px">
+          <button onclick="event.stopPropagation();showProgressionScreen('${item.name.replace(/'/g,"\\'")}','glossary')"
+            style="background:none;border:none;font-size:14px;cursor:pointer;padding:2px 4px;opacity:0.6"
+            title="View progress">📈</button>
+          <span class="glossary-chevron">⌄</span>
+        </div>
       </button>
       <div class="glossary-detail">
         <div class="glossary-desc">${item.desc}</div>
@@ -5533,6 +5709,8 @@ const ACHIEVEMENT_REPEAT_XP = {
   million:       200,   // full bonus — unlikely to trigger more than once a year
   five_k:         50,
   marathon:       75,
+  ten_mile_ride:  50,
+  century_ride:   75,
   breakthrough:   75,
   untouchable:   100,
   warrior:        50,
@@ -5558,6 +5736,7 @@ const ACTIVITY_ATTR_MAP = {
   'Taekwondo (Fitness)':             { primary:['end'], minor:['agi'] },
   'Taekwondo (General)':             { primary:['agi'], minor:['end','dex'] },
   'Running':                         { primary:['end'], minor:['agi'] },
+  'Biking':                          { primary:['end'], minor:['agi'] },
   'General Core Workout':            { primary:['str'], minor:['end'] },
 };
 
@@ -5606,6 +5785,8 @@ function calcSessionXP(s, priorSessions, priorPBs) {
         rate = 10;
       } else if (name === 'Running' || name === 'General Core Workout') {
         rate = 8;
+      } else if (name === 'Biking') {
+        rate = 7;
       } else if (vm2.type === 'core') {
         rate = 5; // standalone Core A/B/C
       } else if (s.variationKey === CUSTOM_KEY) {
@@ -5728,24 +5909,94 @@ function calcSessionXP(s, priorSessions, priorPBs) {
 }
 
 // ── Exercise mastery ───────────────────────────────────────────────────────
-const MASTERY_VOLUME_PER_FILL = 500; // lbs
+// ── Mastery system — reps-based with tiered thresholds ────────────────────
+// Tier 1: Heavy compounds — 1,000 reps per fill
+// Tier 2: Moderate compounds — 750 reps per fill
+// Tier 3: Isolation / everything else — 500 reps per fill
+
+const MASTERY_TIERS = {
+  heavy: {
+    threshold: 1000,
+    label: 'heavy compound',
+    exercises: new Set([
+      'Barbell Bench Press','Barbell Back Squat','Conventional Deadlift','Barbell Row',
+      'Romanian Deadlift','Leg Press','Sumo Deadlift','Hack Squat',
+      'Barbell Overhead Press','Incline Barbell Bench Press','Close-Grip Bench Press',
+      'Barbell Hip Thrust','Barbell Lunge','Trap Bar Deadlift',
+    ])
+  },
+  moderate: {
+    threshold: 750,
+    label: 'compound',
+    exercises: new Set([
+      'Dumbbell Bench Press','Incline Dumbbell Press','Dumbbell Shoulder Press',
+      'Arnold Press','Dumbbell Row','Pull-Up','Chin-Up','Weighted Pull-Up',
+      'Dumbbell Romanian Deadlift','Goblet Squat','Bulgarian Split Squat',
+      'Dumbbell Lunge','Step-Up','Dumbbell Hip Thrust','Landmine Press',
+      'Cable Row','Lat Pulldown','Chest-Supported Row','Seal Row',
+      'Dumbbell Fly','Cable Fly','Pec Deck',
+    ])
+  },
+};
+
+// Activity mastery — duration based (minutes per fill)
+const ACTIVITY_MASTERY_THRESHOLDS = {
+  'Running':                          600,  // ~20 sessions at 30 min
+  'Biking':                           600,  // ~20 sessions at 30 min
+  'Taekwondo (General)':              700,  // ~12 sessions at 60 min
+  'Taekwondo (Fitness)':              700,
+  'Taekwondo (Sparring)':             700,
+  'Taekwondo (Small Target Training)':700,
+  'Taekwondo (Partner Drills)':       700,
+  'General Core Workout':             300,  // ~15 sessions at 20 min
+};
+
+function getMasteryThreshold(exerciseName) {
+  if (MASTERY_TIERS.heavy.exercises.has(exerciseName)) return MASTERY_TIERS.heavy.threshold;
+  if (MASTERY_TIERS.moderate.exercises.has(exerciseName)) return MASTERY_TIERS.moderate.threshold;
+  return 500; // isolation / default
+}
+
+function getActivityMasteryThreshold(activityName) {
+  return ACTIVITY_MASTERY_THRESHOLDS[activityName] || 600; // default 600 min
+}
 
 function computeMastery(sessionList) {
-  // Per exercise: { totalVolume, fills, currentBar (0-1), xpBonus }
+  // Per exercise: { totalReps, fills, barProgress, threshold, isActivity }
+  // Per activity: { totalMinutes, fills, barProgress, threshold, isActivity }
   const mastery = {};
+
   sessionList.forEach(s => {
+    // Exercise-based mastery (reps)
     s.exercises.forEach(ex => {
       if (!ex.name) return;
-      if (!mastery[ex.name]) mastery[ex.name] = { totalVolume: 0, fills: 0, barProgress: 0 };
-      const vol = ex.sets.reduce((acc, st) => acc + ((parseFloat(st.reps)||0) * (parseFloat(st.weight)||0)), 0);
-      mastery[ex.name].totalVolume += vol;
+      if (!mastery[ex.name]) mastery[ex.name] = { totalReps: 0, fills: 0, barProgress: 0, isActivity: false };
+      const reps = ex.sets.reduce((acc, st) => acc + (parseFloat(st.reps)||0), 0);
+      mastery[ex.name].totalReps += reps;
     });
+
+    // Activity-based mastery (duration in minutes)
+    if (s.variationKey === CUSTOM_KEY && s.customName && ACTIVITY_MASTERY_THRESHOLDS[s.customName]) {
+      const name = s.customName;
+      if (!mastery[name]) mastery[name] = { totalMinutes: 0, fills: 0, barProgress: 0, isActivity: true };
+      mastery[name].totalMinutes += parseFloat(s.duration) || 0;
+    }
   });
+
   // Compute fills and bar progress
   Object.keys(mastery).forEach(name => {
     const m = mastery[name];
-    m.fills = Math.floor(m.totalVolume / MASTERY_VOLUME_PER_FILL);
-    m.barProgress = (m.totalVolume % MASTERY_VOLUME_PER_FILL) / MASTERY_VOLUME_PER_FILL;
+    if (m.isActivity) {
+      const threshold = getActivityMasteryThreshold(name);
+      m.threshold = threshold;
+      m.fills = Math.floor(m.totalMinutes / threshold);
+      m.barProgress = (m.totalMinutes % threshold) / threshold;
+    } else {
+      const threshold = getMasteryThreshold(name);
+      m.threshold = threshold;
+      m.fills = Math.floor(m.totalReps / threshold);
+      m.barProgress = (m.totalReps % threshold) / threshold;
+    }
   });
   return mastery;
 }
@@ -5794,7 +6045,11 @@ const ACHIEVEMENTS = [
   // Running
   { id:'first_mile',   cat:'running',     icon:'👟', name:'First Mile',             desc:'Log a 1-mile run.',                                  repeatable: false, check: (s,_,m) => maxRunDist(s) >= 1,                   countFn: null,                                           progressFn: (s,_,m) => Math.min(1, maxRunDist(s) / 1),                      title: null },
   { id:'five_k',       cat:'running',     icon:'🏃', name:'5K',                     desc:'Run 3.1+ miles in one session. Repeats for every time you hit 3.1+ miles.', repeatable: true, check: (s,_,m) => maxRunDist(s) >= 3.1,                countFn: (s,_,m) => runSessionsOver(s, 3.1),            progressFn: (s,_,m) => Math.min(1, maxRunDist(s) / 3.1),                   title: null },
-  { id:'marathon',     cat:'running',     icon:'🏅', name:'Marathoner',             desc:'Run 26.2+ miles cumulative. Repeats every 26.2 miles.', repeatable: true, check: (s,_,m) => totalMiles(cardioSessions(s)) >= 26.2, countFn: (s,_,m) => Math.floor(totalMiles(cardioSessions(s)) / 26.2), progressFn: (s,_,m) => (totalMiles(cardioSessions(s)) % 26.2) / 26.2, title: 'The Marathoner' },
+  { id:'marathon',     cat:'running',     icon:'🏅', name:'Marathoner',             desc:'Run 26.2+ miles cumulative. Repeats every 26.2 miles.', repeatable: true, check: (s,_,m) => totalRunMiles(s) >= 26.2, countFn: (s,_,m) => Math.floor(totalRunMiles(s) / 26.2), progressFn: (s,_,m) => (totalRunMiles(s) % 26.2) / 26.2, title: 'The Marathoner' },
+  // Biking
+  { id:'first_ride',   cat:'biking',      icon:'🚴', name:'First Ride',             desc:'Log your first bike ride.',                          repeatable: false, check: (s,_,m) => maxBikeDist(s) >= 0.1,                countFn: null,                                           progressFn: (s,_,m) => Math.min(1, maxBikeDist(s) > 0 ? 1 : 0),            title: null },
+  { id:'ten_mile_ride',cat:'biking',      icon:'🚵', name:'Ten Miler',              desc:'Bike 10+ miles in one session. Repeats each time.', repeatable: true,  check: (s,_,m) => maxBikeDist(s) >= 10,                 countFn: (s,_,m) => bikeSessionsOver(s, 10),            progressFn: (s,_,m) => Math.min(1, maxBikeDist(s) / 10),                   title: null },
+  { id:'century_ride', cat:'biking',      icon:'🏆', name:'Century Ride',           desc:'Bike 100+ miles cumulative. Repeats every 100 miles.', repeatable: true, check: (s,_,m) => totalBikeMiles(s) >= 100,            countFn: (s,_,m) => Math.floor(totalBikeMiles(s) / 100), progressFn: (s,_,m) => (totalBikeMiles(s) % 100) / 100,                    title: 'Road Warrior' },
   // PBs
   { id:'first_pb',     cat:'pbs',         icon:'⭐', name:'Personal Best',          desc:'Set your first personal best.',                      repeatable: false, check: (s,_,m) => Object.keys(computePBs(s)).length >= 1, countFn: null,                                           progressFn: (s,_,m) => Math.min(1, Object.keys(computePBs(s)).length),       title: null },
   { id:'breakthrough', cat:'pbs',         icon:'💥', name:'Breakthrough',           desc:'Set 5+ PBs in one session. Repeats for each time you do it.', repeatable: true, check: (s,_,m) => hasManyPBsInOneSession(s, 5),         countFn: (s,_,m) => countBreakthroughSessions(s, 5),    progressFn: (s,_,m) => hasManyPBsInOneSession(s,5) ? 1 : 0,                title: null },
@@ -5822,10 +6077,22 @@ function weeksWith3Plus(sessionList) {
   return Object.values(wc).filter(v => v >= 3).length;
 }
 function maxRunDist(sessionList) {
-  return Math.max(0, ...sessionList.map(s => parseFloat(s.distance)||0));
+  return Math.max(0, ...sessionList.filter(s => s.customName === 'Running').map(s => parseFloat(s.distance)||0));
 }
 function runSessionsOver(sessionList, dist) {
-  return sessionList.filter(s => (parseFloat(s.distance)||0) >= dist).length;
+  return sessionList.filter(s => s.customName === 'Running' && (parseFloat(s.distance)||0) >= dist).length;
+}
+function totalRunMiles(sessionList) {
+  return sessionList.filter(s => s.customName === 'Running').reduce((acc, s) => acc + (parseFloat(s.distance)||0), 0);
+}
+function maxBikeDist(sessionList) {
+  return Math.max(0, ...sessionList.filter(s => s.customName === 'Biking').map(s => parseFloat(s.distance)||0));
+}
+function bikeSessionsOver(sessionList, dist) {
+  return sessionList.filter(s => s.customName === 'Biking' && (parseFloat(s.distance)||0) >= dist).length;
+}
+function totalBikeMiles(sessionList) {
+  return sessionList.filter(s => s.customName === 'Biking').reduce((acc, s) => acc + (parseFloat(s.distance)||0), 0);
 }
 function tkdCount(sessionList) {
   return sessionList.filter(s => s.customName && s.customName.startsWith('Taekwondo')).length;
@@ -5975,7 +6242,7 @@ function generateTagline(sessionList) {
   const legsC  = sessionList.filter(s => VARIATIONS[s.variationKey] && VARIATIONS[s.variationKey].type === 'legs').length;
   const cardioC= cardioSessions(sessionList).length;
   const tkdC   = tkdCount(sessionList);
-  const runDist= totalMiles(cardioSessions(sessionList));
+  const runDist= totalRunMiles(sessionList);
   const lbs    = totalLbs(sessionList);
 
   if (!sessionList.length) return 'Just getting started.';
@@ -6026,6 +6293,29 @@ function showXPOverlay(summary) {
     <div class="xp-breakdown-label">💪 Volume bonus</div>
     <div class="xp-breakdown-val">+${bd.volume}</div>
   </div>`;
+
+  // Session contribution comparisons
+  const sid = summary.session.id;
+  const sessVol = summary.session.exercises.reduce((acc,e) =>
+    acc + e.sets.reduce((a,st) => a + ((parseFloat(st.reps)||0)*(parseFloat(st.weight)||0)), 0), 0);
+  const sessDist = parseFloat(summary.session.distance) || 0;
+
+  if (sessVol > 0) {
+    const c1 = volumeComparisons(sessVol, sid);
+    const c2 = volumeComparisonScaled(sessVol, sid);
+    html += `<div class="xp-breakdown-row" style="border-color:#2A2820;flex-direction:column;align-items:flex-start;gap:2px">
+      <div class="xp-breakdown-label" style="opacity:0.5;font-size:9px">THIS SESSION MOVED</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--str);line-height:1.6">≈ ${c1}<br>≈ ${c2}</div>
+    </div>`;
+  }
+
+  if (sessDist > 0) {
+    const dc = distanceComparisonPair(sessDist, sid);
+    html += `<div class="xp-breakdown-row" style="border-color:#2A2820;flex-direction:column;align-items:flex-start;gap:2px">
+      <div class="xp-breakdown-label" style="opacity:0.5;font-size:9px">THIS SESSION COVERED</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--end);line-height:1.6">≈ ${dc.local}<br>≈ ${dc.national}</div>
+    </div>`;
+  }
 
   if (bd.pr > 0) html += `<div class="xp-breakdown-row" style="border-color:var(--str)">
     <div class="xp-breakdown-label">⭐ Personal best bonus!</div>
@@ -6367,9 +6657,9 @@ function buildProfileHTML() {
   const inProgress = achievements.filter(a => !a.earned);
 
   // One-time achievements — no meaningful progress bar
-  const ONE_TIME_IDS = new Set(['first_rep','first_pb','first_mile','ex_initiate']);
+  const ONE_TIME_IDS = new Set(['first_rep','first_pb','first_mile','ex_initiate','first_ride']);
   // Count-only achievements — show count not a bar
-  const COUNT_ONLY_IDS = new Set(['five_k','breakthrough']);
+  const COUNT_ONLY_IDS = new Set(['five_k','breakthrough','ten_mile_ride']);
 
   // Returns a { label, showBar } for the progress footer of each achievement
   function achievementProgressLabel(a, earned) {
@@ -6389,7 +6679,10 @@ function buildProfileHTML() {
       case 'ton_moved':      return { label: `${fmt(lbs % 2000)} / ${fmt(2000)} lbs`, showBar: true };
       case 'freight':        return { label: `${fmt(lbs % 100000)} / ${fmt(100000)} lbs`, showBar: true };
       case 'million':        return { label: `${fmt(lbs % 1000000)} / ${fmt(1000000)} lbs`, showBar: true };
-      case 'marathon':       return { label: `${totalMiles(cardioSessions(s)).toFixed(1)} / 26.2 mi cumulative`, showBar: true };
+      case 'marathon':       return { label: `${totalRunMiles(s).toFixed(1)} / 26.2 mi cumulative`, showBar: true };
+      case 'first_ride':     return { label: maxBikeDist(s) > 0 ? '✓ Earned' : 'Not yet unlocked', showBar: false };
+      case 'ten_mile_ride':  return { label: maxBikeDist(s) >= 10 ? `×${bikeSessionsOver(s,10)} completed` : 'Not yet unlocked', showBar: false };
+      case 'century_ride':   return { label: `${totalBikeMiles(s).toFixed(1)} / 100 mi cumulative`, showBar: true };
       case 'untouchable':    return { label: `${countAllTimePBEvents(s) % 50} / 50 PBs`, showBar: true };
       case 'warrior':        return { label: `${tkdCount(s) % 10} / 10 sessions`, showBar: true };
       case 'sparring':       return { label: `${tkdTypeCount(s,'Sparring') % 10} / 10 sessions`, showBar: true };
@@ -6570,11 +6863,6 @@ function openQuickLog() {
   const overlay = document.getElementById('quick-log-overlay');
   overlay.style.display = 'flex';
   renderQuickLogSheet();
-  // Focus search after short delay for sheet animation
-  setTimeout(() => {
-    const input = document.getElementById('ql-search');
-    if (input) input.focus();
-  }, 100);
 }
 
 function closeQuickLog(e) {
@@ -6844,6 +7132,406 @@ function minSecToDecimal(min, sec) {
   return total > 0 ? String(Math.round(total * 100) / 100) : '';
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// EXERCISE PROGRESSION SCREEN
+// ════════════════════════════════════════════════════════════════════════════
+
+let progressionReferrer = 'glossary';
+let progressionExName = null;
+let progressionMetricIdx = 0;
+
+function showProgressionScreen(exName, referrer) {
+  progressionExName = exName;
+  progressionReferrer = referrer || 'glossary';
+  progressionMetricIdx = 0;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-progression').classList.add('active');
+  setActiveNav(null);
+  document.getElementById('progression-topbar-title').textContent = exName;
+  const labels = { glossary:'Glossary', detail:'Session', bests:'Bests' };
+  document.getElementById('progression-back-label').textContent = labels[progressionReferrer] || 'Back';
+  renderProgressionScreen();
+}
+
+function closeProgressionScreen() {
+  if (progressionReferrer === 'detail') {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-session-detail').classList.add('active');
+  } else if (progressionReferrer === 'bests') {
+    showBests('bests');
+  } else {
+    showGlossary();
+  }
+}
+
+function setProgressionMetric(idx) {
+  progressionMetricIdx = idx;
+  renderProgressionScreen();
+}
+
+function renderProgressionScreen() {
+  const exName = progressionExName;
+  const body = document.getElementById('progression-body');
+  if (!exName) { body.innerHTML = ''; return; }
+
+  const actDef = PREDEFINED_ACTIVITIES.find(a => a.name === exName);
+  const isActivity = !!actDef;
+  const isRunning = actDef && actDef.supportsDistance;
+
+  // Build data points
+  const dataPoints = [];
+  if (isActivity) {
+    sessions.forEach(s => {
+      if (s.customName !== exName) return;
+      const dur = parseFloat(s.duration)||0;
+      const dist = parseFloat(s.distance)||0;
+      if (!dur && !dist) return;
+      const pace = (dist > 0 && dur > 0) ? dur/dist : null;
+      dataPoints.push({ date: s.date, id: s.id, dur, dist, pace });
+    });
+  } else {
+    sessions.forEach(s => {
+      const ex = s.exercises.find(e => e.name === exName);
+      if (!ex) return;
+      const validSets = ex.sets.filter(st => parseFloat(st.reps) > 0);
+      if (!validSets.length) return;
+      const maxWeight = Math.max(...validSets.map(st => parseFloat(st.weight)||0));
+      const maxReps = Math.max(...validSets.map(st => parseFloat(st.reps)||0));
+      const totalVol = validSets.reduce((a, st) => a + (parseFloat(st.reps)||0)*(parseFloat(st.weight)||0), 0);
+      dataPoints.push({ date: s.date, id: s.id, maxWeight, maxReps, totalVol });
+    });
+  }
+
+  // Define metrics
+  let metrics = [];
+  if (isRunning) {
+    metrics = [
+      { key:'dist',  label:'Distance', unit:'mi',     values: dataPoints.map(d=>d.dist),  fmtVal: v=>v.toFixed(2) },
+      { key:'dur',   label:'Duration', unit:'',       values: dataPoints.map(d=>d.dur),   fmtVal: v=>fmtDuration(v) },
+      { key:'pace',  label:'Pace',     unit:'min/mi', values: dataPoints.map(d=>d.pace),  fmtVal: v=>{ if(!v) return '—'; const m=Math.floor(v),s=Math.round((v-m)*60); return `${m}:${String(s).padStart(2,'0')}`; }, lowerIsBetter:true },
+    ];
+  } else if (isActivity) {
+    metrics = [
+      { key:'dur', label:'Duration', unit:'', values: dataPoints.map(d=>d.dur), fmtVal: v=>fmtDuration(v) },
+    ];
+  } else {
+    metrics = [
+      { key:'weight', label:'Weight',  unit:'lbs', values: dataPoints.map(d=>d.maxWeight), fmtVal: v=>fmt(v) },
+      { key:'reps',   label:'Reps',    unit:'',    values: dataPoints.map(d=>d.maxReps),   fmtVal: v=>String(v) },
+      { key:'volume', label:'Volume',  unit:'lbs', values: dataPoints.map(d=>d.totalVol),  fmtVal: v=>fmt(v) },
+    ];
+  }
+
+  const metric = metrics[Math.min(progressionMetricIdx, metrics.length-1)];
+  const values = metric.values;
+  const lowerIsBetter = !!metric.lowerIsBetter;
+
+  let html = '';
+
+  // Metric tabs
+  if (metrics.length > 1) {
+    html += `<div style="display:flex;gap:6px;padding:14px 18px 0;flex-wrap:wrap">`;
+    metrics.forEach((m, i) => {
+      const active = i === progressionMetricIdx;
+      html += `<button onclick="setProgressionMetric(${i})"
+        style="padding:6px 14px;border-radius:20px;font-family:'DM Mono',monospace;font-size:10px;
+          text-transform:uppercase;letter-spacing:0.5px;cursor:pointer;
+          background:${active?'var(--surface2)':'none'};
+          border:1px solid ${active?'var(--accent)':'var(--border)'};
+          color:${active?'var(--accent)':'var(--text-dim)'}">${m.label}</button>`;
+    });
+    html += `</div>`;
+  }
+
+  // Summary stats
+  if (dataPoints.length > 0) {
+    const validVals = values.filter(v=>v!=null&&v>0);
+    const best = lowerIsBetter ? Math.min(...validVals) : Math.max(...validVals);
+    const latest = values[values.length-1];
+    const avg = validVals.length ? validVals.reduce((a,b)=>a+b,0)/validVals.length : 0;
+    html += `<div class="stats-grid" style="padding:14px 18px 0">
+      <div class="stat-tile">
+        <div class="stat-tile-label">${lowerIsBetter?'Best (fastest)':'Best'}</div>
+        <div class="stat-tile-value" style="font-size:18px;color:var(--str)">${metric.fmtVal(best)}</div>
+        <div class="stat-tile-unit">${metric.unit}</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-tile-label">Latest</div>
+        <div class="stat-tile-value" style="font-size:18px">${metric.fmtVal(latest||0)}</div>
+        <div class="stat-tile-unit">${metric.unit}</div>
+      </div>
+      <div class="stat-tile wide">
+        <div class="stat-tile-label">Sessions logged</div>
+        <div class="stat-tile-value" style="font-size:18px">${dataPoints.length}</div>
+        <div class="stat-tile-unit">avg ${metric.fmtVal(avg)} ${metric.unit}</div>
+      </div>
+    </div>`;
+  }
+
+  // SVG line chart
+  if (dataPoints.length >= 2) {
+    const W=340, H=160, PAD={top:16,right:16,bottom:28,left:44};
+    const cW=W-PAD.left-PAD.right, cH=H-PAD.top-PAD.bottom;
+    const validVals = values.filter(v=>v!=null&&v>0);
+    const rawMin=Math.min(...validVals), rawMax=Math.max(...validVals);
+    const range = rawMax-rawMin||1;
+    const vMin=rawMin-range*0.1, vMax=rawMax+range*0.1;
+    const n = dataPoints.length;
+    const xS = i => PAD.left+(i/(n-1))*cW;
+    const yS = v => PAD.top+cH-((v-vMin)/(vMax-vMin))*cH;
+
+    let path='', gridlines='', yLabels='', xLabels='', dots='';
+    values.forEach((v,i)=>{ if(v==null||v<=0) return; path+=(path?'L':'M')+`${xS(i).toFixed(1)},${yS(v).toFixed(1)} `; });
+    for(let g=0;g<=4;g++){
+      const v=vMin+(vMax-vMin)*(g/4), y=yS(v).toFixed(1);
+      gridlines+=`<line x1="${PAD.left}" y1="${y}" x2="${W-PAD.right}" y2="${y}" stroke="#2A2820" stroke-width="1"/>`;
+      const lv = metric.key==='pace' ? (()=>{const m=Math.floor(v),s=Math.round((v-m)*60);return `${m}:${String(s).padStart(2,'0')}`;})()
+               : metric.key==='dur' ? `${Math.round(v)}m`
+               : Math.round(v)>=1000?`${(Math.round(v)/1000).toFixed(1)}k`:String(Math.round(v));
+      yLabels+=`<text x="${PAD.left-4}" y="${y}" text-anchor="end" dominant-baseline="middle" font-size="8" fill="#888780" font-family="monospace">${lv}</text>`;
+    }
+    [0,Math.floor((n-1)/2),n-1].filter((v,i,a)=>a.indexOf(v)===i).forEach(i=>{
+      const d=new Date(dataPoints[i].date);
+      xLabels+=`<text x="${xS(i).toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="8" fill="#888780" font-family="monospace">${d.getMonth()+1}/${d.getDate()}</text>`;
+    });
+    let runningBest = lowerIsBetter?Infinity:-Infinity;
+    values.forEach((v,i)=>{
+      if(v==null||v<=0) return;
+      const isPR = lowerIsBetter?v<runningBest:v>runningBest;
+      if(isPR) runningBest=v;
+      const cx=xS(i).toFixed(1), cy=yS(v).toFixed(1);
+      dots += isPR
+        ? `<text x="${cx}" y="${parseFloat(cy)-1}" text-anchor="middle" font-size="10" dominant-baseline="auto">⭐</text>`
+        : `<circle cx="${cx}" cy="${cy}" r="3" fill="var(--accent)" opacity="0.7"/>`;
+    });
+
+    html+=`<div style="padding:14px 18px 0;overflow-x:auto">
+      <svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;max-width:${W}px">
+        ${gridlines}${yLabels}${xLabels}
+        <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>
+        ${dots}
+      </svg>
+    </div>`;
+  } else if (dataPoints.length===1) {
+    html+=`<div style="padding:20px 18px;text-align:center;color:var(--text-dim);font-size:13px">Log at least 2 sessions to see a chart.</div>`;
+  } else {
+    html+=`<div style="padding:40px 18px;text-align:center;color:var(--text-dim);font-size:13px">No sessions logged for ${exName} yet.</div>`;
+  }
+
+  // Session history
+  if (dataPoints.length > 0) {
+    html+=`<div class="section-label" style="margin-top:16px">Session history</div><div style="padding:0 18px">`;
+    [...dataPoints].reverse().forEach(dp=>{
+      const d=new Date(dp.date);
+      const ds=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+      let detail='';
+      if(isRunning){
+        const p=[]; if(dp.dist)p.push(`${dp.dist.toFixed(2)} mi`); if(dp.dur)p.push(fmtDuration(dp.dur));
+        if(dp.pace){const m=Math.floor(dp.pace),s=Math.round((dp.pace-m)*60);p.push(`${m}:${String(s).padStart(2,'0')} /mi`);}
+        detail=p.join(' · ');
+      } else if(isActivity){
+        detail=dp.dur?fmtDuration(dp.dur):'';
+      } else {
+        const p=[];
+        if(dp.maxWeight>0)p.push(`${fmt(dp.maxWeight)} lbs`);
+        if(dp.maxReps>0)p.push(`${dp.maxReps} reps`);
+        if(dp.totalVol>0)p.push(`${fmt(dp.totalVol)} lbs vol`);
+        detail=p.join(' · ');
+      }
+      html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #1A1814">
+        <div style="font-size:12px;color:var(--text-muted)">${ds}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text)">${detail}</div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  html+=`<div style="height:32px"></div>`;
+  body.innerHTML=html;
+  body.scrollTop=0;
+}
+
+// ── Practical comparison helpers ─────────────────────────────────────────────
+// Each threshold has a pool of comparisons. Rotation is keyed off session.id
+// so a given session always shows the same comparison regardless of history length.
+
+function pickComp(pool, sessionId) {
+  return pool[Math.abs(sessionId) % pool.length];
+}
+
+// Volume pools — each threshold maps to a pool of equivalent comparisons
+const VOLUME_POOLS = [
+  { lbs:1,       pool:['a loaf of bread','a can of paint','a small dumbbell'] },
+  { lbs:2,       pool:['a bag of sugar','a large book','a small laptop'] },
+  { lbs:3,       pool:['a large bottle of water','a bag of flour','a small cat'] },
+  { lbs:5,       pool:['a bag of potatoes','a large textbook stack','a car battery'] },
+  { lbs:8,       pool:['a gallon of water × 4','a small microwave','a large house cat'] },
+  { lbs:10,      pool:['a bowling ball','a small fire extinguisher','a large watermelon'] },
+  { lbs:15,      pool:['a small dog','a car tire','a large laptop bag fully loaded'] },
+  { lbs:20,      pool:['a car tire','a medium dog','a bag of concrete mix'] },
+  { lbs:25,      pool:['a large dog','a car battery × 5','a large monitor'] },
+  { lbs:30,      pool:['a large dog (Lab)','a microwave × 2','2 bowling balls'] },
+  { lbs:40,      pool:['a small child','a large suitcase packed','5 gallons of water × 4'] },
+  { lbs:45,      pool:['an Olympic barbell','3 bowling balls','a large dog (Saint Bernard)'] },
+  { lbs:50,      pool:['a large bag of dog food','5 gallons of water × 5','a small generator'] },
+  { lbs:60,      pool:['a medium German shepherd','a large bag of cement','a full keg of beer (half)'] },
+  { lbs:75,      pool:['a full keg of beer (⅔)','a large toolbox','a small refrigerator'] },
+  { lbs:100,     pool:['a large television','a baby grand piano lid','2 cinder blocks × 6'] },
+  { lbs:120,     pool:['a full keg of beer','an average 10-year-old','a large monitor system'] },
+  { lbs:150,     pool:['a giant panda','a large motorcycle engine','a baby dolphin'] },
+  { lbs:175,     pool:['a large motorcycle','a big screen TV with stand','2 refrigerator doors'] },
+  { lbs:200,     pool:['a large vending machine','a baby grand piano leg','a big male kangaroo × 3'] },
+  { lbs:250,     pool:['a male lion','a large snowmobile','a grand piano bench + lid'] },
+  { lbs:300,     pool:['a full-grown male lion','a large upright piano','a refrigerator × 2'] },
+  { lbs:350,     pool:['a large safe','a grand piano (upright)','a medium-sized boat anchor'] },
+  { lbs:400,     pool:['a concert grand piano','a large black bear','a male tiger'] },
+  { lbs:450,     pool:['a large black bear','a medium ATV','a baby grand piano'] },
+  { lbs:500,     pool:['a black bear (large male)','a large motorcycle × 2','a full-size refrigerator × 3'] },
+  { lbs:600,     pool:['a baby grand piano','a large sports motorcycle × 2','a polar bear (female)'] },
+  { lbs:700,     pool:['a large grizzly bear','a typical oak tree trunk','5 full kegs of beer'] },
+  { lbs:750,     pool:['a grizzly bear','a large kayak × 10','a compact car door × 8'] },
+  { lbs:900,     pool:['a male polar bear','a large cargo motorcycle sidecar','6 full kegs of beer'] },
+  { lbs:1000,    pool:['a dairy cow','a baby grand piano × 2','a large stove × 7'] },
+  { lbs:1200,    pool:['a small racehorse','a large piano × 2','a riding lawnmower × 8'] },
+  { lbs:1500,    pool:['a small horse','a riding lawnmower × 10','a refrigerator × 10'] },
+  { lbs:1800,    pool:['a large horse','a baby grand piano × 3','a large ATV × 5'] },
+  { lbs:2000,    pool:['a smart car','a large horse','a refrigerator × 13'] },
+  { lbs:2500,    pool:['a large Clydesdale horse','a small car engine × 4','a concert grand piano × 5'] },
+  { lbs:3000,    pool:['a white rhinoceros','a compact car without engine','a large fishing boat anchor'] },
+  { lbs:3500,    pool:['a walrus','a large SUV door × 10','a baby hippo'] },
+  { lbs:4000,    pool:['a hippopotamus','a large pickup truck bed loaded','a grand piano × 8'] },
+  { lbs:4500,    pool:['a small SUV','a male hippo','a large concert grand × 9'] },
+  { lbs:5000,    pool:['a medium boat','a small SUV','a refrigerator × 33'] },
+  { lbs:6000,    pool:['a pickup truck','a male hippo × 1.5','a large concert grand × 12'] },
+  { lbs:7000,    pool:['a large SUV','a large pickup truck','3 compact cars (no engine)'] },
+  { lbs:8000,    pool:['an African elephant (female)','a large cargo van loaded','4 smart cars'] },
+  { lbs:9000,    pool:['a male giraffe','a large fire truck engine','a small bus'] },
+  { lbs:10000,   pool:['an African elephant (male)','a large school bus engine','5 smart cars'] },
+  { lbs:12000,   pool:['a school bus (empty)','a large RV','6 smart cars'] },
+  { lbs:14000,   pool:['a large delivery truck','a loaded moving truck','7 smart cars'] },
+  { lbs:15000,   pool:['a city bus (empty)','a loaded dump truck (half)','an elephant + a car'] },
+  { lbs:18000,   pool:['a large fire truck','a school bus with kids','2 African elephants'] },
+  { lbs:20000,   pool:['two elephants','a loaded city bus','a large yacht anchor'] },
+  { lbs:25000,   pool:['a loaded dump truck','a large military tank (light)','a loaded fire truck'] },
+  { lbs:30000,   pool:['a T-Rex (estimated)','a large cement mixer','a loaded city bus'] },
+  { lbs:40000,   pool:['a loaded school bus','a large military vehicle','4 large SUVs loaded'] },
+  { lbs:50000,   pool:['a Stegosaurus','a large fishing vessel anchor','5 African elephants'] },
+  { lbs:60000,   pool:['a sperm whale','a large crane counterweight','6 loaded dump trucks'] },
+  { lbs:80000,   pool:['a humpback whale','a large ship anchor','8 African elephants'] },
+  { lbs:100000,  pool:['a blue whale','a large naval gun turret','10 African elephants'] },
+  { lbs:120000,  pool:['a locomotive engine','a large crane arm','1.2 blue whales'] },
+  { lbs:150000,  pool:['two blue whales','a large railroad car loaded','15 African elephants'] },
+  { lbs:200000,  pool:['the Space Shuttle Endeavour','a large cargo ship section','20 African elephants'] },
+  { lbs:300000,  pool:['a Boeing 747 (empty)','30 African elephants','a large naval destroyer section'] },
+  { lbs:400000,  pool:['the International Space Station','a large cruise ship anchor','40 African elephants'] },
+  { lbs:500000,  pool:['a fully loaded Airbus A380','50 African elephants','a naval destroyer'] },
+  { lbs:750000,  pool:['the Saturn V rocket (fueled)','75 African elephants','a large submarine'] },
+  { lbs:1000000, pool:['the Statue of Liberty','100 African elephants','the Saturn V rocket × 1.3'] },
+  { lbs:2000000, pool:['the Eiffel Tower lower structure','200 African elephants','2 Statues of Liberty'] },
+  { lbs:5000000, pool:['a Great Pyramid cornerstone','the Eiffel Tower × 2.5','500 African elephants'] },
+];
+
+// Distance pools — local (Minneapolis) + national per threshold
+// Pools update every ~5 miles up to 50, then less frequently
+const DISTANCE_POOLS = [
+  { mi:0.1,   local:['across a city block in Minneapolis','from IDS Center to Nicollet Mall'],                                   national:['the length of 2 football fields','up the Statue of Liberty × 2'] },
+  { mi:0.2,   local:['from the Guthrie Theater to the Stone Arch Bridge','half a lap around Loring Park'],                       national:['up the Eiffel Tower (height is 0.2 mi)','the length of 4 football fields'] },
+  { mi:0.3,   local:['from Nicollet Mall to the Sculpture Garden','around Loring Park once'],                                    national:['up and down the Eiffel Tower','the length of the National Mall'] },
+  { mi:0.4,   local:['from First Ave to the Basilica','half the length of the Stone Arch Bridge walk'],                         national:['the length of Central Park west side','up the Empire State Building × 2'] },
+  { mi:0.5,   local:['across downtown Minneapolis','from US Bank Stadium to Target Field'],                                      national:['across the National Mall in DC','the length of the Golden Gate Bridge'] },
+  { mi:0.75,  local:['from downtown to the North Loop','around Loring Park and back'],                                           national:['the length of the Las Vegas Strip (core)','around the Capitol grounds in DC'] },
+  { mi:1,     local:['Nicollet Mall to the Stone Arch Bridge','from Target Field to the Walker Art Center'],                     national:['the length of Central Park','up the Burj Khalifa × 2','the length of the Brooklyn Bridge × 2'] },
+  { mi:1.5,   local:['around Lake of the Isles once','from Uptown to Lyn-Lake'],                                                 national:['the Las Vegas Strip end to end','the length of the National Mall twice'] },
+  { mi:2,     local:['downtown Minneapolis to Uptown','from the Walker Art Center to Lake Calhoun'],                             national:['across the Golden Gate Bridge and back','up the Eiffel Tower × 10','around the White House grounds × 8'] },
+  { mi:2.5,   local:['from the U of M to downtown Minneapolis','across the U of M campus twice'],                                national:['the length of the Las Vegas Strip × 2','up Mount Washington (NH) and back (halfway)'] },
+  { mi:3,     local:['from Dinkytown to downtown Minneapolis','around Lake of the Isles twice'],                                  national:['the length of Rodeo Drive × 20','up the Empire State Building × 12','the depth of the Grand Canyon and back'] },
+  { mi:3.1,   local:['a 5K through downtown Minneapolis','from Uptown to the Walker Art Center and back'],                       national:['a 5K race','3 laps around a standard running track × 13','the length of Central Park × 3'] },
+  { mi:4,     local:['around Lake Calhoun (Bde Maka Ska)','from the U of M to Uptown'],                                          national:['Manhattan island end to end (halfway)','up the Eiffel Tower × 20','the length of the Golden Gate Bridge × 7'] },
+  { mi:5,     local:['Minneapolis to St. Louis Park','from downtown to Lake Harriet'],                                            national:['Manhattan island end to end','up the Burj Khalifa × 10','the Grand Canyon rim to rim (¼)'] },
+  { mi:6,     local:['Minneapolis to Richfield','from Uptown to Edina (Mall of America area)'],                                   national:['across Niagara Falls and back','up the Empire State Building × 25','the length of Alcatraz Island × 40'] },
+  { mi:7,     local:['Minneapolis to St. Paul','from downtown Minneapolis to Mendota Heights'],                                   national:['the width of the Grand Canyon','up the Eiffel Tower × 35','the length of the National Mall × 15'] },
+  { mi:8,     local:['Minneapolis to Roseville','around Lake Calhoun twice'],                                                     national:['around Central Park twice','up Mount Whitney (CA) and back','the length of the Las Vegas Strip × 5'] },
+  { mi:9,     local:['Minneapolis to New Brighton','from downtown to White Bear Lake (⅓)'],                                      national:['the length of Yosemite Valley','up Pikes Peak (CO) (halfway)','the Grand Canyon rim to rim (⅓)'] },
+  { mi:10,    local:['Minneapolis to Edina','from the U of M to Eden Prairie (halfway)'],                                         national:['across the width of Rhode Island','up Pikes Peak (CO)','the Grand Canyon rim to rim (halfway)'] },
+  { mi:12,    local:['Minneapolis to Bloomington','from downtown to the Minnesota Zoo'],                                           national:['around Central Park × 3','the Yosemite Valley loop','up and down Mount Rainier (base to summit)'] },
+  { mi:13.1,  local:['a half marathon in the Twin Cities','from Minneapolis to Burnsville'],                                       national:['a half marathon','the length of the Grand Canyon (½ width × 2)','13 laps of the Indianapolis Motor Speedway'] },
+  { mi:15,    local:['Minneapolis to Eden Prairie','from downtown to Chaska (halfway)'],                                           national:['the length of the Appalachian Trail per average hiking day','across the Florida Keys (short section)','the Grand Canyon rim to rim × 2/3'] },
+  { mi:17,    local:['Minneapolis to Prior Lake','from downtown to Jordan (halfway)'],                                             national:['the length of Pikes Peak Highway','the Grand Canyon rim to rim × 3/4','the width of Manhattan × 10'] },
+  { mi:20,    local:['Minneapolis to Shakopee','from downtown to Lakeville'],                                                      national:['the Grand Canyon rim to rim','across the Florida Keys (south section)','20 laps of a NASCAR superspeedway'] },
+  { mi:22,    local:['Minneapolis to Burnsville','from downtown to Apple Valley'],                                                  national:['the length of Lake Tahoe','the width of the Florida panhandle','the Gettysburg battlefield perimeter × 5'] },
+  { mi:25,    local:['Minneapolis to Prior Lake','from downtown to New Prague'],                                                    national:['the length of the Florida Keys','across the Chesapeake Bay','the Tour de France average daily stage'] },
+  { mi:26.2,  local:['the Twin Cities Marathon route','from Minneapolis to Savage'],                                               national:['a full marathon','the length of the Grand Canyon south rim trail','26 times up and down the Eiffel Tower'] },
+  { mi:30,    local:['Minneapolis to Stillwater','from downtown to Hudson, WI'],                                                   national:['the width of Lake Tahoe','the length of Denali summit approach','the Grand Canyon length (north section)'] },
+  { mi:35,    local:['Minneapolis to Forest Lake','from downtown to Elk River'],                                                   national:['across the Chesapeake Bay Bridge twice','the width of the Great Smoky Mountains park','35 marathons at once (just kidding)'] },
+  { mi:40,    local:['Minneapolis to Northfield','from downtown to Faribault'],                                                    national:['the Grand Teton range end to end','the length of Olympic National Park coastline','the width of Yellowstone'] },
+  { mi:45,    local:['Minneapolis to Elk River','from downtown to St. Cloud (halfway)'],                                           national:['the length of the Natchez Trace Parkway (section)','the width of Lake Ontario at its narrowest','45 laps around a NASCAR superspeedway'] },
+  { mi:50,    local:['Minneapolis to St. Cloud','from downtown to Monticello and back'],                                           national:['Los Angeles to San Diego (halfway)','the length of the Delaware River','the width of the Florida peninsula'] },
+  { mi:60,    local:['Minneapolis to Hinckley','from downtown to Cambridge, MN'],                                                  national:['the width of the Florida peninsula','the length of Chesapeake Bay','New York to Philadelphia (highway)'] },
+  { mi:70,    local:['Minneapolis to Brainerd (halfway)','from downtown to Little Falls'],                                         national:['the width of the Great Smoky Mountains National Park','Los Angeles to Palm Springs','across Lake Michigan at its narrowest'] },
+  { mi:80,    local:['Minneapolis to Mora, MN','from downtown to Milaca and back'],                                                national:['San Francisco to San Jose','the width of the Everglades','across Long Island end to end'] },
+  { mi:90,    local:['Minneapolis to Rochester','from downtown to Faribault and back'],                                            national:['New York to Philadelphia and back','the Oregon coastline section','across Virginia end to end'] },
+  { mi:100,   local:['Minneapolis to Brainerd','from downtown to Wausau, WI (⅓)'],                                                national:['New York to Philadelphia by car','the length of the Blue Ridge Parkway section','the width of Texas panhandle'] },
+  { mi:130,   local:['Minneapolis to Duluth','the North Shore Drive starting point'],                                              national:['Washington DC to New York','the length of the Chesapeake & Ohio Canal','the width of Pennsylvania'] },
+  { mi:160,   local:['Minneapolis to Eau Claire, WI','from downtown to La Crosse, WI'],                                           national:['Los Angeles to San Diego and back','the length of the Florida Keys total','Washington DC to Philadelphia × 1.5'] },
+  { mi:200,   local:['Minneapolis to Sioux Falls, SD','from downtown to Madison, WI'],                                             national:['New York to Boston','the length of the Mississippi River through MN','the Natchez Trace Parkway (section)'] },
+  { mi:250,   local:['Minneapolis to Des Moines','from downtown to Omaha (½)'],                                                    national:['New York to Boston and back','the length of Lake Michigan','the Oregon Trail (⅙)'] },
+  { mi:300,   local:['Minneapolis to Milwaukee','from downtown to Chicago (¾)'],                                                   national:['Chicago to Detroit','the length of the Rio Grande (section)','the Pacific Crest Trail (Oregon section)'] },
+  { mi:400,   local:['Minneapolis to Chicago','from downtown to Indianapolis'],                                                    national:['Los Angeles to Las Vegas','the length of the Columbia River','the Appalachian Trail (New England section)'] },
+  { mi:500,   local:['Minneapolis to Detroit','from downtown to Cincinnati'],                                                      national:['Dallas to Houston × 2.5','Seattle to Portland × 3','the Oregon Trail (¼)'] },
+  { mi:650,   local:['Minneapolis to Kansas City','from downtown to St. Louis'],                                                   national:['Miami to Atlanta','the length of the Mississippi River (lower section)','the Pacific Crest Trail (California section)'] },
+  { mi:850,   local:['Minneapolis to St. Louis','from downtown to Memphis'],                                                       national:['New York to Miami (halfway)','the length of the Missouri River (section)','the Appalachian Trail (full, halfway)'] },
+  { mi:1000,  local:['Minneapolis to Nashville','from downtown to Dallas (¾)'],                                                    national:['Miami to New York','the Appalachian Trail (full)','the Pony Express route'] },
+  { mi:1200,  local:['Minneapolis to Dallas','from downtown to Houston'],                                                          national:['Chicago to Denver','the Oregon Trail (½)','New York to Miami and back (halfway)'] },
+  { mi:1400,  local:['Minneapolis to Denver','from downtown to Albuquerque'],                                                      national:['Seattle to San Francisco','the Pacific Crest Trail (Washington + Oregon)','the Lewis & Clark route (section)'] },
+  { mi:1700,  local:['Minneapolis to Phoenix','from downtown to Los Angeles (halfway more)'],                                      national:['New York to Miami and back','the Route 66 total length','the Pony Express route × 1.7'] },
+  { mi:2000,  local:['Minneapolis to Los Angeles','from downtown to Seattle and back'],                                            national:['Seattle to Los Angeles × 2','the Oregon Trail','the Continental Divide Trail (section)'] },
+  { mi:2200,  local:['Minneapolis to Portland, OR','from downtown to Vancouver, BC'],                                              national:['the Tour de France total distance','the Pacific Crest Trail','New York to Los Angeles × 0.8'] },
+  { mi:2500,  local:['Minneapolis to Anchorage','from downtown to Fairbanks, AK (halfway)'],                                       national:['the Continental Divide Trail','the Oregon Trail × 1.2','New York to Los Angeles'] },
+  { mi:2800,  local:['Minneapolis to Fairbanks, AK','from downtown to Juneau, AK × 2'],                                           national:['New York to Los Angeles','the Route 66 total × 1.1','coast to coast across the US'] },
+  { mi:3600,  local:['across the US from Minneapolis to both coasts','the continental US cross-country drive'],                    national:['across the continental US','the Lewis & Clark expedition route','the Appalachian Trail × 1.6'] },
+  { mi:4800,  local:['Minneapolis to Honolulu','halfway around the Northern Hemisphere at this latitude'],                         national:['New York to London','the Iditarod × 5','the Trans-Siberian Railway'] },
+  { mi:7900,  local:['one-third of the way around the Earth from Minneapolis'],                                                    national:['one third of the way around the globe','Los Angeles to Sydney','New York to Tokyo'] },
+  { mi:12500, local:['halfway around the Earth from Minneapolis'],                                                                  national:['halfway around the Earth','New York to the opposite side of the globe','the diameter of the Earth × 5'] },
+  { mi:24901, local:['all the way around the Earth'],                                                                               national:['all the way around the Earth','the circumference of the Moon × 10','New York to LA × 8.5'] },
+];
+
+function pickComp(pool, sessionId) {
+  return pool[Math.abs(parseInt(sessionId) || 0) % pool.length];
+}
+
+function getNearestPool(value, pools, key) {
+  let best = pools[0];
+  for (const p of pools) {
+    const v = p[key] !== undefined ? p[key] : p.mi;
+    if (v <= value) best = p;
+    else break;
+  }
+  return best;
+}
+
+function volumeComparisons(lbs, sessionId) {
+  if (lbs <= 0) return null;
+  const pool = getNearestPool(lbs, VOLUME_POOLS, 'lbs');
+  return pickComp(pool.pool, sessionId);
+}
+
+function volumeComparisonScaled(lbs, sessionId) {
+  // Find a second comparison from a different pool for the scaled line
+  // Use sessionId+1 to get a different rotation
+  const pool = getNearestPool(lbs, VOLUME_POOLS, 'lbs');
+  return pickComp(pool.pool, (parseInt(sessionId)||0) + 1);
+}
+
+function distanceComparisonPair(mi, sessionId) {
+  if (mi <= 0) return null;
+  const pool = getNearestPool(mi, DISTANCE_POOLS, 'mi');
+  const id = parseInt(sessionId) || 0;
+  return {
+    local: pickComp(pool.local, id),
+    national: pickComp(pool.national, id + 1),
+  };
+}
+
 updateTimerDisplay();
 showHome();
 </script>
@@ -6858,9 +7546,9 @@ showHome();
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
     <span>History</span>
   </button>
-  <button class="bnav-btn" id="bnav-data" onclick="showData()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-    <span>Data</span>
+  <button class="bnav-btn" id="bnav-profile" onclick="showProfile()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <span>Profile</span>
   </button>
   <button class="bnav-btn" id="bnav-bests" onclick="showBests()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
