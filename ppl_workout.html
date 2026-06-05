@@ -1287,7 +1287,7 @@ html, body {
     <div class="home-header">
       <div style="display:flex;align-items:baseline;gap:10px">
         <div class="home-logo">PPL<span>.</span></div>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:0.5px">v2.2</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:0.5px">v2.3</div>
       </div>
       <div class="home-date" id="home-date"></div>
     </div>
@@ -1487,7 +1487,7 @@ const VARIATIONS = {
       {name:'Push-ups (finisher)',sets:'2 × max',desc:'Standard push-up, hands shoulder-width apart. Keep a rigid plank from head to heels and lower your chest to the floor. Go to or near failure. Elevate hands on bench to reduce difficulty.'},
     ],
     core:[
-      {name:'Plank',sets:'3 × 30–45 sec',desc:'Forearms on the floor, body in a straight line from head to heels. Squeeze your glutes and brace your abs hard — don\'t let your hips sag or pike. 📝 Log as seconds held per set (e.g. 45 reps × 0 lbs = 45 sec hold).'},
+      {name:'Plank',sets:'3 × 30–45 sec',isTimed:true,timedUnit:'seconds',desc:'Forearms on the floor, body in a straight line from head to heels. Squeeze your glutes and brace your abs hard — don\'t let your hips sag or pike.'},
       {name:'Ab wheel rollout (or bench walkout)',sets:'3 × 8–10',desc:'Kneel and grip an ab wheel, or place hands on the bench edge and walk them forward. Roll or walk out slowly until nearly parallel to the floor, then pull back in using your abs.'},
       {name:'Dead bug',sets:'3 × 8/side',desc:'Lie on your back, arms up, knees at 90 degrees. Lower one arm overhead and the opposite leg toward the floor simultaneously, keeping lower back pressed into the ground. Return and alternate.'},
     ]
@@ -1524,7 +1524,7 @@ const VARIATIONS = {
     ],
     core:[
       {name:'Plank with shoulder taps',sets:'3 × 10/side',desc:'High plank, hands under shoulders. Lift one hand to tap opposite shoulder, return before switching. Resist any hip rotation throughout. Wider feet makes stabilizing easier.'},
-      {name:'Hollow body hold',sets:'3 × 20–30 sec',desc:'Lie on back, arms overhead, legs straight a few inches off floor. Press lower back firmly into ground and hold. If back arches, raise legs higher. The foundational anti-extension position in gymnastics.'},
+      {name:'Hollow body hold',sets:'3 × 20–30 sec',isTimed:true,timedUnit:'seconds',desc:'Lie on back, arms overhead, legs straight a few inches off floor. Press lower back firmly into ground and hold. If back arches, raise legs higher. The foundational anti-extension position in gymnastics.'},
       {name:'Ab wheel rollout (or bench walkout)',sets:'3 × 8–10',desc:'Kneel and grip an ab wheel, or place hands on the bench edge and walk them forward. Roll or walk out slowly until nearly parallel to the floor, then pull back in using your abs.'},
     ]
   },
@@ -1539,6 +1539,7 @@ const VARIATIONS = {
       {name:'Dumbbell curl',sets:'3 × 10–12',desc:'Dumbbells at sides, palms forward. Curl to shoulder height, elbows pinned to sides. Lower under full control. Can be done alternating or both arms simultaneously.'},
       {name:'Hammer curl',sets:'3 × 10–12',desc:'Dumbbells at sides, palms facing each other — neutral grip maintained throughout. Curl to shoulder height and lower under control. Shifts emphasis to brachialis and brachioradialis.'},
       {name:'Superman holds',sets:'3 × 10',desc:'Face down on floor, arms extended overhead. Lift arms, chest, and legs simultaneously squeezing glutes and back. Hold 2–3 seconds at top, then lower. No-equipment posterior chain finisher.'},
+      {name:'Dead hang',sets:'3 × 20–30 sec',isTimed:true,timedUnit:'seconds',desc:'Hang from a pull-up bar with straight arms and shoulders engaged — not shrugging. Hold for time to build grip strength and shoulder stability. An excellent finisher for any pull session.'},
     ],
     core:[
       {name:'Bench-assisted leg raises',sets:'3 × 12–15',desc:'Lie flat on bench, hands gripping sides above head. Raise straight legs from hanging to perpendicular, then lower slowly. Bench allows greater range than floor raises with a full hip flexor stretch at bottom.'},
@@ -1595,7 +1596,7 @@ const VARIATIONS = {
       {name:'Calf raises',sets:'3 × 15–20',desc:'Dumbbells at sides, balls of feet on bench or step edge. Rise onto toes as high as possible, hold briefly, then lower all the way down past the step for a full stretch. Calves respond well to higher reps and slow lowering.'},
     ],
     core:[
-      {name:'Side plank',sets:'3 × 25–35 sec/side',desc:'On your side, forearm on floor, elbow under shoulder. Lift hips so only forearm and side of foot contact floor, forming a straight line head to feet. Keep hips stacked — resist letting them drop.'},
+      {name:'Side plank',sets:'3 × 25–35 sec/side',isTimed:true,timedUnit:'seconds',desc:'On your side, forearm on floor, elbow under shoulder. Lift hips so only forearm and side of foot contact floor, forming a straight line head to feet. Keep hips stacked — resist letting them drop.'},
       {name:'Dead bug with rotation',sets:'3 × 8/side',desc:'On back, arms up, knees at 90 degrees. As you lower one arm and opposite leg, add a slight torso rotation toward the working side. Keep lower back pressed into ground. Adds anti-rotation to the standard dead bug.'},
       {name:'Pallof press (band or DB hold)',sets:'3 × 10/side',desc:'Stand sideways to a band anchor or hold a light dumbbell with both hands at chest. Press straight out and hold for a beat, then return. Resistance pulls you into rotation — your job is to resist. Complete all reps on one side before switching.'},
     ]
@@ -1631,7 +1632,7 @@ const VARIATIONS = {
       {name:'Calf raises',sets:'3 × 15–20',desc:'Dumbbells at sides, balls of feet on bench or step edge. Rise onto toes as high as possible, hold briefly, then lower all the way down past the step for a full stretch.'},
     ],
     core:[
-      {name:'Side plank',sets:'3 × 25–35 sec/side',desc:'On your side, forearm on floor, elbow under shoulder. Lift hips so only forearm and side of foot contact floor, forming a straight line head to feet. Keep hips stacked. After heavy posterior chain work, lateral stability targets obliques without further spinal extension.'},
+      {name:'Side plank',sets:'3 × 25–35 sec/side',isTimed:true,timedUnit:'seconds',desc:'On your side, forearm on floor, elbow under shoulder. Lift hips so only forearm and side of foot contact floor, forming a straight line head to feet. Keep hips stacked. After heavy posterior chain work, lateral stability targets obliques without further spinal extension.'},
       {name:'Dead bug',sets:'3 × 8/side',desc:'On back, arms up, knees at 90 degrees. Lower one arm overhead and opposite leg toward floor simultaneously, keeping lower back pressed into ground. Return and alternate. Low-impact anti-extension work — ideal after a hinge-heavy session.'},
       {name:'Seated Russian twist',sets:'3 × 12–15/side',desc:'Sit on floor or bench edge leaning back at 45 degrees. Feet slightly raised or lightly touching. Hold one dumbbell with both hands and rotate torso to one side tapping dumbbell to floor, then rotate to other side. Keep movement controlled.'},
     ]
@@ -1644,11 +1645,13 @@ const CORE_VARIATIONS = {
     key:'core_a', type:'core', label:'Core A', name:'Anti-Extension',
     focus:'Builds the ability to resist spinal extension under load — the foundation of a strong, stable core.',
     exercises:[
-      {name:'Plank',sets:'3 × 30–45 sec',desc:'Forearms on the floor, body in a straight line from head to heels. Squeeze your glutes and brace your abs hard — don\'t let your hips sag or pike. 📝 Log as seconds held per set (e.g. 45 reps × 0 lbs = 45 sec hold).'},
+      {name:'Plank',sets:'3 × 30–45 sec',isTimed:true,timedUnit:'seconds',desc:'Forearms on the floor, body in a straight line from head to heels. Squeeze your glutes and brace your abs hard — don\'t let your hips sag or pike.'},
       {name:'Ab wheel rollout (or bench walkout)',sets:'3 × 8–10',desc:'Kneel and grip an ab wheel, or place hands on the bench edge and walk them forward. Roll or walk out slowly until nearly parallel to the floor, then pull back in using your abs.'},
       {name:'Dead bug',sets:'3 × 8/side',desc:'Lie on your back, arms up, knees at 90 degrees. Lower one arm overhead and the opposite leg toward the floor simultaneously, keeping lower back pressed into the ground. Return and alternate.'},
-      {name:'Hollow body hold',sets:'3 × 20–30 sec',desc:'Lie on back, arms overhead, legs straight a few inches off floor. Press lower back firmly into ground and hold. If back arches, raise legs higher. The foundational anti-extension position in gymnastics.'},
+      {name:'Hollow body hold',sets:'3 × 20–30 sec',isTimed:true,timedUnit:'seconds',desc:'Lie on back, arms overhead, legs straight a few inches off floor. Press lower back firmly into ground and hold. If back arches, raise legs higher. The foundational anti-extension position in gymnastics.'},
       {name:'Plank with shoulder taps',sets:'3 × 10/side',desc:'High plank, hands under shoulders. Lift one hand to tap opposite shoulder, return before switching. Resist any hip rotation throughout. Wider feet makes stabilising easier.'},
+      {name:'Wall sit',sets:'3 × 30–45 sec',isTimed:true,timedUnit:'seconds',desc:'Back flat against wall, thighs parallel to floor, knees at 90 degrees. Hold the position. Keep weight in heels and avoid letting knees cave inward. Add duration progressively.'},
+      {name:'L-Sit',sets:'3 × 10–20 sec',isTimed:true,timedUnit:'seconds',desc:'Seated on the floor with hands beside hips, press through palms to lift hips and extend legs parallel to floor forming an L shape. Requires strong hip flexors, triceps, and core compression. Work up from short holds.'},
     ]
   },
   core_b: {
@@ -1666,7 +1669,7 @@ const CORE_VARIATIONS = {
     key:'core_c', type:'core', label:'Core C', name:'Rotation & Lateral',
     focus:'Trains the obliques and lateral stabilisers — the rotational power behind every athletic movement.',
     exercises:[
-      {name:'Side plank',sets:'3 × 25–35 sec/side',desc:'On your side, forearm on floor, elbow under shoulder. Lift hips so only forearm and side of foot contact floor, forming a straight line head to feet. Keep hips stacked — resist letting them drop.'},
+      {name:'Side plank',sets:'3 × 25–35 sec/side',isTimed:true,timedUnit:'seconds',desc:'On your side, forearm on floor, elbow under shoulder. Lift hips so only forearm and side of foot contact floor, forming a straight line head to feet. Keep hips stacked — resist letting them drop.'},
       {name:'Side plank with hip dip',sets:'3 × 10/side',desc:'Hold a side plank, then lower your hip toward floor in a controlled descent and raise it back up past neutral as high as you can. Adds dynamic demand on obliques. Control both directions.'},
       {name:'Seated Russian twist',sets:'3 × 12–15/side',desc:'Sit on floor or bench edge leaning back at 45 degrees. Feet slightly raised or lightly touching. Hold one dumbbell with both hands and rotate torso to one side tapping dumbbell to floor, then rotate to other side.'},
       {name:'Pallof press (band or DB hold)',sets:'3 × 10/side',desc:'Stand sideways to a band anchor or hold a light dumbbell with both hands at chest. Press straight out and hold for a beat, then return. Resistance pulls you into rotation — your job is to resist.'},
@@ -2974,13 +2977,21 @@ function renderExercises() {
     }
 
     if (isLogging) {
-      const sets = sessionEx ? sessionEx.sets : [{reps:'',weight:''}];
+      const isTimed = isTimedExercise(ex.name);
+      const sets = sessionEx ? sessionEx.sets : isTimed ? [{duration:''}] : [{reps:'',weight:''}];
       html += `<div class="set-logger">
         <div class="set-logger-head">
-          <div class="set-logger-title">Sets logged</div>
+          <div class="set-logger-title">${isTimed ? 'Sets (seconds held)' : 'Sets logged'}</div>
           <button class="add-set-btn" onclick="addSet('${exKey}')">+ Set</button>
         </div>
-        ${sets.map((s, si) => `
+        ${sets.map((s, si) => isTimed ? `
+          <div class="set-row" id="set-row-${exKey}-${si}">
+            <div class="set-num">${si+1}</div>
+            <input class="set-input" type="number" inputmode="numeric" placeholder="sec"
+              value="${s.duration||''}" onchange="updateSet('${exKey}',${si},'duration',this.value)" style="max-width:90px">
+            <div class="set-unit">sec</div>
+            <button class="del-set-btn" onclick="deleteSet('${exKey}',${si})">×</button>
+          </div>` : `
           <div class="set-row" id="set-row-${exKey}-${si}">
             <div class="set-num">${si+1}</div>
             <input class="set-input" type="number" inputmode="decimal" placeholder="reps"
@@ -3122,9 +3133,9 @@ function addSet(exKey) {
   if (!activeSession) return;
   let ex = activeSession.exercises.find(e => e.key === exKey);
   if (!ex) { ex = {key:exKey, name:'', sets:[]}; activeSession.exercises.push(ex); }
-  ex.sets.push({reps:'', weight:''});
+  const timed = isTimedExercise(ex.name);
+  ex.sets.push(timed ? {duration:''} : {reps:'', weight:''});
   renderExercises();
-  // Re-open the card
   setTimeout(() => {
     const card = document.getElementById('ex-card-' + exKey);
     if (card) card.classList.add('open');
@@ -4290,7 +4301,7 @@ function buildOverviewHTML() {
       h += `<div class="stats-grid">
         ${runMiles > 0 ? `<div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
           <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Distance</div>
-          <div class="stat-tile-value" style="color:var(--cardio-text)">${runMiles.toFixed(1)}</div>
+          <div class="stat-tile-value" style="color:var(--cardio-text)">${runMiles.toFixed(2)}</div>
           <div class="stat-tile-unit">total miles</div>
           ${(() => { const dc = distanceComparisonPair(runMiles, sessions.length); return `<div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--end);margin-top:4px;opacity:0.9;line-height:1.5">≈ ${dc.local}<br>≈ ${dc.national}</div>`; })()}
         </div>` : ''}
@@ -4301,7 +4312,7 @@ function buildOverviewHTML() {
         </div>
         <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
           <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Best distance</div>
-          <div class="stat-tile-value" style="color:var(--cardio-text);font-size:20px">${runBestDist ? runBestDist.dist.toFixed(1) : '—'}</div>
+          <div class="stat-tile-value" style="color:var(--cardio-text);font-size:20px">${runBestDist ? runBestDist.dist.toFixed(2) : '—'}</div>
           <div class="stat-tile-unit">${runBestDist ? 'mi · ' + new Date(runBestDist.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : 'miles'}</div>
         </div>
         <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
@@ -4322,7 +4333,7 @@ function buildOverviewHTML() {
       h += `<div class="stats-grid">
         ${bikeMiles > 0 ? `<div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
           <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Distance</div>
-          <div class="stat-tile-value" style="color:var(--cardio-text)">${bikeMiles.toFixed(1)}</div>
+          <div class="stat-tile-value" style="color:var(--cardio-text)">${bikeMiles.toFixed(2)}</div>
           <div class="stat-tile-unit">total miles</div>
           ${(() => { const dc = distanceComparisonPair(bikeMiles, sessions.length + 1); return `<div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--end);margin-top:4px;opacity:0.9;line-height:1.5">≈ ${dc.local}<br>≈ ${dc.national}</div>`; })()}
         </div>` : ''}
@@ -4333,7 +4344,7 @@ function buildOverviewHTML() {
         </div>
         <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
           <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Best distance</div>
-          <div class="stat-tile-value" style="color:var(--cardio-text);font-size:20px">${bikeBestDist ? bikeBestDist.dist.toFixed(1) : '—'}</div>
+          <div class="stat-tile-value" style="color:var(--cardio-text);font-size:20px">${bikeBestDist ? bikeBestDist.dist.toFixed(2) : '—'}</div>
           <div class="stat-tile-unit">${bikeBestDist ? 'mi · ' + new Date(bikeBestDist.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : 'miles'}</div>
         </div>
         <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
@@ -4501,7 +4512,7 @@ function buildPeriodHTML(mode) {
         ${periodMiles > 0 ? `
         <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
           <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Distance</div>
-          <div class="stat-tile-value" style="color:var(--cardio-text)">${periodMiles.toFixed(1)}</div>
+          <div class="stat-tile-value" style="color:var(--cardio-text)">${periodMiles.toFixed(2)}</div>
           <div class="stat-tile-unit">miles</div>
         </div>
         <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
@@ -5557,30 +5568,52 @@ function renderGlossary(query) {
       if (rows) statsHtml = `<div class="glossary-stats">${rows}</div>`;
     }
 
-    // Mastery bar — reps-based for exercises, duration-based for activities
+    // Mastery bar — timed (seconds), reps-based, or activity (minutes)
     let masteryHtml = '';
     if (!item.isActivity) {
       const m = mastery[item.name];
-      const totalReps = m ? m.totalReps : 0;
-      const fills = m ? m.fills : 0;
-      const threshold = m ? m.threshold : getMasteryThreshold(item.name);
-      const withinCycle = totalReps % threshold;
-      const pct = Math.round((withinCycle / threshold) * 100);
-      const fillLabel = fills > 0 ? `×${fills} filled` : 'not yet filled';
-      const tierLabel = MASTERY_TIERS.heavy.exercises.has(item.name) ? 'heavy compound' :
-                        MASTERY_TIERS.moderate.exercises.has(item.name) ? 'compound' : 'isolation';
-      masteryHtml = `<div style="margin:10px 12px 4px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px">Mastery <span style="opacity:0.5">· ${tierLabel}</span></div>
-          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dex);${fills>0?'':'opacity:0.5'}">${fillLabel}</div>
-        </div>
-        <div style="height:4px;background:#2A2820;border-radius:2px;overflow:hidden">
-          <div style="height:100%;width:${pct}%;background:var(--dex);border-radius:2px;transition:width 0.4s ease"></div>
-        </div>
-        <div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text-dim);margin-top:3px">
-          ${withinCycle} / ${threshold} reps to next fill
-        </div>
-      </div>`;
+      if (isTimedExercise(item.name)) {
+        const totalSecs = m ? Math.round(m.totalSecs) : 0;
+        const fills = m ? m.fills : 0;
+        const threshold = getTimedMasteryThreshold(item.name);
+        const withinCycle = totalSecs % threshold;
+        const pct = Math.round((withinCycle / threshold) * 100);
+        const fillLabel = fills > 0 ? `×${fills} filled` : 'not yet filled';
+        const fmtSecs = s => s >= 60 ? `${Math.floor(s/60)}m ${s%60>0?s%60+'s':''}`.trim() : `${s}s`;
+        masteryHtml = `<div style="margin:10px 12px 4px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px">Mastery <span style="opacity:0.5">· timed hold</span></div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dex);${fills>0?'':'opacity:0.5'}">${fillLabel}</div>
+          </div>
+          <div style="height:4px;background:#2A2820;border-radius:2px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:var(--dex);border-radius:2px;transition:width 0.4s ease"></div>
+          </div>
+          <div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text-dim);margin-top:3px">
+            ${fmtSecs(withinCycle)} / ${fmtSecs(threshold)} to next fill
+          </div>
+        </div>`;
+      } else {
+        const totalReps = m ? m.totalReps : 0;
+        const fills = m ? m.fills : 0;
+        const threshold = m ? m.threshold : getMasteryThreshold(item.name);
+        const withinCycle = totalReps % threshold;
+        const pct = Math.round((withinCycle / threshold) * 100);
+        const fillLabel = fills > 0 ? `×${fills} filled` : 'not yet filled';
+        const tierLabel = MASTERY_TIERS.heavy.exercises.has(item.name) ? 'heavy compound' :
+                          MASTERY_TIERS.moderate.exercises.has(item.name) ? 'compound' : 'isolation';
+        masteryHtml = `<div style="margin:10px 12px 4px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px">Mastery <span style="opacity:0.5">· ${tierLabel}</span></div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dex);${fills>0?'':'opacity:0.5'}">${fillLabel}</div>
+          </div>
+          <div style="height:4px;background:#2A2820;border-radius:2px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:var(--dex);border-radius:2px;transition:width 0.4s ease"></div>
+          </div>
+          <div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text-dim);margin-top:3px">
+            ${withinCycle} / ${threshold} reps to next fill
+          </div>
+        </div>`;
+      }
     } else if (ACTIVITY_MASTERY_THRESHOLDS[item.name]) {
       const m = mastery[item.name];
       const totalMins = m ? Math.round(m.totalMinutes) : 0;
@@ -5801,12 +5834,25 @@ function calcSessionXP(s, priorSessions, priorPBs) {
     }
   }
 
-  // ── Reps bonus: +1 XP per rep logged ─────────────────────────────────────
-  const totalReps = s.exercises.reduce((acc, e) =>
-    acc + e.sets.reduce((a, st) => a + (parseFloat(st.reps)||0), 0), 0);
+  // ── Reps bonus: +1 XP per rep logged (reps-based exercises only) ──────────
+  const totalReps = s.exercises.reduce((acc, e) => {
+    if (isTimedExercise(e.name)) return acc;
+    return acc + e.sets.reduce((a, st) => a + (parseFloat(st.reps)||0), 0);
+  }, 0);
   if (totalReps > 0) {
     breakdown.reps = totalReps;
     distribute(totalReps, map.primary, map.minor || []);
+  }
+
+  // ── Timed hold bonus: +1 XP per 10 seconds held ──────────────────────────
+  const totalSecs = s.exercises.reduce((acc, e) => {
+    if (!isTimedExercise(e.name)) return acc;
+    return acc + e.sets.reduce((a, st) => a + (parseFloat(st.duration)||0), 0);
+  }, 0);
+  if (totalSecs > 0) {
+    const timedBonus = Math.floor(totalSecs / 10);
+    breakdown.timed = timedBonus;
+    distribute(timedBonus, map.primary, map.minor || []);
   }
 
   // ── Volume bonus: +1 XP per 100 lbs ──────────────────────────────────────
@@ -5915,6 +5961,21 @@ function calcSessionXP(s, priorSessions, priorPBs) {
 // Tier 2: Moderate compounds — 750 reps per fill
 // Tier 3: Isolation / everything else — 500 reps per fill
 
+// ── Timed exercise system ────────────────────────────────────────────────────
+const TIMED_EXERCISE_NAMES = new Set([
+  'Plank', 'Side plank', 'Wall sit', 'Dead hang', 'L-Sit',
+  'Hollow body hold', 'Hollow Hold',
+]);
+const TIMED_MASTERY_THRESHOLDS = {
+  'Dead hang': 1800,
+};
+function getTimedMasteryThreshold(name) {
+  return TIMED_MASTERY_THRESHOLDS[name] || 3000;
+}
+function isTimedExercise(name) {
+  return TIMED_EXERCISE_NAMES.has(name);
+}
+
 const MASTERY_TIERS = {
   heavy: {
     threshold: 1000,
@@ -5963,19 +6024,18 @@ function getActivityMasteryThreshold(activityName) {
 }
 
 function computeMastery(sessionList) {
-  // Per exercise: { totalReps, fills, barProgress, threshold, isActivity }
-  // Per activity: { totalMinutes, fills, barProgress, threshold, isActivity }
   const mastery = {};
-
   sessionList.forEach(s => {
-    // Exercise-based mastery (reps)
+    // Exercise-based mastery (reps or timed seconds)
     s.exercises.forEach(ex => {
       if (!ex.name) return;
-      if (!mastery[ex.name]) mastery[ex.name] = { totalReps: 0, fills: 0, barProgress: 0, isActivity: false };
-      const reps = ex.sets.reduce((acc, st) => acc + (parseFloat(st.reps)||0), 0);
-      mastery[ex.name].totalReps += reps;
+      if (!mastery[ex.name]) mastery[ex.name] = { totalReps: 0, totalSecs: 0, fills: 0, barProgress: 0, isTimed: isTimedExercise(ex.name) };
+      if (isTimedExercise(ex.name)) {
+        mastery[ex.name].totalSecs += ex.sets.reduce((acc, st) => acc + (parseFloat(st.duration)||0), 0);
+      } else {
+        mastery[ex.name].totalReps += ex.sets.reduce((acc, st) => acc + (parseFloat(st.reps)||0), 0);
+      }
     });
-
     // Activity-based mastery (duration in minutes)
     if (s.variationKey === CUSTOM_KEY && s.customName && ACTIVITY_MASTERY_THRESHOLDS[s.customName]) {
       const name = s.customName;
@@ -5983,19 +6043,19 @@ function computeMastery(sessionList) {
       mastery[name].totalMinutes += parseFloat(s.duration) || 0;
     }
   });
-
-  // Compute fills and bar progress
   Object.keys(mastery).forEach(name => {
     const m = mastery[name];
     if (m.isActivity) {
       const threshold = getActivityMasteryThreshold(name);
-      m.threshold = threshold;
-      m.fills = Math.floor(m.totalMinutes / threshold);
+      m.threshold = threshold; m.fills = Math.floor(m.totalMinutes / threshold);
       m.barProgress = (m.totalMinutes % threshold) / threshold;
+    } else if (m.isTimed) {
+      const threshold = getTimedMasteryThreshold(name);
+      m.threshold = threshold; m.fills = Math.floor(m.totalSecs / threshold);
+      m.barProgress = (m.totalSecs % threshold) / threshold;
     } else {
       const threshold = getMasteryThreshold(name);
-      m.threshold = threshold;
-      m.fills = Math.floor(m.totalReps / threshold);
+      m.threshold = threshold; m.fills = Math.floor(m.totalReps / threshold);
       m.barProgress = (m.totalReps % threshold) / threshold;
     }
   });
@@ -6249,7 +6309,7 @@ function generateTagline(sessionList) {
   if (!sessionList.length) return 'Just getting started.';
   if (tkdC > 20 && lbs > 10000) return `Warrior of iron and spirit — ${tkdC} mat sessions, ${fmt(lbs)} lbs moved.`;
   if (tkdC > 10) return `Martial artist in training — ${tkdC} sessions on the mat and counting.`;
-  if (runDist > 50) return `${runDist.toFixed(1)} miles logged and still going.`;
+  if (runDist > 50) return `${runDist.toFixed(2)} miles logged and still going.`;
   if (lbs > 100000) return `${fmt(lbs)} lbs moved. The iron doesn't lie.`;
   if (sessionList.length >= 50) return `${sessionList.length} sessions in. Consistency is the craft.`;
   if (legsC > pushC && legsC > pullC) return 'Legs day enthusiast. The gains are real.';
@@ -6288,6 +6348,10 @@ function showXPOverlay(summary) {
   if (bd.reps > 0) html += `<div class="xp-breakdown-row">
     <div class="xp-breakdown-label">🔁 Reps bonus (${bd.reps} reps)</div>
     <div class="xp-breakdown-val">+${bd.reps}</div>
+  </div>`;
+  if (bd.timed > 0) html += `<div class="xp-breakdown-row">
+    <div class="xp-breakdown-label">⏱ Hold bonus (${bd.timed * 10} sec held)</div>
+    <div class="xp-breakdown-val">+${bd.timed}</div>
   </div>`;
 
   if (bd.volume > 0) html += `<div class="xp-breakdown-row">
@@ -6345,8 +6409,34 @@ function showXPOverlay(summary) {
 
   html += `</div>`;
 
-  // Attr gains breakdown
-  html += `<div style="margin-top:16px">`;
+  // ── Composite character level-up — shown prominently at the top ────────────
+  if (summary.charLevelAfter > summary.charLevelBefore) {
+    html += `<div style="
+      background: linear-gradient(135deg, #2A1A08, #1A1408);
+      border: 2px solid var(--str);
+      border-radius: 14px;
+      padding: 20px 18px;
+      margin-bottom: 24px;
+      text-align: center;
+      box-shadow: 0 0 32px rgba(196,115,42,0.5), 0 0 64px rgba(196,115,42,0.2);
+    ">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;
+        letter-spacing:2px;color:var(--str);margin-bottom:8px">⚔️ Character Level Up ⚔️</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:8px">
+        <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--text-dim);opacity:0.5">
+          ${summary.charLevelBefore}
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:18px;color:var(--str)">→</div>
+        <div style="font-family:'Syne',sans-serif;font-size:48px;font-weight:800;color:var(--str);
+          text-shadow:0 0 20px rgba(196,115,42,0.6);line-height:1">
+          ${summary.charLevelAfter}
+        </div>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--str-text);opacity:0.8">
+        You are now Level ${summary.charLevelAfter}
+      </div>
+    </div>`;
+  }
   Object.entries(summary.attrGains).forEach(([key, xp]) => {
     if (!xp) return;
     const a = ATTRS[key];
@@ -6498,6 +6588,12 @@ function computeAndShowXP(savedSessionId) {
     if (curPaceVal && priorBestPace !== Infinity && curPaceVal < priorBestPace) activityPBs.push('Pace');
   }
 
+  // Composite character level — computed from total XP across all attrs
+  const charLevelBefore = computeCharLevel(priorAttrXP);
+  const newAttrXP = {};
+  Object.keys(priorAttrXP).forEach(k => { newAttrXP[k] = (priorAttrXP[k]||0) + (attrGains[k]||0); });
+  const charLevelAfter = computeCharLevel(newAttrXP);
+
   setTimeout(() => {
     showXPOverlay({
       session: latest,
@@ -6508,6 +6604,8 @@ function computeAndShowXP(savedSessionId) {
       newAchievements,
       achievementXP,
       activityPBs,
+      charLevelBefore: charLevelBefore.level,
+      charLevelAfter: charLevelAfter.level,
     });
   }, 1400); // show after the "Session saved" toast fades
 }
@@ -6521,14 +6619,21 @@ function buildProfileHTML() {
   const earnedTitles = getEarnedTitles(achievements);
   const tagline = generateTagline(sessions);
 
-  // Favourite exercises (top 3 by completion count — individual exercises only)
+  // Favourite exercises and activities (top 3 by logged count)
   const favMap = {};
   sessions.forEach(s => {
+    // Count individual exercises within sessions
     s.exercises.forEach(ex => {
       if (!ex.name) return;
-      if (!ex.sets.some(st => st.reps)) return; // skip unlogged exercises
+      if (!ex.sets.some(st => st.reps)) return;
       favMap[ex.name] = (favMap[ex.name]||0) + 1;
     });
+    // Count activity sessions by name (Running, Biking, Taekwondo etc.)
+    if (s.variationKey === CUSTOM_KEY && s.customName &&
+        PREDEFINED_ACTIVITIES.find(a => a.name === s.customName) &&
+        s.exercises.length === 0) {
+      favMap[s.customName] = (favMap[s.customName]||0) + 1;
+    }
   });
   const favs = Object.entries(favMap).sort((a,b)=>b[1]-a[1]).slice(0,3);
 
@@ -6644,7 +6749,7 @@ function buildProfileHTML() {
     }
     favs.forEach(([name, count], i) => {
       html += `<div class="data-section-row">
-        <div><div class="data-row-label">${i===0?'Favourite Exercise':'#'+(i+1)+' Exercise'}</div>
+        <div><div class="data-row-label">${i===0?'Top Activity / Exercise':'#'+(i+1)+' Activity / Exercise'}</div>
           <div class="data-row-value">${name}</div>
           <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-top:2px">${count} sessions</div>
         </div>
@@ -6680,10 +6785,10 @@ function buildProfileHTML() {
       case 'ton_moved':      return { label: `${fmt(lbs % 2000)} / ${fmt(2000)} lbs`, showBar: true };
       case 'freight':        return { label: `${fmt(lbs % 100000)} / ${fmt(100000)} lbs`, showBar: true };
       case 'million':        return { label: `${fmt(lbs % 1000000)} / ${fmt(1000000)} lbs`, showBar: true };
-      case 'marathon':       return { label: `${totalRunMiles(s).toFixed(1)} / 26.2 mi cumulative`, showBar: true };
+      case 'marathon':       return { label: `${totalRunMiles(s).toFixed(2)} / 26.2 mi cumulative`, showBar: true };
       case 'first_ride':     return { label: maxBikeDist(s) > 0 ? '✓ Earned' : 'Not yet unlocked', showBar: false };
       case 'ten_mile_ride':  return { label: maxBikeDist(s) >= 10 ? `×${bikeSessionsOver(s,10)} completed` : 'Not yet unlocked', showBar: false };
-      case 'century_ride':   return { label: `${totalBikeMiles(s).toFixed(1)} / 100 mi cumulative`, showBar: true };
+      case 'century_ride':   return { label: `${totalBikeMiles(s).toFixed(2)} / 100 mi cumulative`, showBar: true };
       case 'untouchable':    return { label: `${countAllTimePBEvents(s) % 50} / 50 PBs`, showBar: true };
       case 'warrior':        return { label: `${tkdCount(s) % 10} / 10 sessions`, showBar: true };
       case 'sparring':       return { label: `${tkdTypeCount(s,'Sparring') % 10} / 10 sessions`, showBar: true };
@@ -6921,23 +7026,23 @@ function renderQuickLogSheet() {
       html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:10px">
         <div style="padding:12px 14px;border-bottom:${isCardio?'1px solid var(--border)':'none'}">
           <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Duration</div>
-          <div style="display:flex;align-items:center;gap:8px">
+          <div style="display:grid;grid-template-columns:1fr auto 1fr auto;align-items:center;gap:6px">
             <input type="number" inputmode="numeric" placeholder="0" min="0"
               value="${qlDurationMin}"
               oninput="qlDurationMin=this.value;qlDuration=minSecToDecimal(this.value,document.getElementById('ql-sec').value)"
               id="ql-min"
-              style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
-                padding:10px 8px;font-size:22px;font-weight:800;color:var(--text);
-                font-family:'Syne',sans-serif;text-align:center">
-            <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">min</span>
+              style="min-width:0;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+                padding:8px 4px;font-size:18px;font-weight:800;color:var(--text);
+                font-family:'Syne',sans-serif;text-align:center;width:100%">
+            <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);white-space:nowrap">min</span>
             <input type="number" inputmode="numeric" placeholder="0" min="0" max="59"
               value="${qlDurationSec}"
               oninput="qlDurationSec=this.value;qlDuration=minSecToDecimal(document.getElementById('ql-min').value,this.value)"
               id="ql-sec"
-              style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
-                padding:10px 8px;font-size:22px;font-weight:800;color:var(--text);
-                font-family:'Syne',sans-serif;text-align:center">
-            <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">sec</span>
+              style="min-width:0;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+                padding:8px 4px;font-size:18px;font-weight:800;color:var(--text);
+                font-family:'Syne',sans-serif;text-align:center;width:100%">
+            <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);white-space:nowrap">sec</span>
           </div>
         </div>
         ${isCardio ? `<div style="padding:12px 14px">
@@ -6955,6 +7060,7 @@ function renderQuickLogSheet() {
       </div>`;
     } else {
       // Exercise — show set rows
+      const qlIsTimed = qlSelectedExercise && isTimedExercise(qlSelectedExercise.name);
       qlSets.forEach((s, si) => {
         html += `<div style="background:var(--surface);border:1px solid var(--border);
           border-radius:var(--radius);padding:12px 14px;margin-bottom:8px">
@@ -6962,6 +7068,16 @@ function renderQuickLogSheet() {
             text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">
             Set ${si+1}${qlSets.length > 1 ? ` <button onclick="qlRemoveSet(${si})" style="background:none;border:none;color:var(--text-dim);font-size:11px;cursor:pointer;float:right">Remove</button>` : ''}
           </div>
+          ${qlIsTimed ? `
+          <div style="display:flex;align-items:center;justify-content:center;gap:10px">
+            <input type="number" inputmode="numeric" placeholder="0" min="0"
+              value="${s.duration||''}"
+              oninput="qlSets[${si}].duration=this.value"
+              style="width:120px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+                padding:10px 8px;font-size:22px;font-weight:800;color:var(--text);
+                font-family:'Syne',sans-serif;text-align:center;box-sizing:border-box">
+            <div style="font-family:'DM Mono',monospace;font-size:13px;color:var(--text-dim)">sec</div>
+          </div>` : `
           <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px">
             <div>
               <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);text-transform:uppercase;margin-bottom:6px">Reps</div>
@@ -6982,7 +7098,7 @@ function renderQuickLogSheet() {
                   padding:10px 8px;font-size:22px;font-weight:800;color:var(--text);
                   font-family:'Syne',sans-serif;text-align:center;box-sizing:border-box">
             </div>
-          </div>
+          </div>`}
         </div>`;
       });
       html += `<button onclick="qlAddSet()"
@@ -7021,6 +7137,13 @@ function renderQLSearchResults(q) {
       groups[type].push({ name: ex.name, isActivity: false, category: type });
     });
   });
+  CORE_ORDER.forEach(key => {
+    const v = VARIATIONS[key];
+    v.exercises.forEach(ex => {
+      if (seen.has(ex.name)) return; seen.add(ex.name);
+      groups.core.push({ name: ex.name, isActivity: false, category: 'core' });
+    });
+  });
   PREDEFINED_ACTIVITIES.forEach(act => {
     if (seen.has(act.name)) return; seen.add(act.name);
     groups.activity.push({ name: act.name, isActivity: true, category: act.category||'general', supportsDistance: !!act.supportsDistance });
@@ -7052,7 +7175,8 @@ function renderQLSearchResults(q) {
 
 function qlSelectExercise(name, isActivity, category, supportsDistance) {
   qlSelectedExercise = { name, isActivity, category, supportsDistance };
-  qlSets = [{ reps:'', weight:'' }];
+  const timed = isTimedExercise(name);
+  qlSets = [timed ? { duration:'' } : { reps:'', weight:'' }];
   qlDuration = '';
   qlDurationMin = '';
   qlDurationSec = '';
@@ -7067,7 +7191,8 @@ function qlBack() {
 }
 
 function qlAddSet() {
-  qlSets.push({ reps:'', weight:'' });
+  const timed = qlSelectedExercise && isTimedExercise(qlSelectedExercise.name);
+  qlSets.push(timed ? { duration:'' } : { reps:'', weight:'' });
   renderQuickLogSheet();
 }
 
@@ -7083,8 +7208,14 @@ function saveQuickLog() {
 
   let exercises = [];
   if (!ex.isActivity) {
-    const validSets = qlSets.filter(s => s.reps);
-    if (!validSets.length) { showToast('Enter at least one rep to log'); return; }
+    const timed = isTimedExercise(ex.name);
+    const validSets = timed
+      ? qlSets.filter(s => parseFloat(s.duration) > 0)
+      : qlSets.filter(s => s.reps);
+    if (!validSets.length) {
+      showToast(timed ? 'Enter at least one hold duration to log' : 'Enter at least one rep to log');
+      return;
+    }
     exercises = [{ key: 'ql_0', name: ex.name, sets: validSets }];
   }
 
