@@ -1327,10 +1327,10 @@ html, body {
   <div class="workout-tabs" id="workout-tabs"></div>
   <div class="timer-bar" id="timer-bar">
     <div>
-      <div style="font-size:10px;color:var(--text-dim);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Rest</div>
       <div class="timer-display" id="timer-display">1:30</div>
     </div>
     <div class="timer-presets">
+      <button class="timer-preset" onclick="setTimerPreset(30)">30s</button>
       <button class="timer-preset" onclick="setTimerPreset(60)">1m</button>
       <button class="timer-preset active" onclick="setTimerPreset(90)">90s</button>
       <button class="timer-preset" onclick="setTimerPreset(120)">2m</button>
@@ -1484,18 +1484,20 @@ const EXERCISE_LIBRARY = [
   { name:'Dumbbell flyes',               type:'push', muscleGroup:'chest',     sets:'3 × 12',    isTimed:false, masteryThreshold:750, masteryTier:'compound', xpRateType:'reps', appearsIn:['push_a'], desc:'Lie flat on the bench, dumbbells above your chest, palms facing each other with a slight bend in the elbows. Lower the weights in a wide arc until you feel a chest stretch, then squeeze them back up. Keep the elbows soft throughout.' },
   { name:'Lateral raises',               type:'push', muscleGroup:'shoulders', sets:'3 × 12–15', isTimed:false, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:['push_a','push_b','push_c'], desc:'Stand with dumbbells at your sides. Raise both arms out to the sides until parallel to the floor, leading with the elbows. Lower slowly — the eccentric phase does most of the work. Use lighter weight than you think you need.' },
   { name:'Tricep overhead extension',    type:'push', muscleGroup:'triceps',   sets:'3 × 10–12', isTimed:false, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:['push_a'], desc:'Seated on the bench, hold one dumbbell with both hands overhead, arms straight. Bend at the elbows to lower it behind your head, keeping upper arms vertical and still. Extend back up.' },
-  { name:'Push-ups (finisher)',          type:'push', muscleGroup:'chest',     sets:'2 × max',   isTimed:false, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:['push_a'], desc:'Standard push-up, hands shoulder-width apart. Keep a rigid plank from head to heels and lower your chest to the floor. Go to or near failure. Elevate hands on bench to reduce difficulty.' },
+  { name:'Push-ups (finisher)',          type:'push', muscleGroup:'chest',     sets:'2 × max',   isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:['push_a'], desc:'Standard push-up, hands shoulder-width apart. Keep a rigid plank from head to heels and lower your chest to the floor. Go to or near failure. Elevate hands on bench to reduce difficulty.' },
   { name:'DB incline press',             type:'push', muscleGroup:'chest',     sets:'3 × 8–10',  isTimed:false, masteryThreshold:750, masteryTier:'compound', xpRateType:'reps', appearsIn:['push_b'], desc:'Set the bench to 30–45 degree incline. Press dumbbells from chest height shifting emphasis to upper chest and front deltoid. Keep elbows at roughly 45 degrees and lower with full control.' },
   { name:'Arnold press',                 type:'push', muscleGroup:'shoulders', sets:'3 × 10',    isTimed:false, masteryThreshold:750, masteryTier:'compound', xpRateType:'reps', appearsIn:['push_b'], desc:'Seated on bench, dumbbells at shoulder height palms facing you. As you press overhead, rotate palms outward so they face forward at the top. Reverse on the way down. Recruits more deltoid across its full range.' },
   { name:'DB flyes (incline)',           type:'push', muscleGroup:'chest',     sets:'3 × 12',    isTimed:false, masteryThreshold:750, masteryTier:'compound', xpRateType:'reps', appearsIn:['push_b'], desc:'Set bench to 30–45 degree incline. Hold dumbbells above chest, palms facing each other with slight elbow bend. Lower in a wide arc until you feel an upper chest stretch, then squeeze back up.' },
   { name:'Tricep kickbacks',             type:'push', muscleGroup:'triceps',   sets:'3 × 12',    isTimed:false, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:['push_b'], desc:'Hinge forward until torso is nearly parallel to the floor, upper arm pinned parallel to the floor. Extend forearm back until arm is straight, pause, then lower. Upper arm stays completely still.' },
-  { name:'Diamond push-ups',            type:'push', muscleGroup:'triceps',   sets:'2 × max',   isTimed:false, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:['push_b'], desc:'Hands close together in a diamond shape under your chest. Lower and press back up with narrow elbows. The close grip shifts load heavily onto the triceps. Go to or near failure.' },
+  { name:'Diamond push-ups',            type:'push', muscleGroup:'triceps',   sets:'2 × max',   isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:['push_b'], desc:'Hands close together in a diamond shape under your chest. Lower and press back up with narrow elbows. The close grip shifts load heavily onto the triceps. Go to or near failure.' },
   { name:'DB front raise',              type:'push', muscleGroup:'shoulders', sets:'3 × 12',    isTimed:false, masteryThreshold:750, masteryTier:'compound', xpRateType:'reps', appearsIn:['push_c'], desc:'Stand with dumbbells at thighs, palms facing down. Raise both arms straight forward to shoulder height, then lower under control. Slight elbow bend throughout. Avoid swinging — use lighter weight than expected.' },
   { name:'DB floor press',              type:'push', muscleGroup:'chest',     sets:'3 × 10',    isTimed:false, masteryThreshold:750, masteryTier:'compound', xpRateType:'reps', appearsIn:['push_c'], desc:'Lie on the floor with dumbbells at chest height. Press up until arms extend, then lower until triceps contact the floor — that is the bottom of the rep. Floor limits range, reducing shoulder stress.' },
-  { name:'Tricep dips (bench)',         type:'push', muscleGroup:'triceps',   sets:'3 × 10–12', isTimed:false, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:['push_c'], desc:'Hands on bench edge behind you, legs extended or slightly bent. Lower body bending elbows until upper arms are roughly parallel to floor, then press back up. Keep hips close to bench.' },
-  { name:'Pike push-ups (feet elevated)',type:'push', muscleGroup:'shoulders', sets:'2 × max',  isTimed:false, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:['push_c'], desc:'Feet on bench, walk hands out until hips are high forming an inverted V. Bend elbows to lower head toward floor, then press back up. Elevated feet significantly increases shoulder load.' },
+  { name:'Tricep dips (bench)',         type:'push', muscleGroup:'triceps',   sets:'3 × 10–12', isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:['push_c'], desc:'Hands on bench edge behind you, legs extended or slightly bent. Lower body bending elbows until upper arms are roughly parallel to floor, then press back up. Keep hips close to bench.' },
+  { name:'Pike push-ups (feet elevated)',type:'push', muscleGroup:'shoulders', sets:'2 × max',  isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:['push_c'], desc:'Feet on bench, walk hands out until hips are high forming an inverted V. Bend elbows to lower head toward floor, then press back up. Elevated feet significantly increases shoulder load.' },
   // ── PULL ─────────────────────────────────────────────────────────────────
   { name:'Dumbbell rows',               type:'pull', muscleGroup:'back',      sets:'3 × 8–10',  isTimed:false, masteryThreshold:750, masteryTier:'compound', xpRateType:'reps', appearsIn:['pull_a','pull_c'], desc:'One hand and knee on bench for support, dumbbell in other hand. Pull toward your hip, elbow back and close to body. Lower slowly. Think of pulling your elbow to the ceiling rather than lifting the dumbbell.' },
+  { name:'Pull-up',                     type:'pull', muscleGroup:'back',      sets:'3 × max',   isTimed:false, isBodyweight:true, masteryThreshold:250, masteryTier:'compound', xpRateType:'reps', appearsIn:['pull_a'], desc:'Hang from a bar with an overhand grip slightly wider than shoulder-width. Pull until chin clears the bar, then lower under full control. One of the best upper body pulling movements available. Add weight via belt or vest once you can do 10+ clean reps.' },
+  { name:'Chin-up',                     type:'pull', muscleGroup:'biceps',    sets:'3 × max',   isTimed:false, isBodyweight:true, masteryThreshold:250, masteryTier:'compound', xpRateType:'reps', appearsIn:['pull_a'], desc:'Hang from a bar with an underhand (supinated) grip shoulder-width apart. Pull until chin clears the bar. The underhand grip shifts more load onto the biceps compared to a pull-up. Add weight via belt or vest once you can do 10+ clean reps.' },
   { name:'Dumbbell deadlifts',          type:'pull', muscleGroup:'full body', sets:'3 × 8–10',  isTimed:false, masteryThreshold:1000, masteryTier:'heavy compound', xpRateType:'reps', appearsIn:['pull_a'], desc:'Dumbbells in front of thighs, feet hip-width. Hinge at hips pushing them back, flat back, soft knee bend. Lower along legs until hamstring stretch, then drive through heels to stand. Full posterior chain.' },
   { name:'Rear delt fly',               type:'pull', muscleGroup:'shoulders', sets:'3 × 12',    isTimed:false, masteryThreshold:750, masteryTier:'compound', xpRateType:'reps', appearsIn:['pull_a','pull_b','pull_c'], desc:'Hinge forward until torso is near parallel to floor, dumbbells hanging down. Raise both arms in a wide arc squeezing shoulder blades at top. Lower under control. Targets rear delt and mid-trap.' },
   { name:'Dumbbell curl',               type:'pull', muscleGroup:'biceps',    sets:'3 × 10–12', isTimed:false, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:['pull_a'], desc:'Dumbbells at sides, palms forward. Curl to shoulder height, elbows pinned to sides. Lower under full control. Can be done alternating or both arms simultaneously.' },
@@ -1529,7 +1531,7 @@ const EXERCISE_LIBRARY = [
   { name:'Dead bug',                     type:'core', muscleGroup:'core',     sets:'3 × 8/side', isTimed:false, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:['push_a','push_b','legs_b','legs_c','core_a'], desc:'Lie on your back, arms up, knees at 90 degrees. Lower one arm overhead and the opposite leg toward the floor simultaneously, keeping lower back pressed into the ground. Return and alternate.' },
   { name:'Decline plank',                type:'core', muscleGroup:'core',     sets:'3 × 30–45 sec', isTimed:false, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:['push_b'], desc:'Feet on the bench, forearms on the floor, body in a straight line. The decline angle increases the abs load compared to a flat plank. Squeeze glutes, brace hard, keep hips level.' },
   { name:'Bench-elevated pike rollout',  type:'core', muscleGroup:'core',     sets:'3 × 8–10', isTimed:false, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:['push_b'], desc:'Push-up position with feet on bench, hands on floor. Walk hands back toward bench piking hips up into an inverted V, then walk back out. Elevated feet challenge abs through a longer range.' },
-  { name:'Plank with shoulder taps',     type:'core', muscleGroup:'core',     sets:'3 × 10/side', isTimed:false, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:['push_c','core_a'], desc:'High plank, hands under shoulders. Lift one hand to tap opposite shoulder, return before switching. Resist any hip rotation throughout. Wider feet makes stabilizing easier.' },
+  { name:'Plank with shoulder taps',     type:'core', muscleGroup:'core',     sets:'3 × 10/side', isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:['push_c','core_a'], desc:'High plank, hands under shoulders. Lift one hand to tap opposite shoulder, return before switching. Resist any hip rotation throughout. Wider feet makes stabilizing easier.' },
   { name:'Hollow body hold',             type:'core', muscleGroup:'core',     sets:'3 × 20–30 sec', isTimed:true, timedUnit:'seconds', masteryThreshold:3000, masteryTier:'timed hold', xpRateType:'timed', appearsIn:['push_c','core_a'], desc:'Lie on back, arms overhead, legs straight a few inches off floor. Press lower back firmly into ground and hold. If back arches, raise legs higher. The foundational anti-extension position in gymnastics.' },
   { name:'Side plank',                   type:'core', muscleGroup:'core',     sets:'3 × 25–35 sec/side', isTimed:true, timedUnit:'seconds', masteryThreshold:3000, masteryTier:'timed hold', xpRateType:'timed', appearsIn:['legs_a','legs_b','legs_c','core_c'], desc:'On your side, forearm on floor, elbow under shoulder. Lift hips so only forearm and side of foot contact floor, forming a straight line head to feet. Keep hips stacked — resist letting them drop.' },
   { name:'Dead bug with rotation',       type:'core', muscleGroup:'core',     sets:'3 × 8/side', isTimed:false, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:['legs_a','core_c'], desc:'On back, arms up, knees at 90 degrees. As you lower one arm and opposite leg, add a slight torso rotation toward the working side. Keep lower back pressed into ground. Adds anti-rotation to the standard dead bug.' },
@@ -1543,6 +1545,25 @@ const EXERCISE_LIBRARY = [
   { name:'Seated Russian twist',         type:'core', muscleGroup:'core',     sets:'3 × 12–15/side', isTimed:false, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:['legs_b','legs_c','core_c'], desc:'Sit on floor or bench edge leaning back at 45 degrees. Feet slightly raised or lightly touching. Hold one dumbbell with both hands and rotate torso to one side tapping dumbbell to floor, then rotate to other side.' },
   { name:'Wall sit',                     type:'core', muscleGroup:'quads',    sets:'3 × 30–45 sec', isTimed:true, timedUnit:'seconds', masteryThreshold:3000, masteryTier:'timed hold', xpRateType:'timed', appearsIn:['core_a'], desc:'Back flat against wall, thighs parallel to floor, knees at 90 degrees. Hold the position. Keep weight in heels and avoid letting knees cave inward. Add duration progressively.' },
   { name:'L-Sit',                        type:'core', muscleGroup:'core',     sets:'3 × 10–20 sec', isTimed:true, timedUnit:'seconds', masteryThreshold:3000, masteryTier:'timed hold', xpRateType:'timed', appearsIn:['core_a'], desc:'Seated on the floor with hands beside hips, press through palms to lift hips and extend legs parallel to floor forming an L shape. Requires strong hip flexors, triceps, and core compression. Work up from short holds.' },
+
+  // ── BODYWEIGHT ADDITIONS ─────────────────────────────────────────────────
+  { name:'Decline push-ups',            type:'push', muscleGroup:'chest',     sets:'3 × max',   isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:[], desc:'Feet elevated on bench, body in a straight plank line. Lower chest toward floor and press back up. The decline angle shifts emphasis to upper chest and front delt. Harder than flat push-ups — a natural progression once standard push-ups feel easy.' },
+  { name:'Wide push-ups',               type:'push', muscleGroup:'chest',     sets:'3 × max',   isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:[], desc:'Push-up with hands placed wider than shoulder-width. The wider stance shifts more load onto the chest and reduces tricep involvement. A good complement to diamond push-ups which do the opposite.' },
+  { name:'Archer push-ups',             type:'push', muscleGroup:'chest',     sets:'3 × 6–8/side', isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:[], desc:'Wide push-up position. As you lower, shift your weight toward one arm which bends normally while the other stays nearly straight and extended to the side. Alternate sides. A unilateral pressing movement that builds toward a one-arm push-up.' },
+  { name:'Dips (parallel bars)',        type:'push', muscleGroup:'triceps',   sets:'3 × max',   isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:[], desc:'Grip parallel bars or sturdy chairs at hip width. Lower body until upper arms are parallel to floor, then press back up. Leaning forward emphasises chest; staying upright emphasises triceps. Add weight via belt or vest for progression.' },
+  { name:'Inverted rows',               type:'pull', muscleGroup:'back',      sets:'3 × max',   isTimed:false, isBodyweight:true, masteryThreshold:750, masteryTier:'compound', xpRateType:'reps', appearsIn:[], desc:'Set a bar at hip height (or use a sturdy table edge). Hang underneath with straight body, hands shoulder-width. Pull chest to bar, elbows back. The horizontal pulling motion targets the same muscles as a dumbbell row. Elevate feet to increase difficulty.' },
+  { name:'Negative pull-ups',           type:'pull', muscleGroup:'back',      sets:'3 × 5–8',   isTimed:false, isBodyweight:true, masteryThreshold:250, masteryTier:'compound', xpRateType:'reps', appearsIn:[], desc:'Jump or step to the top of a pull-up position with chin above the bar. Lower yourself as slowly as possible — aim for 5–10 seconds down. Step off and repeat. Eccentric-focused pull-up training; excellent for building toward a first pull-up or adding difficulty beyond bodyweight.' },
+  { name:'Towel rows',                  type:'pull', muscleGroup:'back',      sets:'3 × max',   isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:[], desc:'Loop a towel around a door handle and hold both ends. Lean back with arms extended, feet at the door base. Pull your chest toward the door by bending your elbows. An accessible horizontal pull requiring only a towel and a door — good substitute when no bar is available.' },
+  { name:'Bodyweight squats',           type:'legs', muscleGroup:'quads',     sets:'3 × 20–30', isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:[], desc:'Feet shoulder-width, toes slightly out. Squat until thighs are parallel to the floor, chest tall. Drive through heels to stand. Foundational movement — high-rep sets build endurance and can be used as a warm-up or finisher. Add a pause at the bottom to increase difficulty.' },
+  { name:'Jump squats',                 type:'legs', muscleGroup:'quads',     sets:'3 × 10–15', isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:[], desc:'Squat to parallel then explode upward into a jump. Land softly with bent knees and immediately descend into the next rep. Develops explosive leg power and doubles as cardio. Keep reps moderate to maintain quality — avoid when knees are sore.' },
+  { name:'Single-leg glute bridge',     type:'legs', muscleGroup:'glutes',    sets:'3 × 12/side', isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:[], desc:'On back, knees bent, feet flat. Extend one leg straight. Drive through the grounded foot to lift hips, squeezing the glute at the top. Lower under control. The unilateral version significantly increases the challenge over a standard glute bridge and exposes any side-to-side imbalance.' },
+  { name:'Reverse Nordic curl',         type:'legs', muscleGroup:'quads',     sets:'3 × 5–10',  isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:[], desc:'Kneel with feet anchored. Keeping hips fully extended and body in a straight line from knee to head, lean backward as slowly as possible by bending at the knee. Catch yourself with hands then push back up. Extreme quad eccentric — start with very short range until you build strength.' },
+  { name:'Box jumps',                   type:'legs', muscleGroup:'glutes',    sets:'3 × 8–10',  isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:[], desc:'Stand facing a sturdy bench or box. Swing arms and jump explosively, landing softly on top with bent knees. Step (do not jump) back down. Develops lower body power and coordination. Ensure the surface is stable and non-slip before attempting.' },
+  { name:'Hanging knee raises',         type:'core', muscleGroup:'core',      sets:'3 × 12–15', isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:[], desc:'Hang from a pull-up bar with straight arms. Draw both knees toward your chest by curling your hips, hold briefly at the top, then lower slowly. Targets the lower abs and hip flexors. Keep the movement controlled — avoid swinging.' },
+  { name:'Hanging leg raises',          type:'core', muscleGroup:'core',      sets:'3 × 8–12',  isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:[], desc:'Hang from a pull-up bar with straight arms. Raise straight legs to horizontal or above while keeping hips from swinging. Lower slowly. The straight-leg version is significantly harder than knee raises and requires strong hip flexors. Progress from knee raises first.' },
+  { name:'V-ups',                       type:'core', muscleGroup:'core',      sets:'3 × 10–15', isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:[], desc:'Lie flat, arms overhead. Simultaneously raise straight legs and reach hands toward feet, forming a V at the top. Lower both under control. A demanding full-body crunch that challenges both upper and lower abs in one movement.' },
+  { name:'Mountain climbers',           type:'core', muscleGroup:'core',      sets:'3 × 20–30', isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', appearsIn:[], desc:'High plank position, hands under shoulders. Drive one knee toward chest then quickly switch legs in a running motion. Keep hips level and core braced throughout. Functions as both a core exercise and cardio — higher reps increase the cardiovascular demand significantly.' },
+  { name:'Bear crawl hold',             type:'core', muscleGroup:'core',      sets:'3 × 20–30 sec', isTimed:true, timedUnit:'seconds', masteryThreshold:3000, masteryTier:'timed hold', xpRateType:'timed', appearsIn:[], desc:'On hands and knees, lift knees one inch off the floor keeping back flat and parallel to the ground. Hold this position. Requires floor space only. Demands anti-extension core control through the same pattern as a dead bug but with added shoulder stability. Build from short holds.' },
   // ── ACTIVITIES ────────────────────────────────────────────────────────────
   { name:'Taekwondo (Small Target Training)', type:'general', muscleGroup:null, isActivity:true, supportsDistance:false, supportsNotes:true, attrMap:{ primary:['dex'], minor:['agi'] }, masteryThreshold:700, xpPerMin:10, masteryTier:'duration', xpRateType:'duration', distanceCategory:null, desc:'Precision-focused Taekwondo training on small pads, handheld targets, or marked zones. Develops accuracy, reaction time, and the fine motor control needed to consistently land techniques on a moving, unpredictable target.' },
   { name:'Taekwondo (Sparring)',          type:'general', muscleGroup:null, isActivity:true, supportsDistance:false, supportsNotes:true, attrMap:{ primary:['agi'], minor:['end','dex'] }, masteryThreshold:700, xpPerMin:10, masteryTier:'duration', xpRateType:'duration', distanceCategory:null, desc:'Live or controlled contact practice against a partner. Develops timing, distance management, reaction speed, and the ability to execute techniques under pressure.' },
@@ -1554,12 +1575,39 @@ const EXERCISE_LIBRARY = [
   { name:'General Core Workout',          type:'core',    muscleGroup:null, isActivity:true, supportsDistance:false, supportsNotes:true, attrMap:{ primary:['str'], minor:['end'] }, masteryThreshold:300, xpPerMin:8, masteryTier:'duration', xpRateType:'duration', distanceCategory:null, desc:'A catch-all for any core-focused session — YouTube routines, class-based core work, or any structured core training outside the built-in Push/Pull/Legs finishers. Log duration and use the notes field to record the source, exercises, or anything worth remembering about the session.' },
 ];
 
-// ── Library lookup helpers ─────────────────────────────────────────────────────
+const MUSCLE_GROUP_COLORS = {
+  chest:      '#C4732A',
+  shoulders:  '#6B5FD4',
+  triceps:    '#6B5FD4',
+  biceps:     '#6B5FD4',
+  forearms:   '#6B5FD4',
+  back:       '#1A9E9E',
+  'full body':'#1A9E9E',
+  quads:      '#4A9E4A',
+  hamstrings: '#4A9E4A',
+  glutes:     '#4A9E4A',
+  calves:     '#4A9E4A',
+  core:       '#C45A2A',
+};
+
+function muscleGroupPill(muscleGroup) {
+  if (!muscleGroup) return '';
+  const color = MUSCLE_GROUP_COLORS[muscleGroup] || '#888780';
+  const label = muscleGroup.charAt(0).toUpperCase() + muscleGroup.slice(1);
+  return `<span style="display:inline-block;background:${color};color:#fff;
+    font-family:'DM Mono',monospace;font-size:9px;font-weight:600;
+    letter-spacing:0.4px;text-transform:uppercase;
+    padding:2px 7px;border-radius:20px;line-height:1.6;white-space:nowrap">${label}</span>`;
+}
 function getExercise(name) {
   const ex = EXERCISE_LIBRARY.find(e => e.name === name);
   if (!ex) console.warn('Exercise not in library:', name);
   return ex || { name, type:'general', muscleGroup:null, desc:'', sets:'', isTimed:false, isActivity:false, appearsIn:[] };
 }
+function isBodyweightExercise(name) {
+  return !!(EXERCISE_LIBRARY.find(e => e.name === name)?.isBodyweight);
+}
+
 function isTimedExercise(name) {
   return !!(EXERCISE_LIBRARY.find(e => e.name === name)?.isTimed);
 }
@@ -2851,7 +2899,10 @@ function renderExercises() {
       <div class="ex-card-header" onclick="toggleEx('${exKey}')">
         <div class="ex-card-left">
           <div class="ex-name">${ex.name}</div>
-          <div class="ex-sets-badge">${ex.sets}</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+            ${ex.muscleGroup ? muscleGroupPill(ex.muscleGroup) : ''}
+            <div class="ex-sets-badge">${ex.sets}</div>
+          </div>
         </div>
         <div class="ex-chevron">⌄</div>
       </div>
@@ -2894,9 +2945,10 @@ function renderExercises() {
         const pbDate = pb.weightDate
           ? new Date(pb.weightDate).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'2-digit'})
           : '';
+        const atReps = pb.weightReps > 0 ? ` × ${pb.weightReps} reps` : '';
         refHtml += `<div class="ex-ref-row">
           <div class="ex-ref-label">Best weight</div>
-          <div class="ex-ref-value"><strong>${pb.weight} lbs</strong>${pbDate ? ` · ${pbDate}` : ''}</div>
+          <div class="ex-ref-value"><strong>${pb.weight} lbs${atReps}</strong>${pbDate ? ` · ${pbDate}` : ''}</div>
         </div>`;
       }
 
@@ -2905,7 +2957,7 @@ function renderExercises() {
         const pbDate = pb.repsDate
           ? new Date(pb.repsDate).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'2-digit'})
           : '';
-        const atWeight = pb.repsWeight > 0 ? ` @ ${pb.repsWeight} lbs` : '';
+        const atWeight = pb.repsWeight > 0 ? ` × ${pb.repsWeight} lbs` : '';
         refHtml += `<div class="ex-ref-row">
           <div class="ex-ref-label">Best reps</div>
           <div class="ex-ref-value"><strong>${pb.reps} reps${atWeight}</strong>${pbDate ? ` · ${pbDate}` : ''}</div>
@@ -2917,6 +2969,7 @@ function renderExercises() {
 
     if (isLogging) {
       const isTimed = isTimedExercise(ex.name);
+      const isBW = isBodyweightExercise(ex.name);
       const sets = sessionEx ? sessionEx.sets : isTimed ? [{duration:''}] : [{reps:'',weight:''}];
       html += `<div class="set-logger">
         <div class="set-logger-head">
@@ -2936,9 +2989,13 @@ function renderExercises() {
             <input class="set-input" type="number" inputmode="decimal" placeholder="reps"
               value="${s.reps}" onchange="updateSet('${exKey}',${si},'reps',this.value)" style="max-width:70px">
             <div class="set-unit">×</div>
-            <input class="set-input" type="number" inputmode="decimal" placeholder="lbs"
-              value="${s.weight}" onchange="updateSet('${exKey}',${si},'weight',this.value)">
-            <div class="set-unit">lbs</div>
+            <input class="set-input" type="number" inputmode="decimal"
+              placeholder="${isBW ? 'added wt.' : 'lbs'}"
+              value="${s.weight}" onchange="updateSet('${exKey}',${si},'weight',this.value)"
+              style="${isBW ? 'opacity:0.6;' : ''}">
+            <div class="set-unit" style="${isBW ? 'opacity:0.6;font-size:9px;' : ''}">
+              ${isBW ? 'lbs opt.' : 'lbs'}
+            </div>
             <button class="del-set-btn" onclick="deleteSet('${exKey}',${si})">×</button>
           </div>`).join('')}
         <button onclick="removeExerciseFromSession('${exKey}','${ex.name.replace(/'/g,"\\'")}')"
@@ -3143,10 +3200,10 @@ function toggleTimer() {
         updateTimerDisplay();
       } else {
         stopTimer();
-        timerSeconds = timerMax; // reset to last used duration ready for next set
+        timerSeconds = timerMax;
         updateTimerDisplay();
         if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
-        showToast('Rest time up!');
+        showToast('Timer complete!');
       }
     }, 1000);
   }
@@ -3171,7 +3228,13 @@ function setTimerPreset(secs) {
   timerMax = secs;
   timerSeconds = secs;
   document.querySelectorAll('.timer-preset').forEach(b => {
-    b.classList.toggle('active', parseInt(b.textContent) === secs/60 || b.textContent === '90s');
+    b.classList.remove('active');
+  });
+  // Find the matching button by its onclick attribute value
+  const allPresets = document.querySelectorAll('.timer-preset');
+  allPresets.forEach(b => {
+    const match = b.getAttribute('onclick')?.match(/setTimerPreset\((\d+)\)/);
+    if (match && parseInt(match[1]) === secs) b.classList.add('active');
   });
   updateTimerDisplay();
 }
@@ -3538,6 +3601,10 @@ function renderSessionDetail(s) {
       <div class="detail-meta-label">Volume</div>
       <div class="detail-meta-value" style="color:var(--text-muted)">+${breakdown.volume}</div>
     </div>`;
+    if (breakdown.distance > 0) html += `<div class="detail-meta-row">
+      <div class="detail-meta-label">Distance</div>
+      <div class="detail-meta-value" style="color:var(--text-muted)">+${breakdown.distance}</div>
+    </div>`;
     if (breakdown.pr > 0) html += `<div class="detail-meta-row">
       <div class="detail-meta-label">PB bonus</div>
       <div class="detail-meta-value" style="color:var(--str-text)">+${breakdown.pr} ⭐</div>
@@ -3762,6 +3829,7 @@ function computePBs(sessionList) {
           if (!isNaN(weight) && weight > pbs[canonicalName].weight) {
             pbs[canonicalName].weight = weight;
             pbs[canonicalName].weightDate = s.date;
+            pbs[canonicalName].weightReps = !isNaN(reps) && reps > 0 ? reps : 0;
           }
           if (!isNaN(reps) && reps > pbs[canonicalName].reps) {
             pbs[canonicalName].reps = reps;
@@ -4562,12 +4630,13 @@ function buildBestsHTML() {
       }
       if (hasWeight) {
         const d = pb.weightDate ? new Date(pb.weightDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
-        html += `<div class="pb-record"><div class="pb-record-label">Max weight</div><div class="pb-record-value" style="color:${g.color}">${pb.weight}</div><div class="pb-record-unit">lbs</div><div class="pb-record-date">${d}</div></div>`;
+        const atReps = pb.weightReps > 0 ? ` × ${pb.weightReps} reps` : '';
+        html += `<div class="pb-record"><div class="pb-record-label">Max weight</div><div class="pb-record-value" style="color:${g.color}">${pb.weight}</div><div class="pb-record-unit">lbs${atReps}</div><div class="pb-record-date">${d}</div></div>`;
       }
       if (hasReps) {
         const d = pb.repsDate ? new Date(pb.repsDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
-        const atW = pb.repsWeight > 0 ? ` @ ${pb.repsWeight}` : '';
-        html += `<div class="pb-record"><div class="pb-record-label">Max reps</div><div class="pb-record-value" style="color:${g.color}">${pb.reps}</div><div class="pb-record-unit">reps${atW ? ` ${atW} lbs` : ''}</div><div class="pb-record-date">${d}</div></div>`;
+        const atW = pb.repsWeight > 0 ? ` × ${pb.repsWeight} lbs` : '';
+        html += `<div class="pb-record"><div class="pb-record-label">Max reps</div><div class="pb-record-value" style="color:${g.color}">${pb.reps}</div><div class="pb-record-unit">reps${atW}</div><div class="pb-record-date">${d}</div></div>`;
       }
       if (!timed && !hasWeight && hasReps) html += `<div class="pb-record" style="opacity:0.2"><div class="pb-record-label">Max weight</div><div class="pb-record-value">—</div></div>`;
       if (!timed && hasWeight && !hasReps)  html += `<div class="pb-record" style="opacity:0.2"><div class="pb-record-label">Max reps</div><div class="pb-record-value">—</div></div>`;
@@ -5491,14 +5560,15 @@ function renderGlossary(query) {
       }
       if (pb && pb.weight > 0) {
         const d = pb.weightDate ? new Date(pb.weightDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : '';
+        const atReps = pb.weightReps > 0 ? ` × ${pb.weightReps} reps` : '';
         rows += `<div class="glossary-stat-row">
           <div class="glossary-stat-label">Best weight</div>
-          <div class="glossary-stat-value"><strong>${pb.weight} lbs</strong>${d ? ` · ${d}` : ''}</div>
+          <div class="glossary-stat-value"><strong>${pb.weight} lbs${atReps}</strong>${d ? ` · ${d}` : ''}</div>
         </div>`;
       }
       if (pb && pb.reps > 0) {
         const d = pb.repsDate ? new Date(pb.repsDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : '';
-        const atW = pb.repsWeight > 0 ? ` @ ${pb.repsWeight} lbs` : '';
+        const atW = pb.repsWeight > 0 ? ` × ${pb.repsWeight} lbs` : '';
         rows += `<div class="glossary-stat-row">
           <div class="glossary-stat-label">Best reps</div>
           <div class="glossary-stat-value"><strong>${pb.reps} reps${atW}</strong>${d ? ` · ${d}` : ''}</div>
@@ -5579,11 +5649,18 @@ function renderGlossary(query) {
       ? item.appearsIn.slice(0, 4).join(', ') + (item.appearsIn.length > 4 ? '…' : '')
       : item.typeLabel;
 
+    const muscleLabel = item.muscleGroup
+      ? item.muscleGroup.charAt(0).toUpperCase() + item.muscleGroup.slice(1).replace(' body', ' body')
+      : null;
+
     return `<div class="glossary-card" id="gcard-${cardId}" style="position:relative">
       <button class="glossary-card-header" onclick="toggleGlossaryCard('${cardId}')">
         <div class="glossary-card-left">
           <div class="glossary-ex-name">${item.name}</div>
-          <div class="glossary-ex-tag" style="color:${item.color}">${tagLine}</div>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:2px">
+            ${item.muscleGroup ? muscleGroupPill(item.muscleGroup) : ''}
+            <div class="glossary-ex-tag" style="color:${item.color}">${tagLine}</div>
+          </div>
         </div>
         <div style="display:flex;align-items:center;gap:24px;padding-right:4px">
           <span class="glossary-chevron">⌄</span>
@@ -5711,9 +5788,23 @@ function getSessionAttrMap(s) {
 }
 
 // ── XP calculation for a single session ───────────────────────────────────
+// ── XP rate constants — session-level, not per-exercise ──────────────────────
+// Per-exercise rates (reps, timed) are read from xpRateType + these values.
+// Per-exercise overrides (xpPerRep, xpPerSec) can be added to EXERCISE_LIBRARY
+// entries in the future (roadmap item #19) without changing calcSessionXP.
+const XP_RATES = {
+  perRep:     1,    // XP per rep for reps-based exercises
+  perSecDiv:  10,   // 1 XP per N seconds held for timed exercises
+  perMile:    5,    // XP per mile distance
+  per100Lbs:  1,    // XP per 100 lbs volume
+  prBonus:    150,  // XP per new personal best
+  aboveAvg:   50,   // XP per above-average metric
+  baseDaily:  100,  // XP for showing up (once per calendar day)
+};
+
 function calcSessionXP(s, priorSessions, priorPBs) {
   const map = getSessionAttrMap(s);
-  const breakdown = { base: 0, duration: 0, volume: 0, reps: 0, pr: 0, aboveAvg: 0, total: 0 };
+  const breakdown = { base: 0, duration: 0, volume: 0, distance: 0, reps: 0, timed: 0, pr: 0, aboveAvg: 0, total: 0 };
   const attrGains = { str: 0, end: 0, agi: 0, dex: 0 };
 
   const distribute = (xp, primary, minor) => {
@@ -5721,21 +5812,17 @@ function calcSessionXP(s, priorSessions, priorPBs) {
     minor.forEach(a => { attrGains[a] = (attrGains[a]||0) + Math.round(xp * 0.5); });
   };
 
-  // ── Daily base XP cap — showing up only earns 100 XP once per calendar day ─
-  const BASE = 100;
+  // ── Daily base XP cap — showing up only earns XP_RATES.baseDaily once per day
   const sessionDay = new Date(s.date).toDateString();
   const alreadyEarnedBase = priorSessions.some(ps =>
     new Date(ps.date).toDateString() === sessionDay
   );
   if (!alreadyEarnedBase) {
-    breakdown.base = BASE;
-    distribute(BASE, map.primary, map.minor || []);
+    breakdown.base = XP_RATES.baseDaily;
+    distribute(XP_RATES.baseDaily, map.primary, map.minor || []);
   }
 
-  // ── Duration bonus — activities and standalone core only, not lifting ───────
-  // Lifting (Push/Pull/Legs) are rewarded via reps + volume instead.
-  // Taekwondo: +10/min | Running & General Core Workout: +8/min | Other cardio/general: +6/min
-  // Standalone Core A/B/C variations: +5/min (conditioning-style, not pure lifting)
+  // ── Duration bonus — reads xpPerMin from library for activities ───────────
   const dur = parseFloat(s.duration) || 0;
   if (dur > 0) {
     const name = s.customName || '';
@@ -5745,11 +5832,11 @@ function calcSessionXP(s, priorSessions, priorPBs) {
       let rate = 0;
       const actDef = getActivity(name);
       if (actDef) {
-        rate = actDef.xpPerMin || 6;
+        rate = actDef.xpPerMin || 6;   // per-activity rate from library
       } else if (vm2.type === 'core') {
-        rate = 5; // standalone Core A/B/C
+        rate = 5;                        // standalone Core A/B/C
       } else if (s.variationKey === CUSTOM_KEY) {
-        rate = 6; // other custom activities
+        rate = 6;                        // other custom activities
       }
       if (rate > 0) {
         const dBonus = Math.round(dur * rate);
@@ -5759,45 +5846,52 @@ function calcSessionXP(s, priorSessions, priorPBs) {
     }
   }
 
-  // ── Reps bonus: +1 XP per rep logged (reps-based exercises only) ──────────
-  const totalReps = s.exercises.reduce((acc, e) => {
-    if (isTimedExercise(e.name)) return acc;
-    return acc + e.sets.reduce((a, st) => a + (parseFloat(st.reps)||0), 0);
-  }, 0);
-  if (totalReps > 0) {
-    breakdown.reps = totalReps;
-    distribute(totalReps, map.primary, map.minor || []);
+  // ── Reps bonus — uses xpRateType from library, rate from XP_RATES.perRep ──
+  let totalRepsXP = 0;
+  s.exercises.forEach(e => {
+    const ex = getExercise(e.name);
+    if (!ex || ex.xpRateType !== 'reps') return;
+    const rate = ex.xpPerRep || XP_RATES.perRep; // per-exercise override if set
+    const reps = e.sets.reduce((a, st) => a + (parseFloat(st.reps)||0), 0);
+    totalRepsXP += reps * rate;
+  });
+  if (totalRepsXP > 0) {
+    breakdown.reps = Math.round(totalRepsXP);
+    distribute(breakdown.reps, map.primary, map.minor || []);
   }
 
-  // ── Timed hold bonus: +1 XP per 10 seconds held ──────────────────────────
-  const totalSecs = s.exercises.reduce((acc, e) => {
-    if (!isTimedExercise(e.name)) return acc;
-    return acc + e.sets.reduce((a, st) => a + (parseFloat(st.duration)||0), 0);
-  }, 0);
-  if (totalSecs > 0) {
-    const timedBonus = Math.floor(totalSecs / 10);
-    breakdown.timed = timedBonus;
-    distribute(timedBonus, map.primary, map.minor || []);
+  // ── Timed hold bonus — uses xpRateType, rate from XP_RATES.perSecDiv ──────
+  let totalTimedXP = 0;
+  s.exercises.forEach(e => {
+    const ex = getExercise(e.name);
+    if (!ex || ex.xpRateType !== 'timed') return;
+    const div = ex.xpPerSecDiv || XP_RATES.perSecDiv; // per-exercise override if set
+    const secs = e.sets.reduce((a, st) => a + (parseFloat(st.duration)||0), 0);
+    totalTimedXP += Math.floor(secs / div);
+  });
+  if (totalTimedXP > 0) {
+    breakdown.timed = totalTimedXP;
+    distribute(totalTimedXP, map.primary, map.minor || []);
   }
 
-  // ── Volume bonus: +1 XP per 100 lbs ──────────────────────────────────────
+  // ── Volume bonus: XP_RATES.per100Lbs per 100 lbs ─────────────────────────
   const vol = s.exercises.reduce((acc, e) =>
     acc + e.sets.reduce((a, st) => a + ((parseFloat(st.reps)||0) * (parseFloat(st.weight)||0)), 0), 0);
   if (vol > 0) {
-    const vBonus = Math.round(vol / 100);
+    const vBonus = Math.round(vol / 100) * XP_RATES.per100Lbs;
     breakdown.volume = vBonus;
     distribute(vBonus, map.primary, map.minor || []);
   }
 
-  // ── Distance bonus: +5 XP per mile ───────────────────────────────────────
+  // ── Distance bonus: XP_RATES.perMile per mile ────────────────────────────
   const dist = parseFloat(s.distance) || 0;
   if (dist > 0) {
-    const distBonus = Math.round(dist * 5);
-    breakdown.volume += distBonus;
+    const distBonus = Math.round(dist * XP_RATES.perMile);
+    breakdown.distance = distBonus;
     distribute(distBonus, map.primary, map.minor || []);
   }
 
-  // ── Above-average bonuses (require ≥3 prior sessions to activate) ─────────
+  // ── Above-average bonuses (require ≥3 prior sessions) ────────────────────
   const ABOVE_AVG_MIN = 3;
 
   const priorWithDur = priorSessions.filter(ps => parseFloat(ps.duration) > 0);
@@ -5823,16 +5917,16 @@ function calcSessionXP(s, priorSessions, priorPBs) {
     ? priorWPRs.reduce((a,b)=>a+b,0)/priorWPRs.length : null;
   const thisWPR = sessionWeightPerRep(s);
 
-  if (avgDur !== null && dur > avgDur)         breakdown.aboveAvg += 50;
-  if (avgVol !== null && vol > avgVol)         breakdown.aboveAvg += 50;
-  if (avgDist !== null && dist > avgDist)      breakdown.aboveAvg += 50;
-  if (avgWPR !== null && thisWPR > avgWPR)     breakdown.aboveAvg += 50;
+  if (avgDur !== null && dur > avgDur)     breakdown.aboveAvg += XP_RATES.aboveAvg;
+  if (avgVol !== null && vol > avgVol)     breakdown.aboveAvg += XP_RATES.aboveAvg;
+  if (avgDist !== null && dist > avgDist)  breakdown.aboveAvg += XP_RATES.aboveAvg;
+  if (avgWPR !== null && thisWPR > avgWPR) breakdown.aboveAvg += XP_RATES.aboveAvg;
 
   if (breakdown.aboveAvg > 0) {
     distribute(breakdown.aboveAvg, map.primary, map.minor || []);
   }
 
-  // ── PR bonus: +150 XP per new lifting PB ─────────────────────────────────
+  // ── PR bonus: XP_RATES.prBonus per new lifting PB ────────────────────────
   const currentPBs = priorPBs || {};
   let prCount = 0;
   s.exercises.forEach(ex => {
@@ -5843,7 +5937,7 @@ function calcSessionXP(s, priorSessions, priorPBs) {
     });
   });
   if (prCount > 0) {
-    const prBonus = prCount * 150;
+    const prBonus = prCount * XP_RATES.prBonus;
     breakdown.pr = prBonus;
     distribute(prBonus, map.primary, map.minor || []);
   }
@@ -6234,6 +6328,10 @@ function showXPOverlay(summary) {
     <div class="xp-breakdown-label">💪 Volume bonus</div>
     <div class="xp-breakdown-val">+${bd.volume}</div>
   </div>`;
+  if (bd.distance > 0) html += `<div class="xp-breakdown-row">
+    <div class="xp-breakdown-label">📍 Distance bonus (${summary.session.distance} mi)</div>
+    <div class="xp-breakdown-val">+${bd.distance}</div>
+  </div>`;
 
   // Session contribution comparisons
   const sid = summary.session.id;
@@ -6616,7 +6714,7 @@ function buildProfileHTML() {
       const pbDate = pb.weightDate || pb.repsDate;
       html += `<div class="data-section-row">
         <div><div class="data-row-label">Most Recent PB</div>
-          <div class="data-row-value">${exName} — ${pb.weight>0?pb.weight+' lbs':''}${pb.reps>0?' / '+pb.reps+' reps':''}</div>
+          <div class="data-row-value">${exName} — ${pb.weight>0?pb.weight+' lbs'+(pb.weightReps>0?' × '+pb.weightReps+' reps':''):''}${pb.reps>0?' / '+pb.reps+' reps'+(pb.repsWeight>0?' × '+pb.repsWeight+' lbs':''):''}</div>
           <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-top:2px">
             ${pbDate ? new Date(pbDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''}
           </div>
@@ -6937,6 +7035,7 @@ function renderQuickLogSheet() {
     } else {
       // Exercise — show set rows
       const qlIsTimed = qlSelectedExercise && isTimedExercise(qlSelectedExercise.name);
+      const qlIsBW = qlSelectedExercise && isBodyweightExercise(qlSelectedExercise.name);
       qlSets.forEach((s, si) => {
         html += `<div style="background:var(--surface);border:1px solid var(--border);
           border-radius:var(--radius);padding:12px 14px;margin-bottom:8px">
@@ -6966,13 +7065,13 @@ function renderQuickLogSheet() {
             </div>
             <div style="font-size:16px;color:var(--text-dim);margin-top:16px">×</div>
             <div>
-              <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);text-transform:uppercase;margin-bottom:6px">Weight (lbs)</div>
+              <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);text-transform:uppercase;margin-bottom:6px;${qlIsBW?'opacity:0.6':''}">${qlIsBW ? 'Added wt. (opt.)' : 'Weight (lbs)'}</div>
               <input type="number" inputmode="decimal" placeholder="0"
                 value="${s.weight}"
                 oninput="qlSets[${si}].weight=this.value"
                 style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
                   padding:10px 8px;font-size:22px;font-weight:800;color:var(--text);
-                  font-family:'Syne',sans-serif;text-align:center;box-sizing:border-box">
+                  font-family:'Syne',sans-serif;text-align:center;box-sizing:border-box;${qlIsBW?'opacity:0.6':''}">
             </div>
           </div>`}
         </div>`;
