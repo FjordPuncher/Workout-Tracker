@@ -1378,7 +1378,7 @@ html, body {
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg>
       Home
     </button>
-    <div class="topbar-title">Data & Backup</div>
+    <div class="topbar-title">Profile</div>
     <div style="width:60px"></div>
   </div>
   <div class="scroll-body" id="data-body" ></div></div>
@@ -2930,8 +2930,9 @@ function renderExercises() {
           setPreview = parts.join(', ') || 'logged';
         } else {
           setPreview = lastSession.sets.slice(0, 3).map(st => {
-            const w = st.weight && parseFloat(st.weight) > 0 ? `${st.weight}lbs` : '';
-            return w ? `${st.reps} × ${w}` : `${st.reps} reps`;
+            const reps = parseFloat(st.reps) || 0;
+            const weight = parseFloat(st.weight) || 0;
+            return weight > 0 ? `${reps} × ${weight}lbs` : `${reps} reps`;
           }).join(', ');
         }
         refHtml += `<div class="ex-ref-row">
@@ -5549,8 +5550,9 @@ function renderGlossary(query) {
           setPreview = parts.join(', ') || 'logged';
         } else {
           setPreview = lastSession.sets.slice(0, 3).map(st => {
-            const w = st.weight && parseFloat(st.weight) > 0 ? ` × ${st.weight}lbs` : '';
-            return `${st.reps}${w}`;
+            const reps = parseFloat(st.reps) || 0;
+            const weight = parseFloat(st.weight) || 0;
+            return weight > 0 ? `${reps} × ${weight}lbs` : `${reps} reps`;
           }).join(', ');
         }
         rows += `<div class="glossary-stat-row">
@@ -6090,7 +6092,7 @@ const ACHIEVEMENTS = [
   { id:'sparring',     cat:'martial',     icon:'🤺', name:'Sparring Spirit',        desc:'Complete 10 sparring sessions. Repeats every 10.', repeatable: true,   check: (s,_,m) => tkdTypeCount(s,'Sparring') >= 10,     countFn: (s,_,m) => Math.floor(tkdTypeCount(s,'Sparring') / 10), progressFn: (s,_,m) => (tkdTypeCount(s,'Sparring') % 10) / 10,       title: null },
   { id:'striker',      cat:'martial',     icon:'🎯', name:'Precision Striker',      desc:'Complete 10 Small Target sessions. Repeats every 10.', repeatable: true, check: (s,_,m) => tkdTypeCount(s,'Small Target') >= 10, countFn: (s,_,m) => Math.floor(tkdTypeCount(s,'Small Target') / 10), progressFn: (s,_,m) => (tkdTypeCount(s,'Small Target') % 10) / 10, title: 'The Striker' },
   // Mastery
-  { id:'ex_initiate',  cat:'mastery',     icon:'📈', name:'Exercise Initiate',      desc:'Fill an exercise XP bar for the first time.',        repeatable: false, check: (s,_,m) => Object.values(m).some(x => x.fills >= 1), countFn: null,                                        progressFn: (s,_,m) => { const best=Math.max(0,...Object.values(m).map(x=>x.fills)); return Math.min(1,best); }, title: null },
+  { id:'ex_initiate',  cat:'mastery',     icon:'📈', name:'Exercise Initiate',      desc:'Fill an exercise mastery bar for the first time.',        repeatable: false, check: (s,_,m) => Object.values(m).some(x => x.fills >= 1), countFn: null,                                        progressFn: (s,_,m) => { const best=Math.max(0,...Object.values(m).map(x=>x.fills)); return Math.min(1,best); }, title: null },
   { id:'dedicated',    cat:'mastery',     icon:'🌊', name:'Dedicated',              desc:'Fill any exercise bar 10+ times. Repeats every 10 fills.', repeatable: true, check: (s,_,m) => Object.values(m).some(x => x.fills >= 10), countFn: (s,_,m) => Math.floor(Math.max(0,...Object.values(m).map(x=>x.fills)) / 10), progressFn: (s,_,m) => (Math.max(0,...Object.values(m).map(x=>x.fills)) % 10) / 10, title: null },
   { id:'master',       cat:'mastery',     icon:'🏆', name:'True Mastery',           desc:'Fill any exercise bar 25+ times. Repeats every 25 fills.', repeatable: true, check: (s,_,m) => Object.values(m).some(x => x.fills >= 25), countFn: (s,_,m) => Math.floor(Math.max(0,...Object.values(m).map(x=>x.fills)) / 25), progressFn: (s,_,m) => (Math.max(0,...Object.values(m).map(x=>x.fills)) % 25) / 25, title: 'The Devoted' },
   { id:'rising_tide',  cat:'performance', icon:'🌊', name:'Rising Tide',            desc:'Beat your personal average for duration, volume, or distance. Repeats every 10 times.', repeatable: true, check: (s,_,m) => countAboveAvgSessions(s) >= 1, countFn: (s,_,m) => Math.floor(countAboveAvgSessions(s) / 10), progressFn: (s,_,m) => (countAboveAvgSessions(s) % 10) / 10, title: null },
@@ -6371,10 +6373,16 @@ function showXPOverlay(summary) {
     <div class="xp-breakdown-val" style="color:var(--agi-text)">+${bd.aboveAvg}</div>
   </div>`;
 
-  if (summary.masteryFills > 0) html += `<div class="xp-breakdown-row" style="border-color:var(--str)">
-    <div class="xp-breakdown-label">📈 Exercise mastery fills ×${summary.masteryFills}</div>
-    <div class="xp-breakdown-val" style="color:var(--str-text)">+${summary.masteryFills * 50}</div>
-  </div>`;
+  if (summary.masteryFills > 0) {
+    const names = summary.masteryFillNames || [];
+    html += `<div class="xp-breakdown-row" style="border-color:var(--dex);flex-direction:column;align-items:flex-start;gap:3px">
+      <div style="display:flex;justify-content:space-between;width:100%">
+        <div class="xp-breakdown-label">📈 Mastery bar filled ×${summary.masteryFills}</div>
+        <div class="xp-breakdown-val" style="color:var(--dex)">+${summary.masteryFills * 50}</div>
+      </div>
+      ${names.map(n => `<div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dex);opacity:0.8">· ${n}</div>`).join('')}
+    </div>`;
+  }
 
   if (summary.achievementXP > 0) html += `<div class="xp-breakdown-row" style="border-color:var(--str)">
     <div class="xp-breakdown-label">🏆 Achievement bonus ×${summary.newAchievements.length}</div>
@@ -6500,9 +6508,14 @@ function computeAndShowXP(savedSessionId) {
   const nowMastery = computeMastery(sessionsUpToNow);
   const aMap = getSessionAttrMap(latest);
   let masteryFills = 0;
+  const masteryFillNames = [];
   Object.keys(nowMastery).forEach(name => {
     const before = priorMastery[name] ? priorMastery[name].fills : 0;
-    masteryFills += Math.max(0, nowMastery[name].fills - before);
+    const newFills = Math.max(0, nowMastery[name].fills - before);
+    if (newFills > 0) {
+      masteryFills += newFills;
+      for (let i = 0; i < newFills; i++) masteryFillNames.push(name);
+    }
   });
   if (masteryFills > 0) {
     const masteryXP = masteryFills * 50;
@@ -6575,6 +6588,7 @@ function computeAndShowXP(savedSessionId) {
       attrGains,
       attrXPBefore: priorAttrXP,
       masteryFills,
+      masteryFillNames,
       newAchievements,
       achievementXP,
       activityPBs,
