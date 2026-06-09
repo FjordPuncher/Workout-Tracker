@@ -957,22 +957,43 @@ html, body {
 .streak-sub { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
 
 /* ── GLOSSARY SCREEN ── */
+.builder-filter-btn {
+  font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.6px;
+  background: none; border: 1px solid var(--border); border-radius: 20px;
+  padding: 5px 12px; color: var(--text-dim); cursor: pointer; transition: all 0.15s;
+}
+.builder-filter-btn.active {
+  border-color: var(--str); color: var(--str); background: var(--str-bg);
+}
+.builder-ex-card {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px;
+  cursor: pointer; transition: border-color 0.15s, background 0.15s;
+}
+.builder-ex-card.selected {
+  border-color: var(--str); background: var(--str-bg);
+}
+.builder-ex-name {
+  font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--text);
+}
+
 .glossary-search-wrap {
   position: relative; padding: 10px 18px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0; background: var(--bg);
 }
 .glossary-search {
-  width: 100%; padding: 10px 36px 10px 14px;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); color: var(--text);
+  width: 100%; padding: 11px 40px 11px 16px;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius); color: var(--text);
   font-family: 'DM Sans', sans-serif; font-size: 14px;
-  outline: none; -webkit-appearance: none;
+  outline: none; -webkit-appearance: none; box-sizing: border-box;
 }
-.glossary-search:focus { border-color: var(--text-dim); }
+.glossary-search:focus { border-color: var(--str); }
 .glossary-search::placeholder { color: var(--text-dim); }
 .glossary-search-icon {
-  position: absolute; right: 28px; top: 50%; transform: translateY(-50%);
+  position: absolute; right: 30px; top: 50%; transform: translateY(-50%);
   color: var(--text-dim); pointer-events: none;
 }
 .glossary-group-label {
@@ -1409,7 +1430,18 @@ html, body {
     <div class="topbar-title">Glossary</div>
     <div style="width:60px"></div>
   </div>
-  <div class="glossary-search-wrap">
+  <!-- Tab bar -->
+  <div style="display:flex;gap:0;border-bottom:1px solid var(--border);padding:0 18px">
+    <button id="gtab-exercises" onclick="switchGlossaryTab('exercises')"
+      style="flex:1;padding:10px 0;font-family:'DM Mono',monospace;font-size:10px;font-weight:500;
+        text-transform:uppercase;letter-spacing:0.6px;background:none;border:none;
+        border-bottom:2px solid var(--str);color:var(--str);cursor:pointer">Exercises</button>
+    <button id="gtab-workouts" onclick="switchGlossaryTab('workouts')"
+      style="flex:1;padding:10px 0;font-family:'DM Mono',monospace;font-size:10px;font-weight:500;
+        text-transform:uppercase;letter-spacing:0.6px;background:none;border:none;
+        border-bottom:2px solid transparent;color:var(--text-dim);cursor:pointer">Workouts</button>
+  </div>
+  <div class="glossary-search-wrap" id="glossary-search-wrap">
     <input class="glossary-search" id="glossary-search" type="text"
       placeholder="Search exercises…"
       oninput="renderGlossary(this.value)" autocomplete="off" autocorrect="off">
@@ -1418,9 +1450,83 @@ html, body {
     </div>
   </div>
   <div class="scroll-body" id="glossary-body" style="padding-top:4px"></div>
+  <div class="scroll-body" id="glossary-workouts-body" style="padding:12px 18px 100px;display:none"></div>
 </div>
 
-<!-- ── EXERCISE PROGRESSION SCREEN ── -->
+<!-- ── CUSTOM WORKOUTS SCREEN ── -->
+<div id="screen-custom-workouts" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="showHome()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg>
+      Home
+    </button>
+    <div class="topbar-title">My Workouts</div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="scroll-body" id="custom-workouts-body" style="padding:0 18px 100px"></div>
+</div>
+
+<!-- ── WORKOUT BUILDER SCREEN ── -->
+<div id="screen-workout-builder" class="screen">
+  <div class="topbar">
+    <button class="back-btn" id="builder-back-btn" onclick="closeWorkoutBuilder()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg>
+      Back
+    </button>
+    <div class="topbar-title" id="builder-topbar-title">Build a Workout</div>
+    <div style="width:60px"></div>
+  </div>
+  <div style="padding:10px 18px 0;display:flex;gap:8px;flex-wrap:wrap">
+    <button onclick="setBuilderFilter('all')" id="bfilter-all"
+      class="builder-filter-btn active">All</button>
+    <button onclick="setBuilderFilter('push')" id="bfilter-push"
+      class="builder-filter-btn">Push</button>
+    <button onclick="setBuilderFilter('pull')" id="bfilter-pull"
+      class="builder-filter-btn">Pull</button>
+    <button onclick="setBuilderFilter('legs')" id="bfilter-legs"
+      class="builder-filter-btn">Legs</button>
+    <button onclick="setBuilderFilter('core')" id="bfilter-core"
+      class="builder-filter-btn">Core</button>
+  </div>
+  <div style="padding:10px 18px 6px">
+    <input type="text" id="builder-search" placeholder="Search exercises…"
+      oninput="renderBuilderExercises()"
+      style="width:100%;background:var(--surface);border:1px solid var(--border);
+        border-radius:var(--radius);padding:10px 14px;font-family:'DM Sans',sans-serif;
+        font-size:14px;color:var(--text);box-sizing:border-box"
+      autocomplete="off" autocorrect="off">
+  </div>
+  <div class="scroll-body" id="builder-exercise-list" style="padding:0 18px 180px"></div>
+  <!-- Floating footer -->
+  <div id="builder-footer" style="position:fixed;bottom:0;left:0;right:0;
+    background:linear-gradient(transparent, var(--bg) 30%);padding:20px 18px 80px;
+    display:flex;align-items:center;justify-content:space-between;z-index:50">
+    <div id="builder-selection-count"
+      style="font-family:'DM Mono',monospace;font-size:11px;color:#FFFFFF;font-weight:500">
+      0 selected
+    </div>
+    <button onclick="openBuilderNaming()"
+      style="background:var(--str);color:var(--str-text);border:none;border-radius:var(--radius);
+        padding:12px 28px;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;cursor:pointer">
+      Save
+    </button>
+  </div>
+</div>
+
+<!-- ── WORKOUT NAMING SCREEN ── -->
+<div id="screen-workout-naming" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="closeWorkoutNaming()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg>
+      Back
+    </button>
+    <div class="topbar-title">Name Your Workout</div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="scroll-body" id="workout-naming-body" style="padding:18px 18px 100px"></div>
+</div>
+
+
 <div id="screen-progression" class="screen">
   <div class="topbar">
     <button class="back-btn" id="progression-back-btn" onclick="closeProgressionScreen()">
@@ -1757,8 +1863,20 @@ function getActivity(name) {
   return PREDEFINED_ACTIVITIES.find(a => a.name === name) || null;
 }
 // Helper: get display info for any variationKey including custom
-function getVariationMeta(key, customName, category) {
+function getVariationMeta(key, customName, category, customWorkoutId) {
   if (key === CUSTOM_KEY) {
+    // Custom workout template session — look up inferred type from saved template
+    if (category === 'custom' && customWorkoutId) {
+      const w = getCustomWorkouts().find(x => x.id === customWorkoutId);
+      const type = w ? w.inferredType : 'custom';
+      const label = customName || (w ? w.name : 'Custom');
+      const name = customName || (w ? w.name : 'Custom Workout');
+      const deleted = !w;
+      const tc = TYPE_COLOR[type] || 'var(--text-dim)';
+      const tb = TYPE_BG[type] || 'var(--surface)';
+      const tt = TYPE_TEXT[type] || 'var(--text-dim)';
+      return { label, name, type, color: tc, bg: tb, text: tt, deleted };
+    }
     // Check if it matches a predefined activity
     const act = customName ? getActivity(customName) : null;
     const cat = category || (act ? act.category : 'general');
@@ -1848,18 +1966,31 @@ function renderHome() {
   const sv = VARIATIONS[suggested];
   const container = document.getElementById('suggestion-container');
   container.innerHTML = `
-    <div style="padding:10px 18px 0">
+    <div style="padding:10px 18px 0;display:flex;gap:8px">
       <button onclick="openQuickLog()"
-        style="width:100%;background:#1A1814;border:1.5px dashed #3A3530;border-radius:var(--radius);
-          padding:14px 18px;display:flex;align-items:center;justify-content:center;
-          gap:10px;cursor:pointer">
-        <div style="width:26px;height:26px;border-radius:50%;background:#2A2820;
+        style="flex:1;background:#1A1814;border:1.5px dashed #3A3530;border-radius:var(--radius);
+          padding:14px 10px;display:flex;align-items:center;justify-content:center;
+          gap:8px;cursor:pointer">
+        <div style="width:22px;height:22px;border-radius:50%;background:#2A2820;
           border:1.5px solid var(--str);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <span style="color:var(--str);font-size:18px;font-weight:400;line-height:1;font-family:Arial,sans-serif">+</span>
+          <span style="color:var(--str);font-size:16px;font-weight:400;line-height:1;font-family:Arial,sans-serif">+</span>
         </div>
         <div style="text-align:left">
-          <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text-muted)">Quick Log</div>
-          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:1px">log a single exercise or activity</div>
+          <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text-muted)">Quick Log</div>
+          <div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text-dim);margin-top:1px">single exercise</div>
+        </div>
+      </button>
+      <button onclick="showCustomWorkouts()"
+        style="flex:1;background:#1A1814;border:1.5px dashed #3A3530;border-radius:var(--radius);
+          padding:14px 10px;display:flex;align-items:center;justify-content:center;
+          gap:8px;cursor:pointer">
+        <div style="width:22px;height:22px;border-radius:50%;background:#2A2820;
+          border:1.5px solid var(--dex);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <span style="color:var(--dex);font-size:16px;font-weight:400;line-height:1;font-family:Arial,sans-serif">★</span>
+        </div>
+        <div style="text-align:left">
+          <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text-muted)">My Workouts</div>
+          <div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text-dim);margin-top:1px">custom templates</div>
         </div>
       </button>
     </div>`;
@@ -2064,7 +2195,7 @@ function renderCalendar() {
     if (sd.getFullYear() === y && sd.getMonth() === m) {
       const key = sd.getDate();
       if (!sessionsByDate[key]) sessionsByDate[key] = [];
-      const vm = getVariationMeta(s.variationKey, s.customName, s.category);
+      const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
       sessionsByDate[key].push({ type: vm.type, label: vm.label, key: s.variationKey });
     }
   });
@@ -2119,7 +2250,7 @@ function calDayClick(d, y, m, isFuture, hasSessions) {
 
   if (daySessions.length) {
     tooltip.textContent = daySessions.map(s =>
-      getVariationMeta(s.variationKey, s.customName, s.category).label + ' — ' + getVariationMeta(s.variationKey, s.customName, s.category).name
+      getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId).label + ' — ' + getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId).name
     ).join(' · ');
     // Open backfill screen showing existing sessions for that day with option to add more
     openBackfill(d, y, m, daySessions);
@@ -2194,7 +2325,7 @@ function renderBackfillScreen(existingSessions) {
   if (existing.length) {
     html += `<div class="section-label">Already logged</div>`;
     existing.forEach(s => {
-      const vm = getVariationMeta(s.variationKey, s.customName, s.category);
+      const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
       const sets = s.exercises.reduce((a, e) => a + e.sets.filter(st => st.reps).length, 0);
       const metaParts = [];
       if (sets) metaParts.push(`${sets} set${sets !== 1 ? 's' : ''} logged`);
@@ -3105,7 +3236,11 @@ function startSession() {
     notes: '',
     duration: '',
     distance: '',
-    category: isCore ? 'core' : ''
+    category: isCore ? 'core' : (currentVariation.isCustom ? 'custom' : ''),
+    ...(currentVariation.isCustom ? {
+      customWorkoutId: currentVariation.customWorkoutId,
+      customWorkoutName: currentVariation.customWorkoutName,
+    } : {}),
   };
   clearInterval(elapsedInterval);
   elapsedInterval = setInterval(updateElapsedDisplay, 10000);
@@ -3308,7 +3443,7 @@ function loggedLaterNote(s) {
 }
 
 function renderSessionDetail(s) {
-  const vm = getVariationMeta(s.variationKey, s.customName, s.category);
+  const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
   const tc = vm.color;
   const bg = vm.bg;
   const tt = vm.text;
@@ -3429,7 +3564,7 @@ function renderSessionDetail(s) {
   const prCount = prList.length;
   const priorWithDur = priorSessions.filter(ps => parseFloat(ps.duration) > 0);
   const avgDurStat = priorWithDur.length >= 3 ? priorWithDur.reduce((a, ps) => a + parseFloat(ps.duration), 0) / priorWithDur.length : null;
-  const vm2 = getVariationMeta(s.variationKey, s.customName, s.category);
+  const vm2 = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
   const priorSameType = priorSessions.filter(ps => getVariationMeta(ps.variationKey, ps.customName, ps.category).type === vm2.type);
   const priorVols = priorSameType.map(ps => ps.exercises.reduce((acc, e) => acc + e.sets.reduce((a, st) => a + ((parseFloat(st.reps)||0)*(parseFloat(st.weight)||0)), 0), 0)).filter(v => v > 0);
   const avgVolStat = priorVols.length >= 3 ? priorVols.reduce((a,b)=>a+b,0)/priorVols.length : null;
@@ -3720,7 +3855,7 @@ function deleteSessionFromDetail(sessionId) {
 }
 
 function renderHistorySessionCard(s) {
-  const vm = getVariationMeta(s.variationKey, s.customName, s.category);
+  const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
   const totalSets = s.exercises.reduce((acc, e) => acc + e.sets.filter(st => st.reps).length, 0);
 
   // Calculate XP earned this session
@@ -3750,7 +3885,7 @@ function renderHistorySessionCard(s) {
   return `<button class="history-item" onclick="showSessionDetail('${s.id}')">
     <div class="history-item-header">
       <div class="history-item-left">
-        <div class="history-item-name" style="color:${vm.color}">${vm.label} — ${vm.name}</div>
+        <div class="history-item-name" style="color:${vm.color}">${vm.label} — ${vm.name}${vm.deleted ? `<span style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text-dim);margin-left:6px;opacity:0.7">deleted</span>` : ''}</div>
         <div class="history-item-meta">${meta}</div>
       </div>
       <div class="history-item-arrow">›</div>
@@ -3961,7 +4096,7 @@ function totalMiles(sessionList) {
 function cardioSessions(sessionList) {
   return sessionList.filter(s => {
     if (ORDER.includes(s.variationKey)) return false;
-    const vm = getVariationMeta(s.variationKey, s.customName, s.category);
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
     return vm.type === 'cardio';
   });
 }
@@ -4948,7 +5083,8 @@ function exportData() {
     exportDate: new Date().toISOString(),
     sessions,
     pbs: computePBs(),
-    profile: loadProfile()
+    profile: loadProfile(),
+    customWorkouts: getCustomWorkouts(),
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -4993,7 +5129,6 @@ function handleImportFile(event) {
       // Restore profile if present in backup (only if current profile is default/empty)
       if (data.profile && typeof data.profile === 'object') {
         const current = loadProfile();
-        // Only overwrite if no custom name has been set on this device yet
         const isDefault = !current.name || current.name === 'Athlete';
         if (isDefault) {
           saveProfile(data.profile);
@@ -5003,6 +5138,17 @@ function handleImportFile(event) {
         }
       } else {
         showToast(`Imported ${added} new session${added !== 1 ? 's' : ''} ✓`);
+      }
+
+      // Merge custom workouts by ID
+      if (data.customWorkouts && Array.isArray(data.customWorkouts)) {
+        const existing = getCustomWorkouts();
+        const existingIds = new Set(existing.map(w => String(w.id)));
+        const merged = [...existing];
+        data.customWorkouts.forEach(w => {
+          if (!existingIds.has(String(w.id))) merged.push(w);
+        });
+        saveCustomWorkouts(merged);
       }
 
       renderDataScreen();
@@ -5044,7 +5190,7 @@ function startEditSession() {
 function renderEditSession() {
   const s = editingSession;
   if (!s) return;
-  const vm = getVariationMeta(s.variationKey, s.customName, s.category);
+  const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
   const tc = vm.color;
   const body = document.getElementById('detail-body');
 
@@ -5795,7 +5941,7 @@ function getSessionAttrMap(s) {
     const actMap = getActivityAttrMap(s.customName);
     if (actMap) return actMap;
   }
-  const vm = getVariationMeta(s.variationKey, s.customName, s.category);
+  const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
   return SESSION_ATTR_MAP[vm.type] || SESSION_ATTR_MAP.general;
 }
 
@@ -5874,7 +6020,7 @@ function calcSessionXP(s, priorSessions, priorPBs) {
   const dur = parseFloat(s.duration) || 0;
   if (dur > 0) {
     const name = s.customName || '';
-    const vm2 = getVariationMeta(s.variationKey, s.customName, s.category);
+    const vm2 = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
     const isLiftingSession = ['push','pull','legs'].includes(vm2.type) && s.variationKey !== CUSTOM_KEY;
     if (!isLiftingSession) {
       let rate = 0;
@@ -5954,7 +6100,7 @@ function calcSessionXP(s, priorSessions, priorPBs) {
   const avgDur = priorWithDur.length >= ABOVE_AVG_MIN
     ? priorWithDur.reduce((a, ps) => a + parseFloat(ps.duration), 0) / priorWithDur.length : null;
 
-  const vm = getVariationMeta(s.variationKey, s.customName, s.category);
+  const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
   const priorSameType = priorSessions.filter(ps =>
     getVariationMeta(ps.variationKey, ps.customName, ps.category).type === vm.type);
   const priorVols = priorSameType.map(ps =>
@@ -6132,7 +6278,7 @@ function getWeekKey(dateStr) {
 // Sessions of a given variation type
 function sessionsOfType(sessionList, type) {
   return sessionList.filter(s => {
-    const vm = getVariationMeta(s.variationKey, s.customName, s.category);
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
     return vm.type === type;
   });
 }
@@ -6158,7 +6304,7 @@ function sessionsOverLbs(sessionList, threshold) {
 
 // Has the user logged at least one session of each PPL type
 function hasFullSplit(sessionList) {
-  const types = new Set(sessionList.map(s => getVariationMeta(s.variationKey, s.customName, s.category).type));
+  const types = new Set(sessionList.map(s => getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId).type));
   return ['push','pull','legs'].every(t => types.has(t));
 }
 
@@ -6174,7 +6320,7 @@ function weeksWithTypes(sessionList, types) {
   sessionList.forEach(s => {
     const k = getWeekKey(s.date);
     if (!byWeek[k]) byWeek[k] = new Set();
-    byWeek[k].add(getVariationMeta(s.variationKey, s.customName, s.category).type);
+    byWeek[k].add(getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId).type);
   });
   return Object.values(byWeek).filter(typeSet =>
     types.every(t => typeSet.has(t))
@@ -6187,7 +6333,7 @@ function weeksWithFullCross(sessionList) {
   sessionList.forEach(s => {
     const k = getWeekKey(s.date);
     if (!byWeek[k]) byWeek[k] = new Set();
-    const vm = getVariationMeta(s.variationKey, s.customName, s.category);
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
     byWeek[k].add(vm.type);
     if (isRunningSession(s) || isBikingSession(s)) byWeek[k].add('_cardio');
   });
@@ -6202,7 +6348,7 @@ function weeksWithAllCategories(sessionList) {
   sessionList.forEach(s => {
     const k = getWeekKey(s.date);
     if (!byWeek[k]) byWeek[k] = new Set();
-    const vm = getVariationMeta(s.variationKey, s.customName, s.category);
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
     byWeek[k].add(vm.type);
     if (isRunningSession(s) || isBikingSession(s)) byWeek[k].add('_cardio');
   });
@@ -6220,7 +6366,7 @@ function consecutiveQualifyingWeekGroups(sessionList, n, typeCheck) {
   sessionList.forEach(s => {
     const k = getWeekKey(s.date);
     if (!byWeek[k]) byWeek[k] = new Set();
-    const vm = getVariationMeta(s.variationKey, s.customName, s.category);
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
     byWeek[k].add(vm.type);
     if (isRunningSession(s) || isBikingSession(s)) byWeek[k].add('_cardio');
   });
@@ -6254,7 +6400,7 @@ function daysWithRunAndLift(sessionList) {
     const k = s.date.slice(0, 10);
     if (!byDay[k]) byDay[k] = { cardio: false, lift: false };
     if (isRunningSession(s) || isBikingSession(s)) byDay[k].cardio = true;
-    const vm = getVariationMeta(s.variationKey, s.customName, s.category);
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
     if (['push','pull','legs','core'].includes(vm.type)) byDay[k].lift = true;
   });
   return Object.values(byDay).filter(d => d.cardio && d.lift).length;
@@ -6267,7 +6413,7 @@ function weeksWithRunAndLift(sessionList) {
     const k = getWeekKey(s.date);
     if (!byWeek[k]) byWeek[k] = { cardio: false, lift: false };
     if (isRunningSession(s) || isBikingSession(s)) byWeek[k].cardio = true;
-    const vm = getVariationMeta(s.variationKey, s.customName, s.category);
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
     if (['push','pull','legs','core'].includes(vm.type)) byWeek[k].lift = true;
   });
   return Object.values(byWeek).filter(w => w.cardio && w.lift).length;
@@ -6348,10 +6494,10 @@ function exercisesWithFills(mastery) {
 // Rolling count of instances where a Legs session was logged within 7 days of a Push session
 function neverSkipLegDayCount(sessionList) {
   const pushDates = sessionList
-    .filter(s => getVariationMeta(s.variationKey, s.customName, s.category).type === 'push')
+    .filter(s => getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId).type === 'push')
     .map(s => new Date(s.date).getTime());
   const legDates = sessionList
-    .filter(s => getVariationMeta(s.variationKey, s.customName, s.category).type === 'legs')
+    .filter(s => getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId).type === 'legs')
     .map(s => new Date(s.date).getTime());
   let count = 0;
   pushDates.forEach(pd => {
@@ -6601,7 +6747,7 @@ function countAboveAvgSessions(sessionList) {
     }
 
     // Volume above average (same type)
-    const vm = getVariationMeta(s.variationKey, s.customName, s.category);
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
     const priorSameType = prior.filter(ps => getVariationMeta(ps.variationKey, ps.customName, ps.category).type === vm.type);
     const priorVols = priorSameType.map(ps =>
       ps.exercises.reduce((acc, e) => acc + e.sets.reduce((a, st) => a + ((parseFloat(st.reps)||0)*(parseFloat(st.weight)||0)), 0), 0)
@@ -8103,8 +8249,477 @@ function distanceComparisonPair(mi, sessionId) {
   };
 }
 
+// ── CUSTOM WORKOUTS ─────────────────────────────────────────────────────────
+
+const CUSTOM_WORKOUT_KEY = 'ppl_custom_workouts';
+
+function getCustomWorkouts() {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_WORKOUT_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function saveCustomWorkouts(list) {
+  localStorage.setItem(CUSTOM_WORKOUT_KEY, JSON.stringify(list));
+}
+
+function inferWorkoutType(exerciseNames) {
+  const typeCounts = {};
+  const typeThresholds = {};
+  exerciseNames.forEach(name => {
+    const ex = getExercise(name);
+    if (!ex || ex.isActivity) return;
+    typeCounts[ex.type] = (typeCounts[ex.type] || 0) + 1;
+    typeThresholds[ex.type] = (typeThresholds[ex.type] || 0) + (ex.masteryThreshold || 0);
+  });
+  const sorted = Object.entries(typeCounts).sort((a, b) => {
+    if (b[1] !== a[1]) return b[1] - a[1];
+    return (typeThresholds[b[0]] || 0) - (typeThresholds[a[0]] || 0);
+  });
+  return sorted.length > 0 ? sorted[0][0] : 'custom';
+}
+
+function estimateSessionLength(exerciseNames) {
+  const total = exerciseNames.reduce((acc, name) => {
+    const ex = getExercise(name);
+    if (!ex) return acc;
+    const sets = parseInt((ex.sets || '3 × 10').split('×')[0]) || 3;
+    return acc + sets;
+  }, 0);
+  if (total < 20) return `~${total} min`;
+  return `~${Math.round(total / 5) * 5} min`;
+}
+
+let builderSelectedExercises = [];
+let builderFilter = 'all';
+let builderEditingId = null;
+
+function showCustomWorkouts() {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-custom-workouts').classList.add('active');
+  renderCustomWorkoutsScreen();
+}
+
+function renderCustomWorkoutsScreen() {
+  const workouts = getCustomWorkouts();
+  const body = document.getElementById('custom-workouts-body');
+
+  let html = `<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0 12px">
+    <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--text)">My Workouts</div>
+    <button onclick="openWorkoutBuilder()"
+      style="background:var(--str);color:var(--str-text);border:none;border-radius:var(--radius);
+        padding:8px 16px;font-family:'DM Mono',monospace;font-size:10px;font-weight:500;
+        text-transform:uppercase;letter-spacing:0.6px;cursor:pointer">+ Build</button>
+  </div>`;
+
+  if (workouts.length === 0) {
+    html += `<div onclick="openWorkoutBuilder()" style="background:var(--surface);
+      border:1.5px dashed var(--border);border-radius:var(--radius);
+      padding:40px 20px;text-align:center;cursor:pointer;margin-top:8px">
+      <div style="font-size:32px;margin-bottom:12px">🏗️</div>
+      <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;
+        color:var(--text-muted);margin-bottom:6px">No custom workouts yet</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim)">
+        Tap here to build one</div>
+    </div>`;
+  } else {
+    workouts.forEach(w => {
+      const wSessions = sessions.filter(s => s.customWorkoutId === w.id);
+      const lastDone = wSessions.slice(-1)[0];
+      const lastText = lastDone
+        ? `Last: ${new Date(lastDone.date).toLocaleDateString('en-US',{month:'short',day:'numeric'})}`
+        : 'Never logged';
+      const tc = TYPE_COLOR[w.inferredType] || 'var(--str)';
+      const tb = TYPE_BG[w.inferredType] || 'var(--surface)';
+      const tt = TYPE_TEXT[w.inferredType] || 'var(--text)';
+
+      html += `<div style="background:var(--surface);border:1px solid var(--border);
+        border-radius:var(--radius);padding:14px 16px;margin-bottom:10px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+              <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;
+                color:var(--text)">${w.name}</div>
+              <div style="background:${tb};color:${tt};font-family:'DM Mono',monospace;
+                font-size:8px;font-weight:500;text-transform:uppercase;letter-spacing:0.6px;
+                padding:2px 7px;border-radius:10px">${w.inferredType}</div>
+            </div>
+            ${w.desc ? `<div style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-muted);margin-bottom:6px;line-height:1.4">${w.desc}</div>` : ''}
+            <div style="font-family:'DM Mono',monospace;font-size:9px;
+              color:var(--text-dim);margin-bottom:8px">
+              ${w.exercises.length} exercises · ${lastText} · ${wSessions.length} sessions
+            </div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;
+              color:var(--text-dim);line-height:1.6">
+              ${w.exercises.slice(0,5).join(' · ')}${w.exercises.length > 5
+                ? ` · +${w.exercises.length - 5} more` : ''}
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button onclick="startCustomWorkout(${w.id})"
+            style="flex:2;background:${tc};color:${tt};border:none;
+              border-radius:var(--radius);padding:10px;font-family:'Syne',sans-serif;
+              font-size:13px;font-weight:700;cursor:pointer">
+            Start Workout
+          </button>
+          <button onclick="editCustomWorkout(${w.id})"
+            style="flex:1;background:none;border:1px solid var(--border);
+              border-radius:var(--radius);padding:10px;font-family:'DM Mono',monospace;
+              font-size:10px;color:var(--text-dim);cursor:pointer">Edit</button>
+          <button onclick="deleteCustomWorkout(${w.id})"
+            style="flex:1;background:none;border:1px solid var(--border);
+              border-radius:var(--radius);padding:10px;font-family:'DM Mono',monospace;
+              font-size:10px;color:var(--text-dim);cursor:pointer">Delete</button>
+        </div>
+      </div>`;
+    });
+  }
+  body.innerHTML = html;
+}
+
+function openWorkoutBuilder(editId) {
+  builderEditingId = editId || null;
+  builderFilter = 'all';
+  if (editId) {
+    const w = getCustomWorkouts().find(x => x.id === editId);
+    builderSelectedExercises = w ? [...w.exercises] : [];
+    document.getElementById('builder-topbar-title').textContent = 'Edit Workout';
+  } else {
+    builderSelectedExercises = [];
+    document.getElementById('builder-topbar-title').textContent = 'Build a Workout';
+  }
+  document.getElementById('builder-search').value = '';
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-workout-builder').classList.add('active');
+  setBuilderFilter('all');
+}
+
+function closeWorkoutBuilder() {
+  showCustomWorkouts();
+}
+
+function setBuilderFilter(f) {
+  builderFilter = f;
+  document.querySelectorAll('.builder-filter-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`bfilter-${f}`).classList.add('active');
+  renderBuilderExercises();
+}
+
+function renderBuilderExercises() {
+  const search = (document.getElementById('builder-search').value || '').toLowerCase();
+  const list = document.getElementById('builder-exercise-list');
+  const countEl = document.getElementById('builder-selection-count');
+  countEl.textContent = `${builderSelectedExercises.length} selected`;
+
+  const exercises = EXERCISE_LIBRARY.filter(ex => {
+    if (ex.isActivity) return false;
+    if (builderFilter !== 'all' && ex.type !== builderFilter) return false;
+    if (search && !ex.name.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  let html = '';
+  if (builderFilter === 'all') {
+    const byType = {};
+    exercises.forEach(ex => { (byType[ex.type] = byType[ex.type] || []).push(ex); });
+    ['push','pull','legs','core'].forEach(type => {
+      if (!byType[type]?.length) return;
+      html += `<div style="font-family:'DM Mono',monospace;font-size:10px;font-weight:500;
+        text-transform:uppercase;letter-spacing:0.8px;
+        color:${TYPE_COLOR[type]||'var(--text-dim)'};padding:14px 0 6px">${type}</div>`;
+      byType[type].forEach(ex => { html += builderExCard(ex); });
+    });
+  } else {
+    exercises.forEach(ex => { html += builderExCard(ex); });
+  }
+
+  if (!html) html = `<div style="text-align:center;padding:40px 0;
+    font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">
+    No exercises found</div>`;
+  list.innerHTML = html;
+}
+
+function builderExCard(ex) {
+  const selected = builderSelectedExercises.includes(ex.name);
+  const setsLabel = ex.isTimed ? (ex.sets || '3 × 30 sec') : (ex.sets || '3 × 10');
+  const pill = muscleGroupPill(ex.muscleGroup);
+  const safeName = ex.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  return `<div class="builder-ex-card${selected ? ' selected' : ''}"
+    onclick="toggleBuilderExercise('${safeName}')">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="builder-ex-name">${ex.name}</div>
+      ${selected ? `<div style="width:18px;height:18px;border-radius:50%;background:var(--str);
+        display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <span style="color:var(--str-text);font-size:12px;font-weight:700">✓</span>
+        </div>` : ''}
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:5px">
+      ${pill}
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim)">${setsLabel}</div>
+      ${ex.isBodyweight ? `<div style="font-family:'DM Mono',monospace;font-size:9px;
+        color:var(--text-dim)">bodyweight</div>` : ''}
+    </div>
+  </div>`;
+}
+
+function toggleBuilderExercise(name) {
+  const idx = builderSelectedExercises.indexOf(name);
+  if (idx === -1) builderSelectedExercises.push(name);
+  else builderSelectedExercises.splice(idx, 1);
+  renderBuilderExercises();
+}
+
+function openBuilderNaming() {
+  if (builderSelectedExercises.length === 0) {
+    showToast('Select at least one exercise');
+    return;
+  }
+  const inferredType = inferWorkoutType(builderSelectedExercises);
+  const tb = TYPE_BG[inferredType] || 'var(--surface)';
+  const tt = TYPE_TEXT[inferredType] || 'var(--text)';
+  const estLength = estimateSessionLength(builderSelectedExercises);
+  const existing = builderEditingId ? getCustomWorkouts().find(x => x.id === builderEditingId) : null;
+
+  document.getElementById('workout-naming-body').innerHTML = `
+    <div style="margin-bottom:16px">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;
+        letter-spacing:0.8px;color:var(--text-dim);margin-bottom:8px">Workout Name</div>
+      <input id="workout-name-input" type="text" placeholder="e.g. My Pull Day"
+        value="${existing ? existing.name.replace(/"/g,'&quot;') : ''}"
+        style="width:100%;background:var(--surface);border:1.5px solid var(--border);
+          border-radius:var(--radius);padding:12px 14px;font-family:'Syne',sans-serif;
+          font-size:15px;font-weight:700;color:var(--text);box-sizing:border-box"
+        autocomplete="off">
+    </div>
+    <div style="margin-bottom:20px">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;
+        letter-spacing:0.8px;color:var(--text-dim);margin-bottom:8px">Description <span style="opacity:0.5">(optional)</span></div>
+      <textarea id="workout-desc-input" placeholder="e.g. Heavy back focus with grip work"
+        rows="2"
+        style="width:100%;background:var(--surface);border:1.5px solid var(--border);
+          border-radius:var(--radius);padding:12px 14px;font-family:'DM Sans',sans-serif;
+          font-size:13px;color:var(--text);box-sizing:border-box;resize:none;
+          line-height:1.5"
+        autocomplete="off">${existing?.desc ? existing.desc.replace(/</g,'&lt;') : ''}</textarea>
+    </div>
+    <div style="display:flex;gap:12px;margin-bottom:20px">
+      <div style="flex:1;background:var(--surface);border:1px solid var(--border);
+        border-radius:var(--radius);padding:12px 14px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;
+          letter-spacing:0.6px;color:var(--text-dim);margin-bottom:4px">Category</div>
+        <div style="background:${tb};color:${tt};display:inline-block;
+          font-family:'DM Mono',monospace;font-size:10px;font-weight:500;
+          text-transform:uppercase;letter-spacing:0.6px;
+          padding:3px 10px;border-radius:10px">${inferredType}</div>
+      </div>
+      <div style="flex:1;background:var(--surface);border:1px solid var(--border);
+        border-radius:var(--radius);padding:12px 14px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;
+          letter-spacing:0.6px;color:var(--text-dim);margin-bottom:4px">Est. Length</div>
+        <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;
+          color:var(--text)">${estLength}</div>
+      </div>
+    </div>
+    <div style="margin-bottom:24px">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;
+        letter-spacing:0.8px;color:var(--text-dim);margin-bottom:10px">
+        ${builderSelectedExercises.length} Exercises</div>
+      ${builderSelectedExercises.map(name => {
+        const ex = getExercise(name);
+        return `<div style="display:flex;align-items:center;justify-content:space-between;
+          padding:8px 0;border-bottom:1px solid var(--border)">
+          <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text)">${name}</div>
+          ${ex ? muscleGroupPill(ex.muscleGroup) : ''}
+        </div>`;
+      }).join('')}
+    </div>
+    <button onclick="saveCustomWorkout()"
+      style="width:100%;background:var(--str);color:var(--str-text);border:none;
+        border-radius:var(--radius);padding:14px;font-family:'Syne',sans-serif;
+        font-size:16px;font-weight:700;cursor:pointer">
+      ${builderEditingId ? 'Save Changes' : 'Save Workout'}
+    </button>`;
+
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-workout-naming').classList.add('active');
+  setTimeout(() => document.getElementById('workout-name-input')?.focus(), 100);
+}
+
+function closeWorkoutNaming() {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-workout-builder').classList.add('active');
+}
+
+function saveCustomWorkout() {
+  const nameInput = document.getElementById('workout-name-input');
+  const name = (nameInput?.value || '').trim();
+  if (!name) { showToast('Please enter a name'); return; }
+  const desc = (document.getElementById('workout-desc-input')?.value || '').trim();
+
+  const workouts = getCustomWorkouts();
+  const inferredType = inferWorkoutType(builderSelectedExercises);
+
+  if (builderEditingId) {
+    const idx = workouts.findIndex(x => x.id === builderEditingId);
+    if (idx !== -1) {
+      workouts[idx] = {
+        ...workouts[idx], name, desc,
+        exercises: [...builderSelectedExercises], inferredType,
+      };
+    }
+    saveCustomWorkouts(workouts);
+    showToast('Workout updated');
+    showCustomWorkouts();
+  } else {
+    const newWorkout = {
+      id: Date.now(), name, desc,
+      createdAt: new Date().toISOString(),
+      exercises: [...builderSelectedExercises],
+      inferredType, category: 'custom',
+    };
+    workouts.push(newWorkout);
+    saveCustomWorkouts(workouts);
+    showCustomWorkouts();
+    setTimeout(() => {
+      if (confirm(`"${name}" saved!\n\nStart this workout now?`)) {
+        startCustomWorkout(newWorkout.id);
+      }
+    }, 100);
+  }
+}
+
+function editCustomWorkout(id) {
+  openWorkoutBuilder(id);
+}
+
+function deleteCustomWorkout(id) {
+  const workouts = getCustomWorkouts();
+  const w = workouts.find(x => x.id === id);
+  if (!w) return;
+  if (!confirm(`Delete "${w.name}"?\n\nPast sessions will still appear in your history.`)) return;
+  saveCustomWorkouts(workouts.filter(x => x.id !== id));
+  renderCustomWorkoutsScreen();
+}
+
+function startCustomWorkout(id) {
+  const w = getCustomWorkouts().find(x => x.id === id);
+  if (!w) return;
+  currentVariation = {
+    key: CUSTOM_KEY, type: w.inferredType,
+    label: w.name, name: w.name,
+    focus: `${w.exercises.length} exercises`,
+    exercises: w.exercises,
+    customWorkoutId: w.id,
+    customWorkoutName: w.name,
+    isCustom: true,
+  };
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-workout').classList.add('active');
+  document.getElementById('workout-body').scrollTop = 0;
+  renderWorkoutScreen();
+}
+
+// ── Glossary Workouts tab ─────────────────────────────────────────────────
+
+let glossaryTab = 'exercises';
+
+function switchGlossaryTab(tab) {
+  glossaryTab = tab;
+  const exTab = document.getElementById('gtab-exercises');
+  const wkTab = document.getElementById('gtab-workouts');
+  const body = document.getElementById('glossary-body');
+  const wBody = document.getElementById('glossary-workouts-body');
+  const searchWrap = document.getElementById('glossary-search-wrap');
+  if (tab === 'exercises') {
+    exTab.style.borderBottomColor = 'var(--str)'; exTab.style.color = 'var(--str)';
+    wkTab.style.borderBottomColor = 'transparent'; wkTab.style.color = 'var(--text-dim)';
+    body.style.display = ''; wBody.style.display = 'none'; searchWrap.style.display = '';
+  } else {
+    wkTab.style.borderBottomColor = 'var(--str)'; wkTab.style.color = 'var(--str)';
+    exTab.style.borderBottomColor = 'transparent'; exTab.style.color = 'var(--text-dim)';
+    body.style.display = 'none'; wBody.style.display = ''; searchWrap.style.display = 'none';
+    renderGlossaryWorkouts();
+  }
+}
+
+function renderGlossaryWorkouts() {
+  const body = document.getElementById('glossary-workouts-body');
+  let html = '';
+
+  html += `<div style="font-family:'DM Mono',monospace;font-size:10px;font-weight:500;
+    text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim);
+    padding:8px 0 10px">Preconfigured Workouts</div>`;
+
+  [...ORDER, ...CORE_ORDER].forEach(key => {
+    const v = VARIATIONS[key];
+    const wSessions = sessions.filter(s => s.variationKey === key);
+    const lastDone = wSessions.slice(-1)[0];
+    const lastText = lastDone
+      ? `Last: ${new Date(lastDone.date).toLocaleDateString('en-US',{month:'short',day:'numeric'})}`
+      : 'Never logged';
+    const tb = TYPE_BG[v.type] || 'var(--surface)';
+    const tt = TYPE_TEXT[v.type] || 'var(--text-dim)';
+    html += `<div style="background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--radius);padding:14px 16px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+        <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;
+          color:var(--text)">${v.label} — ${v.name}</div>
+        <div style="background:${tb};color:${tt};font-family:'DM Mono',monospace;
+          font-size:8px;font-weight:500;text-transform:uppercase;letter-spacing:0.6px;
+          padding:2px 7px;border-radius:10px">${v.type}</div>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);margin-bottom:8px">
+        ${v.exercises.length} exercises · ${lastText} · ${wSessions.length} sessions
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);line-height:1.7">
+        ${v.exercises.join(' · ')}
+      </div>
+    </div>`;
+  });
+
+  const customWorkouts = getCustomWorkouts();
+  html += `<div style="display:flex;align-items:center;justify-content:space-between;
+    padding:16px 0 10px">
+    <div style="font-family:'DM Mono',monospace;font-size:10px;font-weight:500;
+      text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim)">My Workouts</div>
+  </div>`;
+
+  if (customWorkouts.length === 0) {
+    html += `<div style="text-align:center;padding:24px;background:var(--surface);
+      border:1.5px dashed var(--border);border-radius:var(--radius);
+      font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim)">
+      No custom workouts yet — build one from the home screen</div>`;
+  } else {
+    customWorkouts.forEach(w => {
+      const wSessions = sessions.filter(s => s.customWorkoutId === w.id);
+      const lastDone = wSessions.slice(-1)[0];
+      const lastText = lastDone
+        ? `Last: ${new Date(lastDone.date).toLocaleDateString('en-US',{month:'short',day:'numeric'})}`
+        : 'Never logged';
+      const tb = TYPE_BG[w.inferredType] || 'var(--surface)';
+      const tt = TYPE_TEXT[w.inferredType] || 'var(--text-dim)';
+      html += `<div style="background:var(--surface);border:1px solid var(--border);
+        border-radius:var(--radius);padding:14px 16px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+          <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;
+            color:var(--text)">${w.name}</div>
+          <div style="background:${tb};color:${tt};font-family:'DM Mono',monospace;
+            font-size:8px;font-weight:500;text-transform:uppercase;letter-spacing:0.6px;
+            padding:2px 7px;border-radius:10px">${w.inferredType}</div>
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);margin-bottom:8px">
+          ${w.exercises.length} exercises · ${lastText} · ${wSessions.length} sessions
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);line-height:1.7">
+          ${w.exercises.join(' · ')}
+        </div>
+      </div>`;
+    });
+  }
+  body.innerHTML = html;
+}
+
 updateTimerDisplay();
-showHome();
 </script>
 
 <!-- ── GLOBAL BOTTOM NAV ── -->
