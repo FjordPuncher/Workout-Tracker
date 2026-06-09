@@ -1595,11 +1595,12 @@ const EXERCISE_LIBRARY = [
   { name:'Arnold press',                 type:'push', muscleGroup:'shoulders', sets:'3 × 10',    isTimed:false, masteryThreshold:750, masteryTier:'compound', xpRateType:'reps', attrMap:{ primary:['str'], minor:['dex'] }, appearsIn:['push_b'], desc:'Seated on bench, dumbbells at shoulder height palms facing you. As you press overhead, rotate palms outward so they face forward at the top. Reverse on the way down. Recruits more deltoid across its full range.' },
   { name:'DB flyes (incline)',           type:'push', muscleGroup:'chest',     sets:'3 × 12',    isTimed:false, masteryThreshold:750, masteryTier:'compound', xpRateType:'reps', attrMap:{ primary:['str'], minor:['dex'] }, appearsIn:['push_b'], desc:'Set bench to 30–45 degree incline. Hold dumbbells above chest, palms facing each other with slight elbow bend. Lower in a wide arc until you feel an upper chest stretch, then squeeze back up.' },
   { name:'Tricep kickbacks',             type:'push', muscleGroup:'triceps',   sets:'3 × 12',    isTimed:false, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', attrMap:{ primary:['str'], minor:['dex'] }, appearsIn:['push_b'], desc:'Hinge forward until torso is nearly parallel to the floor, upper arm pinned parallel to the floor. Extend forearm back until arm is straight, pause, then lower. Upper arm stays completely still.' },
-  { name:'Diamond push-ups',            type:'push', muscleGroup:'triceps',   sets:'2 × max',   isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', attrMap:{ primary:['str'], minor:['dex'] }, appearsIn:['push_b'], desc:'Hands close together in a diamond shape under your chest. Lower and press back up with narrow elbows. The close grip shifts load heavily onto the triceps. Go to or near failure.' },
+  { name:'Diamond push-ups',            type:'push', muscleGroup:'triceps',   sets:'2 × max',   isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', attrMap:{ primary:['str'], minor:['end'] }, appearsIn:['push_b'], desc:'Hands close together in a diamond shape under your chest. Lower and press back up with narrow elbows. The close grip shifts load heavily onto the triceps. Go to or near failure.' },
   { name:'DB front raise',              type:'push', muscleGroup:'shoulders', sets:'3 × 12',    isTimed:false, masteryThreshold:750, masteryTier:'compound', xpRateType:'reps', attrMap:{ primary:['str'], minor:['dex'] }, appearsIn:['push_c'], desc:'Stand with dumbbells at thighs, palms facing down. Raise both arms straight forward to shoulder height, then lower under control. Slight elbow bend throughout. Avoid swinging — use lighter weight than expected.' },
   { name:'DB floor press',              type:'push', muscleGroup:'chest',     sets:'3 × 10',    isTimed:false, masteryThreshold:750, masteryTier:'compound', xpRateType:'reps', attrMap:{ primary:['str'], minor:['dex'] }, appearsIn:['push_c'], desc:'Lie on the floor with dumbbells at chest height. Press up until arms extend, then lower until triceps contact the floor — that is the bottom of the rep. Floor limits range, reducing shoulder stress.' },
   { name:'Tricep dips (bench)',         type:'push', muscleGroup:'triceps',   sets:'3 × 10–12', isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', attrMap:{ primary:['str'], minor:['dex'] }, appearsIn:['push_c'], desc:'Hands on bench edge behind you, legs extended or slightly bent. Lower body bending elbows until upper arms are roughly parallel to floor, then press back up. Keep hips close to bench.' },
-  { name:'Pike push-ups (feet elevated)',type:'push', muscleGroup:'shoulders', sets:'2 × max',  isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', attrMap:{ primary:['str'], minor:['dex'] }, appearsIn:['push_c'], desc:'Feet on bench, walk hands out until hips are high forming an inverted V. Bend elbows to lower head toward floor, then press back up. Elevated feet significantly increases shoulder load.' },
+  { name:'Pike push-ups (feet elevated)',type:'push', muscleGroup:'shoulders', sets:'2 × max',  isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', attrMap:{ primary:['str'], minor:['end'] }, appearsIn:['push_c'], desc:'Feet on bench, walk hands out until hips are high forming an inverted V. Bend elbows to lower head toward floor, then press back up. Elevated feet significantly increases shoulder load.' },
+  { name:'Incline push-ups',            type:'push', muscleGroup:'chest',     sets:'3 × 10–15', isTimed:false, isBodyweight:true, masteryThreshold:250, masteryTier:'isolation', xpRateType:'reps', attrMap:{ primary:['str'], minor:['end'] }, appearsIn:[], desc:'Place hands on an elevated surface such as a bench or step. Lower your chest toward the surface and push back up. The incline angle reduces the load compared to standard push-ups, making this a good progression exercise or finisher.' },
   // ── PULL ─────────────────────────────────────────────────────────────────
   { name:'Dumbbell rows',               type:'pull', muscleGroup:'back',      sets:'3 × 8–10',  isTimed:false, masteryThreshold:750, masteryTier:'compound', xpRateType:'reps', attrMap:{ primary:['str'], minor:['dex'] }, appearsIn:['pull_a','pull_c'], desc:'One hand and knee on bench for support, dumbbell in other hand. Pull toward your hip, elbow back and close to body. Lower slowly. Think of pulling your elbow to the ceiling rather than lifting the dumbbell.' },
   { name:'Pull-up',                     type:'pull', muscleGroup:'back',      sets:'3 × max',   isTimed:false, isBodyweight:true, masteryThreshold:250, masteryTier:'compound', xpRateType:'reps', attrMap:{ primary:['str'], minor:['dex'] }, appearsIn:['pull_a'], desc:'Hang from a bar with an overhand grip slightly wider than shoulder-width. Pull until chin clears the bar, then lower under full control. One of the best upper body pulling movements available. Add weight via belt or vest once you can do 10+ clean reps.' },
@@ -1653,10 +1654,10 @@ const EXERCISE_LIBRARY = [
   { name:'L-Sit',                        type:'core', muscleGroup:'core',     sets:'3 × 10–20 sec', isTimed:true, timedUnit:'seconds', masteryThreshold:3000, masteryTier:'timed hold', xpRateType:'timed', attrMap:{ primary:['str'], minor:['end'] }, appearsIn:['core_a'], desc:'Seated on the floor with hands beside hips, press through palms to lift hips and extend legs parallel to floor forming an L shape. Requires strong hip flexors, triceps, and core compression. Work up from short holds.' },
 
   // ── BODYWEIGHT ADDITIONS ─────────────────────────────────────────────────
-  { name:'Decline push-ups',            type:'push', muscleGroup:'chest',     sets:'3 × max',   isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', attrMap:{ primary:['str'], minor:['dex'] }, appearsIn:[], desc:'Feet elevated on bench, body in a straight plank line. Lower chest toward floor and press back up. The decline angle shifts emphasis to upper chest and front delt. Harder than flat push-ups — a natural progression once standard push-ups feel easy.' },
+  { name:'Decline push-ups',            type:'push', muscleGroup:'chest',     sets:'3 × max',   isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', attrMap:{ primary:['str'], minor:['end'] }, appearsIn:[], desc:'Feet elevated on bench, body in a straight plank line. Lower chest toward floor and press back up. The decline angle shifts emphasis to upper chest and front delt. Harder than flat push-ups — a natural progression once standard push-ups feel easy.' },
   { name:'Wide push-ups',               type:'push', muscleGroup:'chest',     sets:'3 × max',   isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', attrMap:{ primary:['str'], minor:['end'] }, appearsIn:[], desc:'Push-up with hands placed wider than shoulder-width. The wider stance shifts more load onto the chest and reduces tricep involvement. A good complement to diamond push-ups which do the opposite.' },
-  { name:'Archer push-ups',             type:'push', muscleGroup:'chest',     sets:'3 × 6–8/side', isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', attrMap:{ primary:['str'], minor:['dex'] }, appearsIn:[], desc:'Wide push-up position. As you lower, shift your weight toward one arm which bends normally while the other stays nearly straight and extended to the side. Alternate sides. A unilateral pressing movement that builds toward a one-arm push-up.' },
-  { name:'Dips (parallel bars)',        type:'push', muscleGroup:'triceps',   sets:'3 × max',   isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', attrMap:{ primary:['str'], minor:['dex'] }, appearsIn:[], desc:'Grip parallel bars or sturdy chairs at hip width. Lower body until upper arms are parallel to floor, then press back up. Leaning forward emphasises chest; staying upright emphasises triceps. Add weight via belt or vest for progression.' },
+  { name:'Archer push-ups',             type:'push', muscleGroup:'chest',     sets:'3 × 6–8/side', isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', attrMap:{ primary:['str'], minor:['end'] }, appearsIn:[], desc:'Wide push-up position. As you lower, shift your weight toward one arm which bends normally while the other stays nearly straight and extended to the side. Alternate sides. A unilateral pressing movement that builds toward a one-arm push-up.' },
+  { name:'Dips (parallel bars)',        type:'push', muscleGroup:'triceps',   sets:'3 × max',   isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', attrMap:{ primary:['str'], minor:['end'] }, appearsIn:[], desc:'Grip parallel bars or sturdy chairs at hip width. Lower body until upper arms are parallel to floor, then press back up. Leaning forward emphasises chest; staying upright emphasises triceps. Add weight via belt or vest for progression.' },
   { name:'Inverted rows',               type:'pull', muscleGroup:'back',      sets:'3 × max',   isTimed:false, isBodyweight:true, masteryThreshold:750, masteryTier:'compound', xpRateType:'reps', attrMap:{ primary:['str'], minor:['dex'] }, appearsIn:[], desc:'Set a bar at hip height (or use a sturdy table edge). Hang underneath with straight body, hands shoulder-width. Pull chest to bar, elbows back. The horizontal pulling motion targets the same muscles as a dumbbell row. Elevate feet to increase difficulty.' },
   { name:'Negative pull-ups',           type:'pull', muscleGroup:'back',      sets:'3 × 5–8',   isTimed:false, isBodyweight:true, masteryThreshold:250, masteryTier:'compound', xpRateType:'reps', attrMap:{ primary:['str'], minor:['end'] }, appearsIn:[], desc:'Jump or step to the top of a pull-up position with chin above the bar. Lower yourself as slowly as possible — aim for 5–10 seconds down. Step off and repeat. Eccentric-focused pull-up training; excellent for building toward a first pull-up or adding difficulty beyond bodyweight.' },
   { name:'Towel rows',                  type:'pull', muscleGroup:'back',      sets:'3 × max',   isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', attrMap:{ primary:['str'], minor:['dex'] }, appearsIn:[], desc:'Loop a towel around a door handle and hold both ends. Lean back with arms extended, feet at the door base. Pull your chest toward the door by bending your elbows. An accessible horizontal pull requiring only a towel and a door — good substitute when no bar is available.' },
@@ -3789,14 +3790,14 @@ function renderSessionDetail(s) {
   }
 
   // ── Sets ──────────────────────────────────────────────────────────────────
-  const loggedExercises = s.exercises.filter(e => e.sets && e.sets.some(st => st.reps));
+  const loggedExercises = s.exercises.filter(e => e.sets && e.sets.some(st => parseFloat(st.reps) > 0 || parseFloat(st.duration) > 0));
 
   if (!loggedExercises.length) {
     html += `<div style="padding:24px 18px;color:var(--text-dim);font-size:13px">No sets were logged for this session.</div>`;
   } else {
     html += `<div class="detail-section-label" style="margin-top:16px">${totalSets} sets logged</div>`;
     loggedExercises.forEach(ex => {
-      const validSets = ex.sets.filter(st => st.reps);
+      const validSets = ex.sets.filter(st => parseFloat(st.reps) > 0 || parseFloat(st.duration) > 0);
       html += `<div class="detail-ex-card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;padding-right:4px">
           <div class="detail-ex-name">${ex.name}</div>
@@ -3805,12 +3806,13 @@ function renderSessionDetail(s) {
             title="View progress">📈</button>
         </div>
         ${validSets.map((st, i) => {
-          const reps = st.reps;
-          const hasWeight = st.weight && parseFloat(st.weight) > 0;
+          const isTimed = parseFloat(st.duration) > 0;
+          const reps = isTimed ? `${parseFloat(st.duration)}s` : st.reps;
+          const hasWeight = !isTimed && st.weight && parseFloat(st.weight) > 0;
           return `<div class="detail-set-row">
             <div class="detail-set-num">${i + 1}</div>
             <div class="detail-set-reps">${reps}</div>
-            <div class="detail-set-x">${hasWeight ? '×' : 'reps'}</div>
+            <div class="detail-set-x">${hasWeight ? '×' : isTimed ? 'hold' : 'reps'}</div>
             ${hasWeight ? `<div class="detail-set-weight">${st.weight}</div>
             <div class="detail-set-weight-unit">lbs</div>` : ''}
           </div>`;
@@ -4637,6 +4639,7 @@ function buildPeriodHTML(mode) {
       <div class="stat-tile-label">Volume</div>
       <div class="stat-tile-value">${fmt(lbs)}</div>
       <div class="stat-tile-unit">lbs moved</div>
+      ${lbs > 0 ? `<div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--str);margin-top:4px;opacity:0.9;line-height:1.6">≈ ${volumeComparisons(lbs, ss.length)}<br>≈ ${volumeComparisonScaled(lbs, ss.length)}</div>` : ''}
     </div>
     <div class="stat-tile">
       <div class="stat-tile-label">Sets</div>
@@ -4694,6 +4697,7 @@ function buildPeriodHTML(mode) {
           <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Distance</div>
           <div class="stat-tile-value" style="color:var(--cardio-text)">${periodMiles.toFixed(2)}</div>
           <div class="stat-tile-unit">miles</div>
+          ${(() => { const dc = distanceComparisonPair(periodMiles, ss.length); return dc ? `<div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--end);margin-top:4px;opacity:0.9;line-height:1.5">≈ ${dc.local}<br>≈ ${dc.national}</div>` : ''; })()}
         </div>
         <div class="stat-tile" style="background:var(--cardio-bg);border-color:var(--cardio)">
           <div class="stat-tile-label" style="color:var(--cardio-text);opacity:0.7">Avg pace</div>
@@ -6465,7 +6469,8 @@ function maxCoreRepsInSet(sessionList) {
 
 const PUSHUP_NAMES = new Set([
   'Push-ups (finisher)', 'Diamond push-ups', 'Wide push-ups',
-  'Decline push-ups', 'Archer push-ups', 'Pike push-ups (feet elevated)'
+  'Decline push-ups', 'Archer push-ups', 'Pike push-ups (feet elevated)',
+  'Incline push-ups'
 ]);
 function maxPushupRepsInSet(sessionList) {
   let max = 0;
@@ -6657,6 +6662,8 @@ const ACHIEVEMENTS = [
   // ── New: Long term / Prestige ──────────────────────────────────────────
   { id:'year_of_gains',   cat:'prestige',  icon:'🗓️', name:'Year of Gains',         desc:'Log at least one session every week for 52 consecutive weeks.', repeatable: false, check: (s,_,m) => maxConsecutiveQualifyingWeeks(s) >= 52, countFn: null, progressFn: (s,_,m) => Math.min(1, maxConsecutiveQualifyingWeeks(s) / 52), title: 'The Veteran' },
   { id:'dedicated_athlete',cat:'prestige', icon:'🏅', name:'Dedicated Athlete',     desc:'Log 500 total sessions. Repeats every 500.', repeatable: true, check: (s,_,m) => s.length >= 500, countFn: (s,_,m) => Math.floor(s.length / 500), progressFn: (s,_,m) => (s.length % 500) / 500, title: 'The Dedicated' },
+  { id:'raw_strength',    cat:'prestige',  icon:'💪', name:'Raw Strength',           desc:'Complete a full session using only bodyweight exercises.', repeatable: false, check: (s,_,m) => s.some(x => x.exercises && x.exercises.length > 0 && x.exercises.every(e => getExercise(e.name)?.isBodyweight)), countFn: null, progressFn: (s,_,m) => s.some(x => x.exercises && x.exercises.length > 0 && x.exercises.every(e => getExercise(e.name)?.isBodyweight)) ? 1 : 0, title: 'The Purist' },
+  { id:'not_just_body_building', cat:'prestige', icon:'📋', name:'Not Just Body Building', desc:'Build your first custom workout.', repeatable: false, check: (s,_,m) => getCustomWorkouts().length >= 1, countFn: null, progressFn: (s,_,m) => Math.min(1, getCustomWorkouts().length), title: 'Trainer' },
   { id:'iron_body',       cat:'prestige',  icon:'🦾', name:'Iron Body',             desc:'Fill mastery bars on 10 different exercises.',   repeatable: false, check: (s,_,m) => exercisesWithFills(m) >= 10,          countFn: null, progressFn: (s,_,m) => Math.min(1, exercisesWithFills(m) / 10),      title: 'Iron Warrior' },
   { id:'complete_mastery',cat:'prestige',  icon:'👑', name:'Complete Mastery',      desc:'Fill mastery bars on 25 different exercises.',   repeatable: false, check: (s,_,m) => exercisesWithFills(m) >= 25,          countFn: null, progressFn: (s,_,m) => Math.min(1, exercisesWithFills(m) / 25),      title: 'The Master' },
 ];
@@ -7347,7 +7354,7 @@ function buildProfileHTML() {
     'chest_day','overhead_ambition','pushup_artist','the_machine',
     'pulling_power','hold_it','time_under_tension','iron_hold',
     'stiff_as_board','year_of_gains','iron_body','complete_mastery',
-    'well_rounded_diet','varsity','crunch_time','captain_crunch',
+    'well_rounded_diet','varsity','crunch_time','captain_crunch','not_just_body_building','raw_strength',
   ]);
   // Count-only achievements — show count not a bar
   const COUNT_ONLY_IDS = new Set(['five_k','breakthrough','ten_mile_ride']);
@@ -7420,7 +7427,7 @@ function buildProfileHTML() {
         <div class="achievement-info">
           <div class="achievement-name">${a.name}</div>
           <div class="achievement-desc">${a.desc}</div>
-          ${a.title ? `<div class="achievement-progress" style="color:var(--text-dim)">🏷 Unlocks title: "${a.title}"</div>` : ''}
+          ${a.title ? `<div class="achievement-progress" style="color:var(--text-muted);font-weight:500">🏷 Unlocks title: "${a.title}"</div>` : ''}
           <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
             ${showBar ? `<div style="flex:1;height:3px;background:#2A2820;border-radius:2px;overflow:hidden">
               <div style="height:100%;width:${pct}%;background:${barColor(a)};border-radius:2px;opacity:0.6;transition:width 0.4s ease"></div>
@@ -8094,62 +8101,36 @@ function pickComp(pool, sessionId) {
 
 // Volume pools — each threshold maps to a pool of equivalent comparisons
 const VOLUME_POOLS = [
-  { lbs:1,       items:['a loaf of bread','a can of soup','a small dumbbell'] },
-  { lbs:2,       items:['a bag of sugar','a large hardcover book','a small laptop'] },
-  { lbs:3,       items:['a large bottle of water','a bag of flour','a small cat'] },
-  { lbs:5,       items:['a bag of potatoes','a car battery','a large textbook'] },
-  { lbs:8,       items:['a small microwave','a large house cat','a full gallon jug'] },
-  { lbs:10,      items:['a bowling ball','a small fire extinguisher','a large watermelon'] },
-  { lbs:15,      items:['a small dog','a car tire','a large bag of rice'] },
-  { lbs:20,      items:['a medium dog','a bag of concrete mix','a large suitcase packed'] },
-  { lbs:25,      items:['a large dog','a large monitor','a small generator'] },
-  { lbs:30,      items:['a Labrador retriever','a microwave oven','a large toolbox'] },
-  { lbs:40,      items:['a small child','a large suitcase full','a big bag of dog food'] },
-  { lbs:45,      items:['an Olympic barbell','a large dog (Saint Bernard)','a full keg (half size)'] },
-  { lbs:50,      items:['a large bag of dog food','a small generator','a full half-keg'] },
-  { lbs:60,      items:['a German shepherd','a large bag of cement','a small refrigerator door'] },
-  { lbs:75,      items:['a full keg of beer','a small refrigerator','a large toolbox'] },
-  { lbs:100,     items:['a large television','a cinder block stack','a giant pumpkin'] },
-  { lbs:120,     items:['a full keg of beer','a large piece of gym equipment','a baby dolphin'] },
-  { lbs:150,     items:['a giant panda','a large motorcycle engine','a baby dolphin'] },
-  { lbs:175,     items:['a large motorcycle','a big screen TV with stand','a large toolbox full'] },
-  { lbs:200,     items:['a large vending machine','a big male kangaroo','a grand piano bench'] },
-  { lbs:250,     items:['a male lion','a large snowmobile','a full-size bathtub'] },
-  { lbs:300,     items:['a large upright piano','a refrigerator','a full-grown male lion'] },
-  { lbs:400,     items:['a concert grand piano','a large black bear','a male tiger'] },
-  { lbs:500,     items:['a baby grand piano','a large motorcycle','a full-size refrigerator'] },
-  { lbs:700,     items:['a large grizzly bear','a typical oak tree trunk','a horse (small)'] },
-  { lbs:900,     items:['a male polar bear','a dairy cow','a large cargo motorcycle'] },
-  { lbs:1000,    items:['a dairy cow','a small racehorse','a large upright safe'] },
-  { lbs:1200,    items:['a small racehorse','a large concert grand piano','a riding lawnmower'] },
-  { lbs:1500,    items:['a small horse','a large safe','a grand piano'] },
-  { lbs:1800,    items:['a large horse','a baby grand piano','a large ATV'] },
-  { lbs:2000,    items:['a smart car','a large horse','a Clydesdale horse'] },
-  { lbs:2500,    items:['a large Clydesdale horse','a small car engine','a concert grand piano'] },
-  { lbs:3000,    items:['a white rhinoceros','a compact car (no engine)','a large fishing boat anchor'] },
-  { lbs:3500,    items:['a walrus','a large bull rhinoceros','a baby hippo'] },
-  { lbs:4000,    items:['a hippopotamus','a large pickup truck bed loaded','a male walrus'] },
-  { lbs:4500,    items:['a small SUV','a male hippo','a large tractor'] },
-  { lbs:5000,    items:['a medium sailboat','a small SUV','a large tractor'] },
-  { lbs:6000,    items:['a pickup truck','a large tractor','a male hippo'] },
-  { lbs:7000,    items:['a large SUV','a large pickup truck','a compact car'] },
-  { lbs:8000,    items:['an African elephant (female)','a large cargo van loaded','a large combine harvester'] },
-  { lbs:9000,    items:['a male giraffe','a large fire truck engine','a small transit bus'] },
-  { lbs:10000,   items:['an African elephant (male)','a large school bus engine','a large combine harvester'] },
-  { lbs:12000,   items:['a school bus (empty)','a large RV','a loaded fire truck'] },
-  { lbs:14000,   items:['a large delivery truck','a loaded moving truck','a city transit bus'] },
-  { lbs:15000,   items:['a city bus (empty)','a loaded dump truck (half)','a large fire truck'] },
-  { lbs:18000,   items:['a large fire truck','a school bus with passengers','a large military vehicle'] },
-  { lbs:20000,   items:['a loaded city bus','a large yacht anchor','a loaded fire truck'] },
-  { lbs:25000,   items:['a loaded dump truck','a large military tank (light)','a loaded fire truck'] },
-  { lbs:30000,   items:['a T-Rex (estimated)','a large cement mixer','a loaded city bus'] },
-  { lbs:40000,   items:['a loaded school bus','a large military vehicle','a large naval gun'] },
-  { lbs:50000,   items:['a Stegosaurus','a large fishing vessel anchor','a loaded cement truck'] },
-  { lbs:60000,   items:['a sperm whale','a large crane counterweight','a loaded dump truck'] },
-  { lbs:80000,   items:['a humpback whale','a large ship anchor','a large locomotive'] },
-  { lbs:100000,  items:['a blue whale','a large naval gun turret','a loaded freight car'] },
-  { lbs:120000,  items:['a locomotive engine','a large crane arm','a loaded freight car'] },
-  { lbs:150000,  items:['a blue whale','a large railroad car loaded','a loaded freight train car'] },
+  { lbs:1,    items:['a loaf of bread','a can of soup','a small dumbbell','a large apple','a can of beans','a block of butter','a pair of socks','a paperback novel','a baseball','a deck of cards'] },
+  { lbs:2,    items:['a bag of sugar','a large hardcover book','a small laptop','a pair of shoes','a large orange','a water bottle (full)','a bag of coffee beans','a jar of peanut butter','a basketball','a bag of rice (small)'] },
+  { lbs:3,    items:['a large bottle of water','a bag of flour','a small cat','a large candle','a bunch of bananas','a liter of milk','a pair of jeans','a hardback encyclopedia','a small flower pot','a house brick'] },
+  { lbs:5,    items:['a bag of potatoes','a car battery','a large textbook','a bag of sugar (5lb)','a newborn baby','a large cantaloupe','a bag of flour (5lb)','a standard brick','a small roasting chicken','a bag of cat food'] },
+  { lbs:8,    items:['a small microwave','a large house cat','a full gallon jug','a small bag of potatoes','a large watermelon','a full house paint can','a pair of dumbbells (4lb each)','a large cooking pot','a small dog breed (Chihuahua)','a case of water bottles'] },
+  { lbs:10,   items:['a bowling ball','a small fire extinguisher','a large watermelon','a bag of dog food (small)','a large laptop with bag','a small car battery','a bag of ice','a gallon of paint','a full propane camping canister','a small pumpkin'] },
+  { lbs:15,   items:['a small dog','a car tire','a large bag of rice','a car tire (compact)','a small keg (mini)','a full 2-gallon water jug','a large iron skillet','a bag of birdseed','a large jug of laundry detergent','a bag of mulch'] },
+  { lbs:20,   items:['a medium dog','a bag of concrete mix','a large suitcase packed','a 20lb medicine ball','a small bag of sand','a large cooler (empty)','a car wheel with tire','a large dumbbell','a large bag of kitty litter','a full 5-gallon water jug'] },
+  { lbs:25,   items:['a large dog','a large monitor','a small generator','a 25lb plate','a large bag of dog food','a case of beer (24 cans)','a small anvil','a large mixing bowl set','a full propane grill tank','a large bag of salt'] },
+  { lbs:30,   items:['a Labrador retriever','a microwave oven','a large toolbox','a small keg','a large bag of concrete','a child bicycle','a small suitcase (fully packed)','a large bag of soil','a 30lb dumbbell','a full gas can (5 gal)'] },
+  { lbs:40,   items:['a small child','a large suitcase full','a big bag of dog food','a 40lb weight plate','a large bag of sand','a car battery with case','a large cooler with drinks','a full propane tank','a small riding toy','a large toolbox with tools'] },
+  { lbs:45,   items:['an Olympic barbell','a large dog (Saint Bernard)','a full half-keg','a 45lb plate','a large sack of concrete','a medium-sized dog crate','a large bag of topsoil','a large portable generator','a car jack','a full 10-gallon water drum'] },
+  { lbs:50,   items:['a large bag of dog food','a small generator','a full half-keg','a large bag of salt','a small bale of hay','a 50lb weight plate','a large outdoor planter (full)','a small propane grill','a large bag of sand','a full 12-gallon water drum'] },
+  { lbs:60,   items:['a German shepherd','a large bag of cement','a small refrigerator door','a large bag of gravel','a full 5-gallon paint bucket stack','a 60lb weight plate','a large outdoor pot (filled)','a medium-size chest freezer door','a large gym bag loaded','a full water cooler jug crate'] },
+  { lbs:75,   items:['a full keg of beer','a small refrigerator','a large toolbox','a large bag of concrete','a medium dog (Husky)','a large sack of potting soil','a commercial mixer','a large cooler full of ice','a 75lb sandbag','a heavy-duty car battery jump pack'] },
+  { lbs:100,  items:['a large television','a cinder block stack','a giant pumpkin','a large dog (Mastiff)','a full office chair with base','a large bag of sand (2 bags)','a small safe','a car tire with steel rim','a large generator (portable)','a full 25-gallon water drum'] },
+  { lbs:120,  items:['a full keg of beer','a large piece of gym equipment','a baby dolphin','a large safe (small)','a large dog crate with dog','a commercial vacuum cleaner','a large motorcycle battery stack','a full pallet of bricks (quarter)','a large outdoor grill','a heavy-duty tool chest'] },
+  { lbs:150,  items:['a giant panda','a large motorcycle engine','a large filing cabinet (full)','a professional oven','a large safe','a small riding lawnmower','a large appliance box','a commercial chest freezer','a large industrial fan','a full barrel of water'] },
+  { lbs:175,  items:['a large motorcycle','a big screen TV with stand','a large toolbox full','a large commercial dishwasher','a small ATV','a full 55-gallon drum','a large lathe machine part','a commercial ice machine (small)','a large outdoor generator','a heavy sofa'] },
+  { lbs:200,  items:['a large vending machine','a big male kangaroo','a grand piano bench','a large washer-dryer set','a large safe (medium)','a full 55-gallon steel drum','a commercial refrigerator door','a small engine block','a large industrial toolbox','a commercial deep fryer'] },
+  { lbs:250,  items:['a male lion','a large snowmobile','a full-size bathtub','a large engine block','a full 55-gallon drum (water)','a commercial pizza oven','a large safe (heavy)','a piano bench (loaded)','a commercial washing machine','a large industrial compressor'] },
+  { lbs:300,  items:['a large upright piano','a refrigerator','a full-grown male lion','a commercial chest freezer','a large safe','a small engine (4-cylinder)','a large industrial generator','a large outdoor hot tub (empty)','a full barrel of oil','a commercial dryer'] },
+  { lbs:400,  items:['a concert grand piano','a large black bear','a male tiger','a large industrial safe','a commercial oven range','a large outdoor fountain (empty)','a mid-size engine block','a large riding lawnmower','a commercial ice maker','a full steel barrel stack'] },
+  { lbs:500,  items:['a baby grand piano','a large motorcycle','a full-size refrigerator','a large commercial safe','a small car engine','a large outdoor hot tub (filled, small)','a large industrial compressor','a full 275-gallon water tank (quarter)','a commercial espresso machine (large)','a large boat anchor'] },
+  { lbs:700,  items:['a large grizzly bear','a typical oak tree trunk','a horse (small)','a large V8 engine block','a commercial refrigerator unit','a large outdoor sculpture','a full 275-gallon water tank (half)','a large industrial drill press','a commercial washing machine stack','a large boat motor'] },
+  { lbs:900,  items:['a male polar bear','a dairy cow','a large cargo motorcycle','a large engine assembly','a commercial chest freezer stack','a large outdoor planter (stone)','a full 275-gallon water tank','a large industrial lathe','a commercial ice rink section','a large boat trailer'] },
+  { lbs:1000, items:['a dairy cow','a small racehorse','a large upright safe','a full 275-gallon water tote','a large industrial generator','a large commercial oven stack','a small compact car (no engine)','a large concrete planter','a commercial refrigerator unit (large)','a large industrial air compressor'] },
+  { lbs:1200, items:['a small racehorse','a large concert grand piano','a riding lawnmower','a large industrial lathe','a full 330-gallon water tote','a large commercial freezer unit','a compact car door assembly','a large stone garden feature','a commercial dishwasher unit (large)','a large industrial press'] },
+  { lbs:1500, items:['a small horse','a large safe','a grand piano','a large commercial generator','a full 400-gallon water tank','a large industrial compressor','a mid-size car engine with transmission','a large outdoor stone fountain','a commercial ice maker (large)','a large boat engine'] },
+  { lbs:1800, items:['a large horse','a baby grand piano','a large ATV','a large commercial refrigerator','a full 500-gallon water tank','a large industrial lathe','a car engine with all accessories','a large commercial oven range','a large stone sculpture','a large boat motor assembly'] },
 ];
 
 // Line 1: find the pool entry closest to lbs for a clean "1× X" comparison
@@ -8720,6 +8701,7 @@ function renderGlossaryWorkouts() {
 }
 
 updateTimerDisplay();
+showHome();
 </script>
 
 <!-- ── GLOBAL BOTTOM NAV ── -->
