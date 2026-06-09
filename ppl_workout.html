@@ -6663,7 +6663,7 @@ const ACHIEVEMENTS = [
   // ── New: Long term / Prestige ──────────────────────────────────────────
   { id:'year_of_gains',   cat:'prestige',  icon:'🗓️', name:'Year of Gains',         desc:'Log at least one session every week for 52 consecutive weeks.', repeatable: false, check: (s,_,m) => maxConsecutiveQualifyingWeeks(s) >= 52, countFn: null, progressFn: (s,_,m) => Math.min(1, maxConsecutiveQualifyingWeeks(s) / 52), title: 'The Veteran' },
   { id:'dedicated_athlete',cat:'prestige', icon:'🏅', name:'Dedicated Athlete',     desc:'Log 500 total sessions. Repeats every 500.', repeatable: true, check: (s,_,m) => s.length >= 500, countFn: (s,_,m) => Math.floor(s.length / 500), progressFn: (s,_,m) => (s.length % 500) / 500, title: 'The Dedicated' },
-  { id:'raw_strength',    cat:'prestige',  icon:'💪', name:'Raw Strength',           desc:'Complete a full session using only bodyweight exercises.', repeatable: false, check: (s,_,m) => s.some(x => x.exercises && x.exercises.length > 0 && x.exercises.every(e => getExercise(e.name)?.isBodyweight)), countFn: null, progressFn: (s,_,m) => s.some(x => x.exercises && x.exercises.length > 0 && x.exercises.every(e => getExercise(e.name)?.isBodyweight)) ? 1 : 0, title: 'The Purist' },
+  { id:'raw_strength',    cat:'prestige',  icon:'💪', name:'Raw Strength',           desc:'Complete a full session of 2+ exercises using only bodyweight movements.', repeatable: false, check: (s,_,m) => s.some(x => x.exercises && x.exercises.length > 1 && x.exercises.every(e => getExercise(e.name)?.isBodyweight)), countFn: null, progressFn: (s,_,m) => s.some(x => x.exercises && x.exercises.length > 1 && x.exercises.every(e => getExercise(e.name)?.isBodyweight)) ? 1 : 0, title: 'The Purist' },
   { id:'not_just_body_building', cat:'prestige', icon:'📋', name:'Not Just Body Building', desc:'Build your first custom workout.', repeatable: false, check: (s,_,m) => getCustomWorkouts().length >= 1, countFn: null, progressFn: (s,_,m) => Math.min(1, getCustomWorkouts().length), title: 'Trainer' },
   { id:'iron_body',       cat:'prestige',  icon:'🦾', name:'Iron Body',             desc:'Fill mastery bars on 10 different exercises.',   repeatable: false, check: (s,_,m) => exercisesWithFills(m) >= 10,          countFn: null, progressFn: (s,_,m) => Math.min(1, exercisesWithFills(m) / 10),      title: 'Iron Warrior' },
   { id:'complete_mastery',cat:'prestige',  icon:'👑', name:'Complete Mastery',      desc:'Fill mastery bars on 25 different exercises.',   repeatable: false, check: (s,_,m) => exercisesWithFills(m) >= 25,          countFn: null, progressFn: (s,_,m) => Math.min(1, exercisesWithFills(m) / 25),      title: 'The Master' },
@@ -6821,6 +6821,30 @@ function countAllTimePBEvents(sessionList) {
 }
 
 // Compute which achievements are earned, including repeat count for repeatable ones
+// Find the date of the earliest session at which a one-time achievement became earned.
+// For non-mastery achievements, we can scan sessions chronologically.
+// For mastery achievements, fall back to checking the full mastery object.
+function getAchievementEarnedDate(a, sessionList) {
+  if (!a.check || !sessionList.length) return null;
+  const mastery = computeMastery(sessionList);
+  // Quick check — if not earned at all, skip
+  if (!a.check(sessionList, null, mastery)) return null;
+  // Binary search for the earliest session that tips it over
+  let lo = 0, hi = sessionList.length - 1, result = hi;
+  while (lo <= hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    const slice = sessionList.slice(0, mid + 1);
+    const sliceMastery = computeMastery(slice);
+    if (a.check(slice, null, sliceMastery)) {
+      result = mid;
+      hi = mid - 1;
+    } else {
+      lo = mid + 1;
+    }
+  }
+  return sessionList[result]?.date || null;
+}
+
 function computeAchievements(sessionList, mastery) {
   return ACHIEVEMENTS.map(a => {
     const earned = a.check(sessionList, null, mastery);
@@ -7400,12 +7424,17 @@ function buildProfileHTML() {
     earned.forEach(a => {
       const pct = a.repeatable ? Math.round(a.progress * 100) : 100;
       const { label, showBar } = achievementProgressLabel(a, true);
+      const earnedDate = getAchievementEarnedDate(a, sessions);
+      const earnedDateStr = earnedDate
+        ? new Date(earnedDate).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})
+        : null;
       html += `<div class="achievement-card">
         <div class="achievement-icon">${a.icon}</div>
         <div class="achievement-info">
           <div class="achievement-name">${a.name}</div>
           <div class="achievement-desc">${a.desc}</div>
           ${a.title ? `<div class="achievement-progress" style="color:var(--str)">Title: "${a.title}"</div>` : ''}
+          ${earnedDateStr ? `<div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:3px">${a.repeatable ? 'First unlocked' : 'Unlocked'} ${earnedDateStr}</div>` : ''}
           <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
             ${showBar ? `<div style="flex:1;height:3px;background:#2A2820;border-radius:2px;overflow:hidden">
               <div style="height:100%;width:${pct}%;background:${barColor(a)};border-radius:2px;transition:width 0.4s ease"></div>
