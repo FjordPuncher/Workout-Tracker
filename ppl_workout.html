@@ -1847,6 +1847,7 @@ const TYPE_MID   = { push:'var(--push-mid)', pull:'var(--pull-mid)', legs:'var(-
 
 // Sentinel key for custom/free-form sessions
 const CUSTOM_KEY = '__custom__';
+const CUSTOM_WORKOUT_KEY = 'ppl_custom_workouts';
 
 // Predefined activities — appear in the backfill/custom workout picker
 // Returns true if a session supports distance tracking
@@ -1955,7 +1956,7 @@ function showHome() {
   setActiveNav('bnav-home');
   window.scrollTo(0, 0);
   document.querySelector('#screen-home .scroll-body') && (document.querySelector('#screen-home .scroll-body').scrollTop = 0);
-  renderHome();
+  try { renderHome(); } catch(e) { console.error('renderHome error:', e); }
 }
 
 function renderHome() {
@@ -8231,8 +8232,6 @@ function distanceComparisonPair(mi, sessionId) {
 }
 
 // ── CUSTOM WORKOUTS ─────────────────────────────────────────────────────────
-
-const CUSTOM_WORKOUT_KEY = 'ppl_custom_workouts';
 
 function getCustomWorkouts() {
   try { return JSON.parse(localStorage.getItem(CUSTOM_WORKOUT_KEY) || '[]'); }
