@@ -643,7 +643,7 @@ html, body {
 .detail-set-reps { color: var(--text); font-weight: 500; }
 .detail-set-x { color: var(--text-dim); font-size: 11px; }
 .detail-set-weight { color: var(--text); }
-.detail-set-weight-unit { color: var(--text-dim); font-size: 11px; }
+.detail-set-weight-unit { color: var(--text-dim); font-size: 11px; margin-left: 2px; }
 .detail-no-sets {
   padding: 12px 14px; font-size: 13px; color: var(--text-dim); font-style: italic;
 }
@@ -1915,6 +1915,23 @@ function getVariationMeta(key, customName, category, customWorkoutId) {
 // STATE
 // ════════════════════════════════════════════════════════════════════════════
 let sessions = JSON.parse(localStorage.getItem('ppl_sessions') || '[]');
+
+// ── One-time exercise name migrations ────────────────────────────────────
+// Runs silently on startup — renames old exercise names in stored session data.
+// Add entries here whenever an exercise is renamed in EXERCISE_LIBRARY.
+(function migrateExerciseNames() {
+  const RENAMES = {
+    'Push-ups (finisher)': 'Push-ups',
+  };
+  let changed = false;
+  sessions.forEach(s => {
+    if (!s.exercises) return;
+    s.exercises.forEach(e => {
+      if (RENAMES[e.name]) { e.name = RENAMES[e.name]; changed = true; }
+    });
+  });
+  if (changed) localStorage.setItem('ppl_sessions', JSON.stringify(sessions));
+})();
 let activeSession = null;
 let editingSession = null;  // deep copy of session being edited
 let sessionStartTime = null;
@@ -2045,14 +2062,12 @@ function renderHome() {
     cell.style.cssText = isSuggestedCore ? 'position:relative' : '';
     cell.onclick = () => openVariation(key);
     cell.innerHTML = `
-      ${isSuggestedCore ? `<div style="position:absolute;top:7px;right:8px;display:flex;align-items:center;gap:4px">
-        <span style="font-family:'DM Mono',monospace;font-size:8px;font-weight:500;
-          text-transform:uppercase;letter-spacing:0.8px;color:var(--core-text);opacity:0.9">Pairs with ${VARIATIONS[lastPPL.variationKey]?.label || ''}</span>
-        <div style="width:6px;height:6px;border-radius:50%;background:var(--core);flex-shrink:0;
-          box-shadow:0 0 6px 2px var(--core-bg),0 0 14px 4px var(--core-bg)"></div>
-      </div>` : ''}
+      ${isSuggestedCore ? `<div style="position:absolute;top:8px;right:8px;width:7px;height:7px;
+          border-radius:50%;background:#fff;flex-shrink:0;
+          box-shadow:0 0 6px 2px #fffa,0 0 14px 4px #fff6"></div>` : ''}
       <div class="nav-cell-tag">${v.label}</div>
       <div class="nav-cell-name">${v.name}</div>
+      ${isSuggestedCore ? `<div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--core-text);opacity:0.8;margin-top:2px">↑ ${VARIATIONS[lastPPL.variationKey]?.label || ''}</div>` : ''}
       <div class="nav-cell-sub">${v.focus.split('.')[0]}</div>
       ${doneText ? `<div class="nav-cell-done" style="color:var(--core-text)">${doneText}</div>` : ''}`;
     grid.appendChild(cell);
@@ -3079,7 +3094,7 @@ function renderExercises() {
           setPreview = lastSession.sets.slice(0, 3).map(st => {
             const reps = parseFloat(st.reps) || 0;
             const weight = parseFloat(st.weight) || 0;
-            return weight > 0 ? `${reps} × ${weight}lbs` : `${reps} reps`;
+            return weight > 0 ? `${reps} × ${weight} lbs` : `${reps} reps`;
           }).join(', ');
         }
         refHtml += `<div class="ex-ref-row">
@@ -3812,13 +3827,13 @@ function renderSessionDetail(s) {
         </div>
         ${validSets.map((st, i) => {
           const isTimed = parseFloat(st.duration) > 0;
-          const reps = isTimed ? `${parseFloat(st.duration)}s` : st.reps;
+          const reps = isTimed ? `${parseFloat(st.duration)}s` : parseFloat(st.reps) || 0;
           const hasWeight = !isTimed && st.weight && parseFloat(st.weight) > 0;
           return `<div class="detail-set-row">
             <div class="detail-set-num">${i + 1}</div>
             <div class="detail-set-reps">${reps}</div>
             <div class="detail-set-x">${hasWeight ? '×' : isTimed ? 'hold' : 'reps'}</div>
-            ${hasWeight ? `<div class="detail-set-weight">${st.weight}</div>
+            ${hasWeight ? `<div class="detail-set-weight">${parseFloat(st.weight)}</div>
             <div class="detail-set-weight-unit">lbs</div>` : ''}
           </div>`;
         }).join('')}
@@ -5717,7 +5732,7 @@ function renderGlossary(query) {
           setPreview = lastSession.sets.slice(0, 3).map(st => {
             const reps = parseFloat(st.reps) || 0;
             const weight = parseFloat(st.weight) || 0;
-            return weight > 0 ? `${reps} × ${weight}lbs` : `${reps} reps`;
+            return weight > 0 ? `${reps} × ${weight} lbs` : `${reps} reps`;
           }).join(', ');
         }
         rows += `<div class="glossary-stat-row">
@@ -7027,7 +7042,7 @@ function showXPOverlay(summary) {
     <div class="xp-breakdown-val">+${bd.volume}</div>
   </div>`;
   if (bd.distance > 0) html += `<div class="xp-breakdown-row">
-    <div class="xp-breakdown-label">📍 Distance bonus (${summary.session.distance} mi)</div>
+    <div class="xp-breakdown-label">📍 Distance bonus (${parseFloat(summary.session.distance).toFixed(2)} mi)</div>
     <div class="xp-breakdown-val">+${bd.distance}</div>
   </div>`;
 
