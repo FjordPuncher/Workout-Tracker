@@ -4196,11 +4196,14 @@ function longestStreak(sessionList) {
   if (!sl.length) return { streak: 0, last: null, current: 0 };
   const days = [...new Set(sl.map(s => {
     const d = new Date(s.date);
-    return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }))].sort();
   let best = 1, cur = 1;
   for (let i = 1; i < days.length; i++) {
-    const prev = new Date(days[i-1].replace(/-/g, '/')), next = new Date(days[i].replace(/-/g, '/'));
+    const prev = new Date(days[i-1]), next = new Date(days[i]);
     const diff = (next - prev) / 86400000;
     if (diff === 1) { cur++; if (cur > best) best = cur; }
     else cur = 1;
@@ -4208,7 +4211,7 @@ function longestStreak(sessionList) {
   // current streak
   let cur2 = 1;
   for (let i = days.length - 1; i > 0; i--) {
-    const prev = new Date(days[i-1].replace(/-/g, '/')), next = new Date(days[i].replace(/-/g, '/'));
+    const prev = new Date(days[i-1]), next = new Date(days[i]);
     if ((next - prev) / 86400000 === 1) cur2++;
     else break;
   }
