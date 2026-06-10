@@ -862,18 +862,17 @@ html, body {
   display: flex; gap: 0;
   border-bottom: 1px solid var(--border);
   background: var(--bg);
-  overflow-x: auto; -webkit-overflow-scrolling: touch;
-  scrollbar-width: none; flex-shrink: 0;
+  flex-shrink: 0;
   z-index: 90;
 }
 .stats-tabs::-webkit-scrollbar { display: none; }
 .stats-tab {
-  flex-shrink: 0; padding: 10px 16px;
+  flex: 1; padding: 10px 4px;
   font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500;
   text-transform: uppercase; letter-spacing: 0.5px;
   color: var(--text-dim); background: none; border: none;
   cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
-  white-space: nowrap;
+  white-space: nowrap; text-align: center;
 }
 .stats-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
@@ -1590,7 +1589,7 @@ const EXERCISE_LIBRARY = [
   { name:'Dumbbell flyes',               type:'push', muscleGroup:'chest',     sets:'3 × 12',    isTimed:false, masteryThreshold:750, masteryTier:'compound', xpRateType:'reps', attrMap:{ primary:['str'], minor:['dex'] }, appearsIn:['push_a'], desc:'Lie flat on the bench, dumbbells above your chest, palms facing each other with a slight bend in the elbows. Lower the weights in a wide arc until you feel a chest stretch, then squeeze them back up. Keep the elbows soft throughout.' },
   { name:'Lateral raises',               type:'push', muscleGroup:'shoulders', sets:'3 × 12–15', isTimed:false, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', attrMap:{ primary:['str'], minor:['dex'] }, appearsIn:['push_a','push_b','push_c'], desc:'Stand with dumbbells at your sides. Raise both arms out to the sides until parallel to the floor, leading with the elbows. Lower slowly — the eccentric phase does most of the work. Use lighter weight than you think you need.' },
   { name:'Tricep overhead extension',    type:'push', muscleGroup:'triceps',   sets:'3 × 10–12', isTimed:false, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', attrMap:{ primary:['str'], minor:['dex'] }, appearsIn:['push_a'], desc:'Seated on the bench, hold one dumbbell with both hands overhead, arms straight. Bend at the elbows to lower it behind your head, keeping upper arms vertical and still. Extend back up.' },
-  { name:'Push-ups (finisher)',          type:'push', muscleGroup:'chest',     sets:'2 × max',   isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', attrMap:{ primary:['str'], minor:['end'] }, appearsIn:['push_a'], desc:'Standard push-up, hands shoulder-width apart. Keep a rigid plank from head to heels and lower your chest to the floor. Go to or near failure. Elevate hands on bench to reduce difficulty.' },
+  { name:'Push-ups',          type:'push', muscleGroup:'chest',     sets:'2 × max',   isTimed:false, isBodyweight:true, masteryThreshold:500, masteryTier:'isolation', xpRateType:'reps', attrMap:{ primary:['str'], minor:['end'] }, appearsIn:['push_a'], desc:'Standard push-up, hands shoulder-width apart. Keep a rigid plank from head to heels and lower your chest to the floor. Go to or near failure. Elevate hands on bench to reduce difficulty.' },
   { name:'DB incline press',             type:'push', muscleGroup:'chest',     sets:'3 × 8–10',  isTimed:false, masteryThreshold:750, masteryTier:'compound', xpRateType:'reps', attrMap:{ primary:['str'], minor:['dex'] }, appearsIn:['push_b'], desc:'Set the bench to 30–45 degree incline. Press dumbbells from chest height shifting emphasis to upper chest and front deltoid. Keep elbows at roughly 45 degrees and lower with full control.' },
   { name:'Arnold press',                 type:'push', muscleGroup:'shoulders', sets:'3 × 10',    isTimed:false, masteryThreshold:750, masteryTier:'compound', xpRateType:'reps', attrMap:{ primary:['str'], minor:['dex'] }, appearsIn:['push_b'], desc:'Seated on bench, dumbbells at shoulder height palms facing you. As you press overhead, rotate palms outward so they face forward at the top. Reverse on the way down. Recruits more deltoid across its full range.' },
   { name:'DB flyes (incline)',           type:'push', muscleGroup:'chest',     sets:'3 × 12',    isTimed:false, masteryThreshold:750, masteryTier:'compound', xpRateType:'reps', attrMap:{ primary:['str'], minor:['dex'] }, appearsIn:['push_b'], desc:'Set bench to 30–45 degree incline. Hold dumbbells above chest, palms facing each other with slight elbow bend. Lower in a wide arc until you feel an upper chest stretch, then squeeze back up.' },
@@ -1707,7 +1706,12 @@ function muscleGroupPill(muscleGroup) {
     padding:2px 7px;border-radius:20px;line-height:1.6;white-space:nowrap">${label}</span>`;
 }
 function getExercise(name) {
-  const ex = EXERCISE_LIBRARY.find(e => e.name === name);
+  // Aliases for renamed exercises — handles old session data
+  const ALIASES = {
+    'Push-ups (finisher)': 'Push-ups',
+  };
+  const resolvedName = ALIASES[name] || name;
+  const ex = EXERCISE_LIBRARY.find(e => e.name === resolvedName);
   if (!ex) console.warn('Exercise not in library:', name);
   return ex || { name, type:'general', muscleGroup:null, desc:'', sets:'', isTimed:false, isActivity:false, appearsIn:[] };
 }
@@ -1746,7 +1750,7 @@ const VARIATIONS = {
     suggestedCore:'core_a',
     focus:'Flat pressing as the anchor, with shoulder and tricep isolation to finish.',
     coreFocus:'Anti-extension work pairs naturally after pressing, away from fatigued chest and shoulders.',
-    exercises:['Dumbbell bench press','Dumbbell shoulder press','Dumbbell flyes','Lateral raises','Tricep overhead extension','Push-ups (finisher)'],
+    exercises:['Dumbbell bench press','Dumbbell shoulder press','Dumbbell flyes','Lateral raises','Tricep overhead extension','Push-ups'],
     core:['Plank','Ab wheel rollout (or bench walkout)','Dead bug']
   },
   push_b: {
@@ -6362,135 +6366,6 @@ function weeksWithAllCategories(sessionList) {
   ).length;
 }
 
-// Count non-overlapping groups of N consecutive qualifying weeks.
-// A qualifying week is one where the typeCheck function returns true for that week's type set.
-// After every N consecutive qualifying weeks the counter resets — no overlap.
-function consecutiveQualifyingWeekGroups(sessionList, n, typeCheck) {
-  // Build week map sorted chronologically
-  const byWeek = {};
-  sessionList.forEach(s => {
-    const k = getWeekKey(s.date);
-    if (!byWeek[k]) byWeek[k] = new Set();
-    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
-    byWeek[k].add(vm.type);
-    if (isRunningSession(s) || isBikingSession(s)) byWeek[k].add('_cardio');
-  });
-  const sortedWeeks = Object.keys(byWeek).sort();
-
-  let groups = 0;
-  let streak = 0;
-  for (let i = 0; i < sortedWeeks.length; i++) {
-    const qualifies = typeCheck(byWeek[sortedWeeks[i]]);
-    if (qualifies) {
-      // Check consecutive to previous qualifying week
-      if (streak > 0 && i > 0) {
-        const prev = new Date(sortedWeeks[i - 1]);
-        const curr = new Date(sortedWeeks[i]);
-        const diff = Math.round((curr - prev) / (7 * 24 * 60 * 60 * 1000));
-        if (diff !== 1) streak = 0; // gap — reset streak
-      }
-      streak++;
-      if (streak === n) { groups++; streak = 0; } // completed a group, reset
-    } else {
-      streak = 0;
-    }
-  }
-  return { groups, streak }; // groups = completed unlocks, streak = progress toward next
-}
-
-// Days where both a run/bike AND a lifting session were logged
-function daysWithRunAndLift(sessionList) {
-  const byDay = {};
-  sessionList.forEach(s => {
-    const k = s.date.slice(0, 10);
-    if (!byDay[k]) byDay[k] = { cardio: false, lift: false };
-    if (isRunningSession(s) || isBikingSession(s)) byDay[k].cardio = true;
-    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
-    if (['push','pull','legs','core'].includes(vm.type)) byDay[k].lift = true;
-  });
-  return Object.values(byDay).filter(d => d.cardio && d.lift).length;
-}
-
-// Weeks with both a run/bike AND a lifting session
-function weeksWithRunAndLift(sessionList) {
-  const byWeek = {};
-  sessionList.forEach(s => {
-    const k = getWeekKey(s.date);
-    if (!byWeek[k]) byWeek[k] = { cardio: false, lift: false };
-    if (isRunningSession(s) || isBikingSession(s)) byWeek[k].cardio = true;
-    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
-    if (['push','pull','legs','core'].includes(vm.type)) byWeek[k].lift = true;
-  });
-  return Object.values(byWeek).filter(w => w.cardio && w.lift).length;
-}
-
-// Total Dead hang sets ever logged
-function totalDeadHangSets(sessionList) {
-  return sessionList.reduce((acc, s) =>
-    acc + s.exercises.filter(e => e.name === 'Dead hang')
-      .reduce((a, e) => a + e.sets.filter(st => parseFloat(st.duration) > 0).length, 0), 0);
-}
-
-// Total cumulative timed hold seconds across all timed exercises
-function totalHoldSeconds(sessionList) {
-  return sessionList.reduce((acc, s) =>
-    acc + s.exercises.reduce((a, e) => {
-      if (!isTimedExercise(e.name)) return a;
-      return a + e.sets.reduce((x, st) => x + (parseFloat(st.duration)||0), 0);
-    }, 0), 0);
-}
-
-// Total cumulative Plank hold seconds
-function totalPlankSeconds(sessionList) {
-  return sessionList.reduce((acc, s) =>
-    acc + s.exercises.filter(e => e.name === 'Plank')
-      .reduce((a, e) => a + e.sets.reduce((x, st) => x + (parseFloat(st.duration)||0), 0), 0), 0);
-}
-
-// Max single set duration for any timed exercise
-function maxSingleHoldSecs(sessionList) {
-  let max = 0;
-  sessionList.forEach(s => s.exercises.forEach(e => {
-    if (!isTimedExercise(e.name)) return;
-    e.sets.forEach(st => { const d = parseFloat(st.duration)||0; if (d > max) max = d; });
-  }));
-  return max;
-}
-
-// Max single set reps for any push-up variety
-function maxCoreRepsInSet(sessionList) {
-  let max = 0;
-  sessionList.forEach(s => s.exercises.forEach(e => {
-    const ex = getExercise(e.name);
-    if (!ex || ex.type !== 'core' || ex.isTimed) return;
-    e.sets.forEach(st => { const r = parseFloat(st.reps)||0; if (r > max) max = r; });
-  }));
-  return max;
-}
-
-const PUSHUP_NAMES = new Set([
-  'Push-ups (finisher)', 'Diamond push-ups', 'Wide push-ups',
-  'Decline push-ups', 'Archer push-ups', 'Pike push-ups (feet elevated)',
-  'Incline push-ups'
-]);
-function maxPushupRepsInSet(sessionList) {
-  let max = 0;
-  sessionList.forEach(s => s.exercises.forEach(e => {
-    if (!PUSHUP_NAMES.has(e.name)) return;
-    e.sets.forEach(st => { const r = parseFloat(st.reps)||0; if (r > max) max = r; });
-  }));
-  return max;
-}
-
-// Whether user has logged a Pull-up or Chin-up session
-function hasLoggedPullUp(sessionList) {
-  return sessionList.some(s => s.exercises.some(e => e.name === 'Pull-up' || e.name === 'Chin-up'));
-}
-
-// Standalone core session count
-function coreSessionCount(sessionList) {
-  return sessionList.filter(s => CORE_ORDER.includes(s.variationKey)).length;
-}
 
 // Count of distinct exercises with at least one mastery fill
 function exercisesWithFills(mastery) {
@@ -6574,6 +6449,216 @@ function maxConsecutiveQualifyingWeeks(sessionList) {
   return max;
 }
 
+// ── New achievement helpers ────────────────────────────────────────────────
+
+// Used by Triple Threat and A Full Plate — checks a Set of types per week
+function consecutiveQualifyingWeekGroups(sessionList, n, typeCheck) {
+  const byWeek = {};
+  sessionList.forEach(s => {
+    const k = getWeekKey(s.date);
+    if (!byWeek[k]) byWeek[k] = new Set();
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
+    byWeek[k].add(vm.type);
+    if (isRunningSession(s) || isBikingSession(s)) byWeek[k].add('_cardio');
+  });
+  const sortedWeeks = Object.keys(byWeek).sort();
+  let groups = 0, streak = 0;
+  for (let i = 0; i < sortedWeeks.length; i++) {
+    const qualifies = typeCheck(byWeek[sortedWeeks[i]]);
+    if (qualifies) {
+      if (streak > 0 && i > 0) {
+        const prev = new Date(sortedWeeks[i - 1]);
+        const curr = new Date(sortedWeeks[i]);
+        const diff = Math.round((curr - prev) / (7 * 24 * 60 * 60 * 1000));
+        if (diff !== 1) streak = 0;
+      }
+      streak++;
+      if (streak === n) { groups++; streak = 0; }
+    } else {
+      streak = 0;
+    }
+  }
+  return { groups, streak };
+}
+
+function coreSessionCount(sessionList) {
+  return sessionList.filter(s => CORE_ORDER.includes(s.variationKey)).length;
+}
+
+function weeksWithNTypeSessionsCount(sessionList, type, n) {
+  const byWeek = {};
+  sessionList.forEach(s => {
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
+    if (vm.type !== type) return;
+    const k = getWeekKey(s.date);
+    byWeek[k] = (byWeek[k] || 0) + 1;
+  });
+  return Object.values(byWeek).filter(c => c >= n).length;
+}
+
+function consecutiveTypeWeekGroups(sessionList, type, n, min) {
+  const byWeek = {};
+  sessionList.forEach(s => {
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
+    if (vm.type !== type) return;
+    const k = getWeekKey(s.date);
+    byWeek[k] = (byWeek[k] || 0) + 1;
+  });
+  const sortedWeeks = Object.keys(byWeek).sort();
+  let groups = 0, streak = 0;
+  for (let i = 0; i < sortedWeeks.length; i++) {
+    const qualifies = (byWeek[sortedWeeks[i]] || 0) >= min;
+    if (qualifies) {
+      if (streak > 0 && i > 0) {
+        const prev = new Date(sortedWeeks[i - 1]);
+        const curr = new Date(sortedWeeks[i]);
+        const diff = Math.round((curr - prev) / (7 * 24 * 60 * 60 * 1000));
+        if (diff !== 1) streak = 0;
+      }
+      streak++;
+      if (streak === n) { groups++; streak = 0; }
+    } else {
+      streak = 0;
+    }
+  }
+  return { groups, streak };
+}
+
+function daysWithRunAndLift(sessionList) {
+  const byDay = {};
+  sessionList.forEach(s => {
+    const k = s.date.slice(0, 10);
+    if (!byDay[k]) byDay[k] = { cardio: false, lift: false };
+    if (isRunningSession(s) || isBikingSession(s)) byDay[k].cardio = true;
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
+    if (['push','pull','legs','core'].includes(vm.type)) byDay[k].lift = true;
+  });
+  return Object.values(byDay).filter(d => d.cardio && d.lift).length;
+}
+
+function weeksWithRunAndLift(sessionList) {
+  const byWeek = {};
+  sessionList.forEach(s => {
+    const k = getWeekKey(s.date);
+    if (!byWeek[k]) byWeek[k] = { cardio: false, lift: false };
+    if (isRunningSession(s) || isBikingSession(s)) byWeek[k].cardio = true;
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
+    if (['push','pull','legs','core'].includes(vm.type)) byWeek[k].lift = true;
+  });
+  return Object.values(byWeek).filter(w => w.cardio && w.lift).length;
+}
+
+function totalDeadHangSets(sessionList) {
+  return sessionList.reduce((acc, s) =>
+    acc + s.exercises.filter(e => e.name === 'Dead hang')
+      .reduce((a, e) => a + e.sets.filter(st => parseFloat(st.duration) > 0).length, 0), 0);
+}
+
+function totalHoldSeconds(sessionList) {
+  return sessionList.reduce((acc, s) =>
+    acc + s.exercises.reduce((a, e) => {
+      if (!isTimedExercise(e.name)) return a;
+      return a + e.sets.reduce((x, st) => x + (parseFloat(st.duration)||0), 0);
+    }, 0), 0);
+}
+
+function totalPlankSeconds(sessionList) {
+  return sessionList.reduce((acc, s) =>
+    acc + s.exercises.filter(e => e.name === 'Plank')
+      .reduce((a, e) => a + e.sets.reduce((x, st) => x + (parseFloat(st.duration)||0), 0), 0), 0);
+}
+
+function maxSingleHoldSecs(sessionList) {
+  let max = 0;
+  sessionList.forEach(s => s.exercises.forEach(e => {
+    if (!isTimedExercise(e.name)) return;
+    e.sets.forEach(st => { const d = parseFloat(st.duration)||0; if (d > max) max = d; });
+  }));
+  return max;
+}
+
+const PUSHUP_NAMES = new Set([
+  'Push-ups', 'Diamond push-ups', 'Wide push-ups',
+  'Decline push-ups', 'Archer push-ups', 'Pike push-ups (feet elevated)',
+  'Incline push-ups'
+]);
+
+function maxPushupRepsInSet(sessionList) {
+  let max = 0;
+  sessionList.forEach(s => s.exercises.forEach(e => {
+    if (!PUSHUP_NAMES.has(e.name)) return;
+    e.sets.forEach(st => { const r = parseFloat(st.reps)||0; if (r > max) max = r; });
+  }));
+  return max;
+}
+
+function maxCoreRepsInSet(sessionList) {
+  let max = 0;
+  sessionList.forEach(s => s.exercises.forEach(e => {
+    const ex = getExercise(e.name);
+    if (!ex || ex.type !== 'core' || ex.isTimed) return;
+    e.sets.forEach(st => { const r = parseFloat(st.reps)||0; if (r > max) max = r; });
+  }));
+  return max;
+}
+
+function hasLoggedPullUp(sessionList) {
+  return sessionList.some(s => s.exercises.some(e => e.name === 'Pull-up' || e.name === 'Chin-up'));
+}
+
+function exercisesWithFills(mastery) {
+  return Object.values(mastery).filter(m => !m.isActivity && m.fills >= 1).length;
+}
+
+function neverSkipLegDayCount(sessionList) {
+  const pushDates = sessionList
+    .filter(s => getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId).type === 'push')
+    .map(s => new Date(s.date).getTime());
+  const legDates = sessionList
+    .filter(s => getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId).type === 'legs')
+    .map(s => new Date(s.date).getTime());
+  let count = 0;
+  pushDates.forEach(pd => {
+    if (legDates.some(ld => Math.abs(ld - pd) <= 7 * 24 * 60 * 60 * 1000)) count++;
+  });
+  return count;
+}
+
+function maxStreakOfStrength(sessionList) {
+  if (sessionList.length < 2) return 0;
+  const wprs = sessionList.map(s => sessionWeightPerRep(s));
+  let maxStreak = 0, streak = 0;
+  for (let i = 1; i < wprs.length; i++) {
+    const avg = wprs.slice(0, i).reduce((a, b) => a + b, 0) / i;
+    if (wprs[i] > avg && wprs[i] > 0) { streak++; maxStreak = Math.max(maxStreak, streak); }
+    else streak = 0;
+  }
+  return maxStreak;
+}
+
+function pbJamWeeks(sessionList) {
+  const pbs = {};
+  const byWeek = {};
+  sessionList.forEach(s => {
+    const k = getWeekKey(s.date);
+    if (!byWeek[k]) byWeek[k] = { allPB: true, count: 0 };
+    let sessionHasPB = false;
+    s.exercises.forEach(ex => {
+      const prev = pbs[ex.name] || { weight: 0, reps: 0 };
+      ex.sets.forEach(st => {
+        const w = parseFloat(st.weight)||0, r = parseFloat(st.reps)||0;
+        if (w > prev.weight || r > prev.reps) sessionHasPB = true;
+        if (!pbs[ex.name]) pbs[ex.name] = { weight: 0, reps: 0 };
+        if (w > pbs[ex.name].weight) pbs[ex.name].weight = w;
+        if (r > pbs[ex.name].reps) pbs[ex.name].reps = r;
+      });
+    });
+    byWeek[k].count++;
+    if (!sessionHasPB) byWeek[k].allPB = false;
+  });
+  return Object.values(byWeek).filter(w => w.count >= 3 && w.allPB).length;
+}
+
 // ── ACHIEVEMENTS ──────────────────────────────────────────────────────────
 const ACHIEVEMENTS = [
   // Consistency
@@ -6624,6 +6709,10 @@ const ACHIEVEMENTS = [
 
   // ── New: Push ──────────────────────────────────────────────────────────
   { id:'press_club',      cat:'push',      icon:'🏋️', name:'Press Club',             desc:'Complete 25 Push sessions. Repeats every 25.', repeatable: true, check: (s,_,m) => sessionsOfType(s,'push').length >= 25, countFn: (s,_,m) => Math.floor(sessionsOfType(s,'push').length / 25), progressFn: (s,_,m) => (sessionsOfType(s,'push').length % 25) / 25, title: 'The Bulldozer' },
+  { id:'double_push',     cat:'push',      icon:'💥', name:'Double Push',            desc:'Log 2 Push sessions in a single week. Repeatable.', repeatable: true, check: (s,_,m) => weeksWithNTypeSessionsCount(s,'push',2) >= 1, countFn: (s,_,m) => weeksWithNTypeSessionsCount(s,'push',2), progressFn: (s,_,m) => Math.min(1, weeksWithNTypeSessionsCount(s,'push',2)), title: null },
+  { id:'triple_push',     cat:'push',      icon:'💥', name:'Triple Push',            desc:'Log 3 Push sessions in a single week. Repeatable.', repeatable: true, check: (s,_,m) => weeksWithNTypeSessionsCount(s,'push',3) >= 1, countFn: (s,_,m) => weeksWithNTypeSessionsCount(s,'push',3), progressFn: (s,_,m) => Math.min(1, weeksWithNTypeSessionsCount(s,'push',3)), title: null },
+  { id:'bull_rush',       cat:'push',      icon:'🐂', name:'Bull Rush',              desc:'Log 2+ Push sessions per week for 3 consecutive weeks. Resets after each unlock.', repeatable: true, check: (s,_,m) => consecutiveTypeWeekGroups(s,'push',3,2).groups >= 1, countFn: (s,_,m) => consecutiveTypeWeekGroups(s,'push',3,2).groups, progressFn: (s,_,m) => consecutiveTypeWeekGroups(s,'push',3,2).streak / 3, title: 'The Bull' },
+  { id:'bison_charge',    cat:'push',      icon:'🦬', name:'Bison Charge',           desc:'Log 2+ Push sessions per week for 5 consecutive weeks. Resets after each unlock.', repeatable: true, check: (s,_,m) => consecutiveTypeWeekGroups(s,'push',5,2).groups >= 1, countFn: (s,_,m) => consecutiveTypeWeekGroups(s,'push',5,2).groups, progressFn: (s,_,m) => consecutiveTypeWeekGroups(s,'push',5,2).streak / 5, title: 'The Stampede' },
   { id:'chest_day',       cat:'push',      icon:'💪', name:'Chest Day',              desc:'Log 3 sets on Dumbbell bench press or DB incline press in a single session.', repeatable: false, check: (s,_,m) => s.some(x => x.exercises.some(e => (e.name==='Dumbbell bench press'||e.name==='DB incline press') && e.sets.filter(st=>parseFloat(st.reps)>0).length >= 3)), countFn: null, progressFn: (s,_,m) => s.some(x => x.exercises.some(e => (e.name==='Dumbbell bench press'||e.name==='DB incline press') && e.sets.filter(st=>parseFloat(st.reps)>0).length >= 3)) ? 1 : 0, title: null },
   { id:'overhead_ambition',cat:'push',     icon:'🔝', name:'Overhead Ambition',      desc:'Log 10 sessions with Dumbbell shoulder press.',  repeatable: false, check: (s,_,m) => s.filter(x => x.exercises.some(e => e.name==='Dumbbell shoulder press' && e.sets.some(st=>parseFloat(st.reps)>0))).length >= 10, countFn: null, progressFn: (s,_,m) => Math.min(1, s.filter(x => x.exercises.some(e => e.name==='Dumbbell shoulder press' && e.sets.some(st=>parseFloat(st.reps)>0))).length / 10), title: null },
   { id:'pushup_artist',   cat:'push',      icon:'🤸', name:'Push-Up Artist',         desc:'Log 50 push-up reps in a single set.',           repeatable: false, check: (s,_,m) => maxPushupRepsInSet(s) >= 50,          countFn: null, progressFn: (s,_,m) => Math.min(1, maxPushupRepsInSet(s) / 50),      title: 'Push-Up Artist' },
@@ -6631,11 +6720,19 @@ const ACHIEVEMENTS = [
 
   // ── New: Pull ──────────────────────────────────────────────────────────
   { id:'back_in_action',  cat:'pull',      icon:'🔙', name:'Back in Action',         desc:'Complete 25 Pull sessions. Repeats every 25.', repeatable: true, check: (s,_,m) => sessionsOfType(s,'pull').length >= 25, countFn: (s,_,m) => Math.floor(sessionsOfType(s,'pull').length / 25), progressFn: (s,_,m) => (sessionsOfType(s,'pull').length % 25) / 25, title: 'Back Breaker' },
+  { id:'double_pull',     cat:'pull',      icon:'💥', name:'Double Pull',            desc:'Log 2 Pull sessions in a single week. Repeatable.', repeatable: true, check: (s,_,m) => weeksWithNTypeSessionsCount(s,'pull',2) >= 1, countFn: (s,_,m) => weeksWithNTypeSessionsCount(s,'pull',2), progressFn: (s,_,m) => Math.min(1, weeksWithNTypeSessionsCount(s,'pull',2)), title: null },
+  { id:'triple_pull',     cat:'pull',      icon:'💥', name:'Triple Pull',            desc:'Log 3 Pull sessions in a single week. Repeatable.', repeatable: true, check: (s,_,m) => weeksWithNTypeSessionsCount(s,'pull',3) >= 1, countFn: (s,_,m) => weeksWithNTypeSessionsCount(s,'pull',3), progressFn: (s,_,m) => Math.min(1, weeksWithNTypeSessionsCount(s,'pull',3)), title: null },
+  { id:'croc_lock',       cat:'pull',      icon:'🐊', name:'Croc Lock',              desc:'Log 2+ Pull sessions per week for 3 consecutive weeks. Resets after each unlock.', repeatable: true, check: (s,_,m) => consecutiveTypeWeekGroups(s,'pull',3,2).groups >= 1, countFn: (s,_,m) => consecutiveTypeWeekGroups(s,'pull',3,2).groups, progressFn: (s,_,m) => consecutiveTypeWeekGroups(s,'pull',3,2).streak / 3, title: 'The Crocodile' },
+  { id:'eight_arms',      cat:'pull',      icon:'🐙', name:'Eight Arms',             desc:'Log 2+ Pull sessions per week for 5 consecutive weeks. Resets after each unlock.', repeatable: true, check: (s,_,m) => consecutiveTypeWeekGroups(s,'pull',5,2).groups >= 1, countFn: (s,_,m) => consecutiveTypeWeekGroups(s,'pull',5,2).groups, progressFn: (s,_,m) => consecutiveTypeWeekGroups(s,'pull',5,2).streak / 5, title: 'The Octopus' },
   { id:'pulling_power',   cat:'pull',      icon:'🦾', name:'Pulling Power',          desc:'Log your first Pull-up or Chin-up session.',     repeatable: false, check: (s,_,m) => hasLoggedPullUp(s),                  countFn: null, progressFn: (s,_,m) => hasLoggedPullUp(s) ? 1 : 0,                  title: null },
   { id:'grip_of_steel',   cat:'pull',      icon:'✊', name:'Grip of Steel',          desc:'Complete 10 Dead hang sets. Repeats every 10.', repeatable: true, check: (s,_,m) => totalDeadHangSets(s) >= 10, countFn: (s,_,m) => Math.floor(totalDeadHangSets(s) / 10), progressFn: (s,_,m) => (totalDeadHangSets(s) % 10) / 10, title: null },
 
   // ── New: Legs ──────────────────────────────────────────────────────────
   { id:'leg_day_legend',  cat:'legs',      icon:'🦁', name:'Leg Day Legend',         desc:'Complete 25 Legs sessions. Repeats every 25.', repeatable: true, check: (s,_,m) => sessionsOfType(s,'legs').length >= 25, countFn: (s,_,m) => Math.floor(sessionsOfType(s,'legs').length / 25), progressFn: (s,_,m) => (sessionsOfType(s,'legs').length % 25) / 25, title: 'Leg Day Legend' },
+  { id:'double_leg_day',  cat:'legs',      icon:'💥', name:'Double Leg Day',         desc:'Log 2 Legs sessions in a single week. Repeatable.', repeatable: true, check: (s,_,m) => weeksWithNTypeSessionsCount(s,'legs',2) >= 1, countFn: (s,_,m) => weeksWithNTypeSessionsCount(s,'legs',2), progressFn: (s,_,m) => Math.min(1, weeksWithNTypeSessionsCount(s,'legs',2)), title: null },
+  { id:'triple_leg_day',  cat:'legs',      icon:'💥', name:'Triple Leg Day',         desc:'Log 3 Legs sessions in a single week. Repeatable.', repeatable: true, check: (s,_,m) => weeksWithNTypeSessionsCount(s,'legs',3) >= 1, countFn: (s,_,m) => weeksWithNTypeSessionsCount(s,'legs',3), progressFn: (s,_,m) => Math.min(1, weeksWithNTypeSessionsCount(s,'legs',3)), title: null },
+  { id:'the_outback',     cat:'legs',      icon:'🦘', name:'The Outback',            desc:'Log 2+ Legs sessions per week for 3 consecutive weeks. Resets after each unlock.', repeatable: true, check: (s,_,m) => consecutiveTypeWeekGroups(s,'legs',3,2).groups >= 1, countFn: (s,_,m) => consecutiveTypeWeekGroups(s,'legs',3,2).groups, progressFn: (s,_,m) => consecutiveTypeWeekGroups(s,'legs',3,2).streak / 3, title: 'The Kangaroo' },
+  { id:'horse_power',     cat:'legs',      icon:'🐎', name:'Horse Power',            desc:'Log 2+ Legs sessions per week for 5 consecutive weeks. Resets after each unlock.', repeatable: true, check: (s,_,m) => consecutiveTypeWeekGroups(s,'legs',5,2).groups >= 1, countFn: (s,_,m) => consecutiveTypeWeekGroups(s,'legs',5,2).groups, progressFn: (s,_,m) => consecutiveTypeWeekGroups(s,'legs',5,2).streak / 5, title: 'The Stallion' },
   { id:'never_skip',      cat:'legs',      icon:'📅', name:'Never Skip Leg Day',     desc:'Log a Legs session within 7 days of a Push session, 10 rolling times. Repeats every 10.', repeatable: true, check: (s,_,m) => neverSkipLegDayCount(s) >= 10, countFn: (s,_,m) => Math.floor(neverSkipLegDayCount(s) / 10), progressFn: (s,_,m) => (neverSkipLegDayCount(s) % 10) / 10, title: null },
 
   // ── New: Timed ─────────────────────────────────────────────────────────
@@ -6645,6 +6742,10 @@ const ACHIEVEMENTS = [
 
   // ── New: Core ──────────────────────────────────────────────────────────
   { id:'core_commitment', cat:'core',      icon:'🔒', name:'Core Commitment',        desc:'Complete 25 standalone Core sessions. Repeats every 25.', repeatable: true, check: (s,_,m) => coreSessionCount(s) >= 25, countFn: (s,_,m) => Math.floor(coreSessionCount(s) / 25), progressFn: (s,_,m) => (coreSessionCount(s) % 25) / 25, title: 'Iron Core' },
+  { id:'pill_bug_power',  cat:'core',      icon:'🐛', name:'Pill Bug Power',         desc:'Log 2 core workouts in a single week. Repeatable.', repeatable: true, check: (s,_,m) => weeksWithNTypeSessionsCount(s,'core',2) >= 1, countFn: (s,_,m) => weeksWithNTypeSessionsCount(s,'core',2), progressFn: (s,_,m) => Math.min(1, weeksWithNTypeSessionsCount(s,'core',2)), title: null },
+  { id:'armadillo_warrior',cat:'core',     icon:'🦔', name:'Armadillo Warrior',      desc:'Log 3 core workouts in a single week. Repeatable.', repeatable: true, check: (s,_,m) => weeksWithNTypeSessionsCount(s,'core',3) >= 1, countFn: (s,_,m) => weeksWithNTypeSessionsCount(s,'core',3), progressFn: (s,_,m) => Math.min(1, weeksWithNTypeSessionsCount(s,'core',3)), title: null },
+  { id:'washboard_abs',   cat:'core',      icon:'💪', name:'Washboard Abs',          desc:'Log at least 2 core workouts per week for 3 consecutive weeks. Repeats every 3 qualifying weeks — counter resets after each unlock.', repeatable: true, check: (s,_,m) => consecutiveTypeWeekGroups(s,'core',3,2).groups >= 1, countFn: (s,_,m) => consecutiveTypeWeekGroups(s,'core',3,2).groups, progressFn: (s,_,m) => consecutiveTypeWeekGroups(s,'core',3,2).streak / 3, title: 'The Washboard' },
+  { id:'abs_of_steel',    cat:'core',      icon:'🏆', name:'Abs of Steel',           desc:'Log at least 2 core workouts per week for 5 consecutive weeks. Repeats every 5 qualifying weeks — counter resets after each unlock.', repeatable: true, check: (s,_,m) => consecutiveTypeWeekGroups(s,'core',5,2).groups >= 1, countFn: (s,_,m) => consecutiveTypeWeekGroups(s,'core',5,2).groups, progressFn: (s,_,m) => consecutiveTypeWeekGroups(s,'core',5,2).streak / 5, title: 'Abs of Steel' },
   { id:'crunch_time',     cat:'core',      icon:'💥', name:'Crunch Time',            desc:'Log 50 reps of any core exercise in a single set.',      repeatable: false, check: (s,_,m) => maxCoreRepsInSet(s) >= 50,  countFn: null, progressFn: (s,_,m) => Math.min(1, maxCoreRepsInSet(s) / 50),  title: 'Core Crusher' },
   { id:'captain_crunch',  cat:'core',      icon:'👊', name:'Captain Crunch',         desc:'Log 100 reps of any core exercise in a single set.',     repeatable: false, check: (s,_,m) => maxCoreRepsInSet(s) >= 100, countFn: null, progressFn: (s,_,m) => Math.min(1, maxCoreRepsInSet(s) / 100), title: 'Captain Crunch' },
   { id:'stiff_as_board',  cat:'core',      icon:'🪵', name:'Stiff as a Board',       desc:'Accumulate 30 minutes of total Plank hold time.',repeatable: false, check: (s,_,m) => totalPlankSeconds(s) >= 1800,         countFn: null, progressFn: (s,_,m) => Math.min(1, totalPlankSeconds(s) / 1800),     title: 'Plank Master' },
