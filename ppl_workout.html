@@ -2086,11 +2086,10 @@ function renderStreakWidget() {
   const { current, streak: best } = longestStreak();
 
   // Check if streak is still active — last session must be today or yesterday
-  const today = new Date(); today.setHours(0,0,0,0);
-  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
-  const lastSession = sessions.length ? new Date(sessions[sessions.length - 1].date) : null;
-  if (lastSession) lastSession.setHours(0,0,0,0);
-  const streakActive = lastSession && (lastSession >= yesterday);
+  const todayStr = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
+  const yesterdayStr = (() => { const d = new Date(); d.setDate(d.getDate()-1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
+  const lastSessionStr = sessions.length ? (() => { const d = new Date(sessions[sessions.length-1].date); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })() : null;
+  const streakActive = lastSessionStr && (lastSessionStr === todayStr || lastSessionStr === yesterdayStr);
   const displayStreak = streakActive ? current : 0;
 
   if (!sessions.length) { el.innerHTML = ''; return; }
@@ -2114,6 +2113,7 @@ function renderStreakWidget() {
   const weekly = weeklyStreak();
 
   // Sessions logged this week (Mon–Sun), all 7 days
+  const today = new Date();
   const weekStart = new Date(today);
   weekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7)); // Monday
   weekStart.setHours(0,0,0,0);
@@ -4203,7 +4203,10 @@ function longestStreak(sessionList) {
   }))].sort();
   let best = 1, cur = 1;
   for (let i = 1; i < days.length; i++) {
-    const prev = new Date(days[i-1]), next = new Date(days[i]);
+    const [py, pm, pd] = days[i-1].split('-').map(Number);
+    const [ny, nm, nd] = days[i].split('-').map(Number);
+    const prev = new Date(py, pm-1, pd);
+    const next = new Date(ny, nm-1, nd);
     const diff = (next - prev) / 86400000;
     if (diff === 1) { cur++; if (cur > best) best = cur; }
     else cur = 1;
@@ -4211,7 +4214,10 @@ function longestStreak(sessionList) {
   // current streak
   let cur2 = 1;
   for (let i = days.length - 1; i > 0; i--) {
-    const prev = new Date(days[i-1]), next = new Date(days[i]);
+    const [py, pm, pd] = days[i-1].split('-').map(Number);
+    const [ny, nm, nd] = days[i].split('-').map(Number);
+    const prev = new Date(py, pm-1, pd);
+    const next = new Date(ny, nm-1, nd);
     if ((next - prev) / 86400000 === 1) cur2++;
     else break;
   }
@@ -6299,7 +6305,10 @@ function getWeekKey(dateStr) {
   const day = d.getDay() || 7; // Mon=1 ... Sun=7
   const mon = new Date(d);
   mon.setDate(d.getDate() - (day - 1));
-  return mon.toISOString().slice(0, 10);
+  const y = mon.getFullYear();
+  const m = String(mon.getMonth() + 1).padStart(2, '0');
+  const dd = String(mon.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
 }
 
 // Sessions of a given variation type
@@ -6485,8 +6494,10 @@ function consecutiveQualifyingWeekGroups(sessionList, n, typeCheck) {
     const qualifies = typeCheck(byWeek[sortedWeeks[i]]);
     if (qualifies) {
       if (streak > 0 && i > 0) {
-        const prev = new Date(sortedWeeks[i - 1]);
-        const curr = new Date(sortedWeeks[i]);
+        const [py, pm, pd] = sortedWeeks[i-1].split('-').map(Number);
+        const [cy, cm, cd] = sortedWeeks[i].split('-').map(Number);
+        const prev = new Date(py, pm-1, pd);
+        const curr = new Date(cy, cm-1, cd);
         const diff = Math.round((curr - prev) / (7 * 24 * 60 * 60 * 1000));
         if (diff !== 1) streak = 0;
       }
@@ -6528,8 +6539,10 @@ function consecutiveTypeWeekGroups(sessionList, type, n, min) {
     const qualifies = (byWeek[sortedWeeks[i]] || 0) >= min;
     if (qualifies) {
       if (streak > 0 && i > 0) {
-        const prev = new Date(sortedWeeks[i - 1]);
-        const curr = new Date(sortedWeeks[i]);
+        const [py, pm, pd] = sortedWeeks[i-1].split('-').map(Number);
+        const [cy, cm, cd] = sortedWeeks[i].split('-').map(Number);
+        const prev = new Date(py, pm-1, pd);
+        const curr = new Date(cy, cm-1, cd);
         const diff = Math.round((curr - prev) / (7 * 24 * 60 * 60 * 1000));
         if (diff !== 1) streak = 0;
       }
@@ -6792,10 +6805,15 @@ const ACHIEVEMENTS = [
 function weeksWith3Plus(sessionList) {
   const wc = {};
   sessionList.forEach(s => {
-    const d = new Date(s.date); const day = d.getDay()||7;
-    const mon = new Date(d); mon.setDate(d.getDate()-(day-1));
-    const k = mon.toISOString().slice(0,10);
-    wc[k] = (wc[k]||0) + 1;
+    const d = new Date(s.date);
+    const day = d.getDay() || 7;
+    const mon = new Date(d);
+    mon.setDate(d.getDate() - (day - 1));
+    const y = mon.getFullYear();
+    const m = String(mon.getMonth() + 1).padStart(2, '0');
+    const dd = String(mon.getDate()).padStart(2, '0');
+    const k = `${y}-${m}-${dd}`;
+    wc[k] = (wc[k] || 0) + 1;
   });
   return Object.values(wc).filter(v => v >= 3).length;
 }
@@ -7515,7 +7533,7 @@ function buildProfileHTML() {
     // Build a meaningful current/total label per achievement
     const lbs = Math.round(totalLbs(s));
     switch (a.id) {
-      case 'week_warrior':   return { label: `${weeksWith3Plus(s) % 5} / 5 qualifying weeks`, showBar: true };
+      case 'week_warrior':   return { label: `${weeksWith3Plus(s) % 5 || (weeksWith3Plus(s) >= 5 ? 5 : 0)} / 5 qualifying weeks`, showBar: true };
       case 'iron_habit':     return { label: `${longestStreak(s).streak % 30 || longestStreak(s).streak} / 30 days`, showBar: true };
       case 'century':        return { label: `${s.length % 100} / 100 sessions`, showBar: true };
       case 'ton_moved':      return { label: `${fmt(lbs % 2000)} / ${fmt(2000)} lbs`, showBar: true };
