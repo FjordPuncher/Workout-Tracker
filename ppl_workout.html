@@ -1331,6 +1331,7 @@ html, body {
 
     <div class="section-label" style="margin-top:8px">Recent Sessions</div>
     <div id="recent-sessions" style="padding:0 18px"></div>
+    <div style="padding:0 18px 8px"><button onclick="showHistory()" style="width:100%;padding:10px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;">View All Sessions</button></div>
   </div></div>
 <div id="screen-workout" class="screen">
   <div class="topbar">
@@ -1874,7 +1875,7 @@ function getActivity(name) {
   return PREDEFINED_ACTIVITIES.find(a => a.name === name) || null;
 }
 // Helper: get display info for any variationKey including custom
-function getVariationMeta(key, customName, category, customWorkoutId) {
+function getVariationMeta(key, customName, category, customWorkoutId, tab) {
   if (key === CUSTOM_KEY) {
     // Custom workout template session — look up inferred type from saved template
     if (category === 'custom' && customWorkoutId) {
@@ -1890,7 +1891,8 @@ function getVariationMeta(key, customName, category, customWorkoutId) {
     }
     // Check if it matches a predefined activity
     const act = customName ? getActivity(customName) : null;
-    const cat = category || (act ? act.category : 'general');
+    // Use category, then tab, then activity type, then fallback to general
+    const cat = category || tab || (act ? act.type : 'general');
     const label = customName || 'Custom';
     const name  = customName || 'Custom Workout';
     if (cat === 'cardio') {
@@ -1967,7 +1969,7 @@ function getSuggested() {
 // ════════════════════════════════════════════════════════════════════════════
 // ── Nav active state ─────────────────────────────────────────────────────────
 function setActiveNav(id) {
-  ['bnav-home','bnav-history','bnav-profile','bnav-bests','bnav-glossary'].forEach(b => {
+  ['bnav-home','bnav-rpg','bnav-profile','bnav-bests','bnav-glossary'].forEach(b => {
     const el = document.getElementById(b);
     if (el) el.classList.toggle('active', b === id);
   });
@@ -2245,7 +2247,7 @@ function renderCalendar() {
     if (sd.getFullYear() === y && sd.getMonth() === m) {
       const key = sd.getDate();
       if (!sessionsByDate[key]) sessionsByDate[key] = [];
-      const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
+      const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab);
       sessionsByDate[key].push({ type: vm.type, label: vm.label, key: s.variationKey });
     }
   });
@@ -2300,7 +2302,7 @@ function calDayClick(d, y, m, isFuture, hasSessions) {
 
   if (daySessions.length) {
     tooltip.textContent = daySessions.map(s =>
-      getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId).label + ' — ' + getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId).name
+      getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab).label + ' — ' + getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab).name
     ).join(' · ');
     // Open backfill screen showing existing sessions for that day with option to add more
     openBackfill(d, y, m, daySessions);
@@ -2375,7 +2377,7 @@ function renderBackfillScreen(existingSessions) {
   if (existing.length) {
     html += `<div class="section-label">Already logged</div>`;
     existing.forEach(s => {
-      const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
+      const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab);
       const sets = s.exercises.reduce((a, e) => a + e.sets.filter(st => st.reps).length, 0);
       const metaParts = [];
       if (sets) metaParts.push(`${sets} set${sets !== 1 ? 's' : ''} logged`);
@@ -3441,7 +3443,11 @@ function setTimerPreset(secs) {
 function showHistory() {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-history').classList.add('active');
-  setActiveNav('bnav-history');
+  // History is now accessed via View All — no nav button to highlight
+  ['bnav-home','bnav-rpg','bnav-profile','bnav-bests','bnav-glossary'].forEach(b => {
+    const el = document.getElementById(b);
+    if (el) el.classList.remove('active');
+  });
   window.scrollTo(0, 0);
   renderHistory();
 }
@@ -3454,7 +3460,7 @@ function showSessionDetail(sessionId, referrer) {
   sessionDetailReferrer = referrer || 'history';
   document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
   document.getElementById('screen-session-detail').classList.add('active');
-  setActiveNav('bnav-history');
+  setActiveNav('bnav-home'); // history accessed via View All, home is closest nav context
   // Update back button label and target based on where we came from
   const backBtn = document.querySelector('#screen-session-detail .back-btn');
   if (backBtn) {
@@ -3483,8 +3489,12 @@ function showBackfillFromDetail() {
 // Returns a human-readable note if the session was logged on a different day than it occurred
 function loggedLaterNote(s) {
   if (!s.loggedAt) return null;
-  const workoutDay = new Date(s.date).toDateString();
-  const logDay = new Date(s.loggedAt).toDateString();
+  const toLocalDateStr = (iso) => {
+    const d = new Date(iso);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  };
+  const workoutDay = toLocalDateStr(s.date);
+  const logDay     = toLocalDateStr(s.loggedAt);
   if (workoutDay === logDay) return null;
   return 'Added to log on ' + new Date(s.loggedAt).toLocaleDateString('en-US', {
     weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
@@ -3493,7 +3503,7 @@ function loggedLaterNote(s) {
 }
 
 function renderSessionDetail(s) {
-  const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
+  const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab);
   const tc = vm.color;
   const bg = vm.bg;
   const tt = vm.text;
@@ -3614,8 +3624,8 @@ function renderSessionDetail(s) {
   const prCount = prList.length;
   const priorWithDur = priorSessions.filter(ps => parseFloat(ps.duration) > 0);
   const avgDurStat = priorWithDur.length >= 3 ? priorWithDur.reduce((a, ps) => a + parseFloat(ps.duration), 0) / priorWithDur.length : null;
-  const vm2 = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
-  const priorSameType = priorSessions.filter(ps => getVariationMeta(ps.variationKey, ps.customName, ps.category).type === vm2.type);
+  const vm2 = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab);
+  const priorSameType = priorSessions.filter(ps => getVariationMeta(ps.variationKey, ps.customName, ps.category, ps.customWorkoutId, ps.tab).type === vm2.type);
   const priorVols = priorSameType.map(ps => ps.exercises.reduce((acc, e) => acc + e.sets.reduce((a, st) => a + ((parseFloat(st.reps)||0)*(parseFloat(st.weight)||0)), 0), 0)).filter(v => v > 0);
   const avgVolStat = priorVols.length >= 3 ? priorVols.reduce((a,b)=>a+b,0)/priorVols.length : null;
 
@@ -3838,6 +3848,19 @@ function renderSessionDetail(s) {
     }
   }
 
+  // ── RPG Gold generated ───────────────────────────────────────────────────
+  if (totalXP > 0) {
+    const goldGen = Math.floor(totalXP / 2);
+    html += `<div style="
+      background:#1A1408;border:1px solid #C4732A44;border-radius:10px;
+      padding:12px 16px;margin:10px 18px 0;
+      display:flex;align-items:center;justify-content:space-between;
+    ">
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted)">Gold generated for The Realm</div>
+      <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#FFA726">+${goldGen}g</div>
+    </div>`;
+  }
+
   // ── Sets ──────────────────────────────────────────────────────────────────
   const loggedExercises = s.exercises.filter(e => e.sets && e.sets.some(st => parseFloat(st.reps) > 0 || parseFloat(st.duration) > 0));
 
@@ -3906,7 +3929,7 @@ function deleteSessionFromDetail(sessionId) {
 }
 
 function renderHistorySessionCard(s) {
-  const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
+  const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab);
   const totalSets = s.exercises.reduce((acc, e) => acc + e.sets.filter(st => st.reps).length, 0);
 
   // Calculate XP earned this session
@@ -3928,6 +3951,7 @@ function renderHistorySessionCard(s) {
   if (totalSets) metaParts.push(`${totalSets} set${totalSets !== 1 ? 's' : ''} logged`);
   if (s.duration && String(s.duration).trim()) metaParts.push(fmtDuration(s.duration));
   if (totalXP > 0) metaParts.push(`+${totalXP} XP`);
+  if (totalXP > 0) metaParts.push(`⚔️ +${Math.floor(totalXP / 2)}g`);
   if (s.missed) metaParts.push('retroactive');
   const logNote = loggedLaterNote(s);
   if (logNote) metaParts.push(logNote);
@@ -4147,7 +4171,7 @@ function totalMiles(sessionList) {
 function cardioSessions(sessionList) {
   return sessionList.filter(s => {
     if (ORDER.includes(s.variationKey)) return false;
-    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab);
     return vm.type === 'cardio';
   });
 }
@@ -5252,7 +5276,7 @@ function startEditSession() {
 function renderEditSession() {
   const s = editingSession;
   if (!s) return;
-  const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
+  const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab);
   const tc = vm.color;
   const body = document.getElementById('detail-body');
 
@@ -6003,7 +6027,7 @@ function getSessionAttrMap(s) {
     const actMap = getActivityAttrMap(s.customName);
     if (actMap) return actMap;
   }
-  const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
+  const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab);
   return SESSION_ATTR_MAP[vm.type] || SESSION_ATTR_MAP.general;
 }
 
@@ -6082,7 +6106,7 @@ function calcSessionXP(s, priorSessions, priorPBs) {
   const dur = parseFloat(s.duration) || 0;
   if (dur > 0) {
     const name = s.customName || '';
-    const vm2 = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
+    const vm2 = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab);
     const isLiftingSession = ['push','pull','legs'].includes(vm2.type) && s.variationKey !== CUSTOM_KEY;
     if (!isLiftingSession) {
       let rate = 0;
@@ -6162,9 +6186,9 @@ function calcSessionXP(s, priorSessions, priorPBs) {
   const avgDur = priorWithDur.length >= ABOVE_AVG_MIN
     ? priorWithDur.reduce((a, ps) => a + parseFloat(ps.duration), 0) / priorWithDur.length : null;
 
-  const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
+  const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab);
   const priorSameType = priorSessions.filter(ps =>
-    getVariationMeta(ps.variationKey, ps.customName, ps.category).type === vm.type);
+    getVariationMeta(ps.variationKey, ps.customName, ps.category, ps.customWorkoutId, ps.tab).type === vm.type);
   const priorVols = priorSameType.map(ps =>
     ps.exercises.reduce((acc, e) =>
       acc + e.sets.reduce((a, st) => a + ((parseFloat(st.reps)||0)*(parseFloat(st.weight)||0)), 0), 0)
@@ -6343,7 +6367,7 @@ function getWeekKey(dateStr) {
 // Sessions of a given variation type
 function sessionsOfType(sessionList, type) {
   return sessionList.filter(s => {
-    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab);
     return vm.type === type;
   });
 }
@@ -6369,7 +6393,7 @@ function sessionsOverLbs(sessionList, threshold) {
 
 // Has the user logged at least one session of each PPL type
 function hasFullSplit(sessionList) {
-  const types = new Set(sessionList.map(s => getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId).type));
+  const types = new Set(sessionList.map(s => getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab).type));
   return ['push','pull','legs'].every(t => types.has(t));
 }
 
@@ -6385,7 +6409,7 @@ function weeksWithTypes(sessionList, types) {
   sessionList.forEach(s => {
     const k = getWeekKey(s.date);
     if (!byWeek[k]) byWeek[k] = new Set();
-    byWeek[k].add(getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId).type);
+    byWeek[k].add(getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab).type);
   });
   return Object.values(byWeek).filter(typeSet =>
     types.every(t => typeSet.has(t))
@@ -6398,7 +6422,7 @@ function weeksWithFullCross(sessionList) {
   sessionList.forEach(s => {
     const k = getWeekKey(s.date);
     if (!byWeek[k]) byWeek[k] = new Set();
-    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab);
     byWeek[k].add(vm.type);
     if (isRunningSession(s) || isBikingSession(s)) byWeek[k].add('_cardio');
   });
@@ -6413,7 +6437,7 @@ function weeksWithAllCategories(sessionList) {
   sessionList.forEach(s => {
     const k = getWeekKey(s.date);
     if (!byWeek[k]) byWeek[k] = new Set();
-    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab);
     byWeek[k].add(vm.type);
     if (isRunningSession(s) || isBikingSession(s)) byWeek[k].add('_cardio');
   });
@@ -6431,10 +6455,10 @@ function exercisesWithFills(mastery) {
 // Rolling count of instances where a Legs session was logged within 7 days of a Push session
 function neverSkipLegDayCount(sessionList) {
   const pushDates = sessionList
-    .filter(s => getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId).type === 'push')
+    .filter(s => getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab).type === 'push')
     .map(s => new Date(s.date).getTime());
   const legDates = sessionList
-    .filter(s => getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId).type === 'legs')
+    .filter(s => getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab).type === 'legs')
     .map(s => new Date(s.date).getTime());
   let count = 0;
   pushDates.forEach(pd => {
@@ -6513,7 +6537,7 @@ function consecutiveQualifyingWeekGroups(sessionList, n, typeCheck) {
   sessionList.forEach(s => {
     const k = getWeekKey(s.date);
     if (!byWeek[k]) byWeek[k] = new Set();
-    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab);
     byWeek[k].add(vm.type);
     if (isRunningSession(s) || isBikingSession(s)) byWeek[k].add('_cardio');
   });
@@ -6540,13 +6564,17 @@ function consecutiveQualifyingWeekGroups(sessionList, n, typeCheck) {
 }
 
 function coreSessionCount(sessionList) {
-  return sessionList.filter(s => CORE_ORDER.includes(s.variationKey)).length;
+  return sessionList.filter(s => {
+    if (CORE_ORDER.includes(s.variationKey)) return true;
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab);
+    return vm.type === 'core';
+  }).length;
 }
 
 function weeksWithNTypeSessionsCount(sessionList, type, n) {
   const byWeek = {};
   sessionList.forEach(s => {
-    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab);
     if (vm.type !== type) return;
     const k = getWeekKey(s.date);
     byWeek[k] = (byWeek[k] || 0) + 1;
@@ -6557,7 +6585,7 @@ function weeksWithNTypeSessionsCount(sessionList, type, n) {
 function consecutiveTypeWeekGroups(sessionList, type, n, min) {
   const byWeek = {};
   sessionList.forEach(s => {
-    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab);
     if (vm.type !== type) return;
     const k = getWeekKey(s.date);
     byWeek[k] = (byWeek[k] || 0) + 1;
@@ -6590,7 +6618,7 @@ function daysWithRunAndLift(sessionList) {
     const k = s.date.slice(0, 10);
     if (!byDay[k]) byDay[k] = { cardio: false, lift: false };
     if (isRunningSession(s) || isBikingSession(s)) byDay[k].cardio = true;
-    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab);
     if (['push','pull','legs','core'].includes(vm.type)) byDay[k].lift = true;
   });
   return Object.values(byDay).filter(d => d.cardio && d.lift).length;
@@ -6602,7 +6630,7 @@ function weeksWithRunAndLift(sessionList) {
     const k = getWeekKey(s.date);
     if (!byWeek[k]) byWeek[k] = { cardio: false, lift: false };
     if (isRunningSession(s) || isBikingSession(s)) byWeek[k].cardio = true;
-    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab);
     if (['push','pull','legs','core'].includes(vm.type)) byWeek[k].lift = true;
   });
   return Object.values(byWeek).filter(w => w.cardio && w.lift).length;
@@ -6672,10 +6700,10 @@ function exercisesWithFills(mastery) {
 
 function neverSkipLegDayCount(sessionList) {
   const pushDates = sessionList
-    .filter(s => getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId).type === 'push')
+    .filter(s => getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab).type === 'push')
     .map(s => new Date(s.date).getTime());
   const legDates = sessionList
-    .filter(s => getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId).type === 'legs')
+    .filter(s => getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab).type === 'legs')
     .map(s => new Date(s.date).getTime());
   let count = 0;
   pushDates.forEach(pd => {
@@ -6929,8 +6957,8 @@ function countAboveAvgSessions(sessionList) {
     }
 
     // Volume above average (same type)
-    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId);
-    const priorSameType = prior.filter(ps => getVariationMeta(ps.variationKey, ps.customName, ps.category).type === vm.type);
+    const vm = getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab);
+    const priorSameType = prior.filter(ps => getVariationMeta(ps.variationKey, ps.customName, ps.category, ps.customWorkoutId, ps.tab).type === vm.type);
     const priorVols = priorSameType.map(ps =>
       ps.exercises.reduce((acc, e) => acc + e.sets.reduce((a, st) => a + ((parseFloat(st.reps)||0)*(parseFloat(st.weight)||0)), 0), 0)
     ).filter(v => v > 0);
@@ -7406,8 +7434,26 @@ function computeAndShowXP(savedSessionId) {
       if (!rawProfile.rpg.gold) rawProfile.rpg.gold = 0;
       rawProfile.rpg.gold += rpgGoldEarned;
       localStorage.setItem('ppl_profile', JSON.stringify(rawProfile));
-      // If RPG is loaded, refresh widget
-      if (window.rpgLoaded) renderHomeRPGWidget();
+      // If RPG is loaded, trigger mid-combat workout hook
+      if (window.rpgLoaded && typeof rpgOnWorkoutSaved === 'function') {
+        // Derive session type from variation meta for accuracy.
+        // category is authoritative for core/custom sessions.
+        // For PPL sessions, the variation type is the source of truth.
+        let sessionType = 'push'; // safe default
+        if (latest.category === 'core') {
+          sessionType = 'core';
+        } else if (latest.tab === 'core') {
+          sessionType = 'core';
+        } else if (latest.variationKey && typeof getVariationMeta === 'function') {
+          const vm = getVariationMeta(latest.variationKey, latest.customName, latest.category, latest.customWorkoutId, latest.tab);
+          if (vm && vm.type) sessionType = vm.type;
+        } else if (latest.tab && latest.tab !== 'main') {
+          sessionType = latest.tab;
+        }
+        rpgOnWorkoutSaved(sessionType);
+      } else if (window.rpgLoaded) {
+        renderHomeRPGWidget();
+      }
     }
   } catch(e) { console.warn('RPG gold award failed:', e); }
 
@@ -7683,10 +7729,6 @@ function buildProfileHTML() {
   }
 
   html += `<div style="height:20px"></div>`;
-
-  // ── DEBUG: RPG test button (temporary) ──
-  html += `<div style="padding:0 16px 24px"><button onclick="openRPG()" style="width:100%;padding:12px;background:none;border:1px dashed var(--str);border-radius:8px;color:var(--str);font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;letter-spacing:0.05em;">⚔️  RPG Test</button></div>`;
-
   return html;
 }
 
@@ -8954,9 +8996,9 @@ showHome();
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
     <span>Home</span>
   </button>
-  <button class="bnav-btn" id="bnav-history" onclick="showHistory()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
-    <span>History</span>
+  <button class="bnav-btn" id="bnav-rpg" onclick="openRPG()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    <span>RPG</span>
   </button>
   <button class="bnav-btn" id="bnav-profile" onclick="showProfile()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>

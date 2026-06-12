@@ -745,7 +745,8 @@ function rpgPlayerStats(profile) {
   // Derived stats
   const baseHP   = 200 + (realEND * 6) + (level * 10) + gearHP;
   const maxHP    = Math.round(baseHP * trainingBonus);
-  const atk      = Math.round(effSTR * 1.4 * barracksBonus);
+  const rawATK  = Math.round(effSTR * 1.4 * barracksBonus);
+  const atk     = Math.max(10 + level, rawATK);
   const mitigation = effEND / (effEND + 300);
   const critChance = effDEX / (effDEX + 200);
   const interval = Math.max(4, 20 - Math.floor(effAGI / 8));
@@ -1432,17 +1433,1045 @@ function showRPGCharacterSheet(activeTab, filterSlot) {
   if (screen) screen.classList.add('active');
 }
 
+// ============================================================
+// PHASE 3 — COMBAT SYSTEM, WILDS, QUEST BOARD
+// ============================================================
+
+// ── Tonic heal amount ────────────────────────────────────────────────────────
+function rpgTonicHealPct(profile) {
+  const herbalist = profile.rpg.castle?.herbalist || 0;
+  return [0.25, 0.30, 0.35, 0.40, 0.45, 0.50][herbalist] || 0.25;
+}
+
+// ── Loot generation ──────────────────────────────────────────────────────────
+function rpgRollLootDrop(band, tier, isQuestBoss, forgeLevel) {
+  // Determine item tier using Forge weight table
+  // Base weights: +1:50, +2:30, +3:15, +4:5, +5:0 (shop max)
+  // Forge adds +5 to each tier above +1 per level
+  const baseWeights = [50, 30, 15, 5, 0, 0, 0, 0, 0, 0]; // tiers 1-10
+  const weights = baseWeights.map((w, i) => i === 0 ? w : w + forgeLevel * 5);
+
+  // Tier availability by content
+  let maxTier = tier === 'easy' ? 4 : tier === 'medium' ? 6 : isQuestBoss ? 10 : 8;
+  const effectiveWeights = weights.map((w, i) => i < maxTier ? w : 0);
+  const total = effectiveWeights.reduce((a, b) => a + b, 0);
+  if (total === 0) return null;
+
+  let r = Math.random() * total;
+  let itemTier = 1;
+  for (let i = 0; i < effectiveWeights.length; i++) {
+    r -= effectiveWeights[i];
+    if (r <= 0) { itemTier = i + 1; break; }
+  }
+
+  // Pick random slot and material
+  const slots = ['weapon','shield','helmet','body_armor','boots','jewelry'];
+  const slot = slots[Math.floor(Math.random() * slots.length)];
+  const materials = RPG_BAND_MATERIALS[band] || ['Copper'];
+  const material = materials[Math.floor(Math.random() * materials.length)];
+  const types = RPG_SLOT_TYPES[slot] || ['Item'];
+  const type = types[Math.floor(Math.random() * types.length)];
+
+  // Roll stats with ±10% variance
+  const bandIdx = rpgBandIndex(band);
+  const scale = RPG_GEAR_SCALE[slot] || RPG_GEAR_SCALE.weapon;
+  const baseVal = scale.base[bandIdx] + (itemTier - 1) * scale.inc[bandIdx];
+  const rolled = Math.max(1, Math.round(baseVal * (0.9 + Math.random() * 0.2)));
+
+  const rolledStats = {};
+  const primaryStat = RPG_SLOT_STAT[slot];
+  if (primaryStat === 'STR') rolledStats.effectiveSTR = rolled;
+  else if (primaryStat === 'END') rolledStats.effectiveEND = rolled;
+  else if (primaryStat === 'AGI') rolledStats.effectiveAGI = rolled;
+  else if (primaryStat === 'DEX') rolledStats.effectiveDEX = rolled;
+
+  // Body armor also gets flat HP
+  if (slot === 'body_armor') {
+    const hpScale = RPG_GEAR_SCALE.body_armor_hp;
+    const hpBase = hpScale.base[bandIdx] + (itemTier - 1) * hpScale.inc[bandIdx];
+    rolledStats.flatHP = Math.max(1, Math.round(hpBase * (0.9 + Math.random() * 0.2)));
+  }
+
+  // Jewelry gets a utility bonus note
+  let utilityBonus = null;
+  if (slot === 'jewelry') {
+    const utils = ['gold_find', 'loot_luck'];
+    utilityBonus = utils[Math.floor(Math.random() * utils.length)];
+    const gem = Object.keys(RPG_JEWELRY_GEMS)[Math.floor(Math.random() * 4)];
+    const gemName = RPG_JEWELRY_GEMS[gem];
+    return {
+      instanceId: rpgUUID(),
+      name: `${material} ${gemName} ${type}`,
+      slot, band, tier: itemTier,
+      rolledStats, utilityBonus,
+      isUnique: false, favorite: false,
+      acquiredAt: new Date().toISOString().slice(0, 10),
+    };
+  }
+
+  return {
+    instanceId: rpgUUID(),
+    name: `${material} ${type}`,
+    slot, band, tier: itemTier,
+    rolledStats,
+    isUnique: false, favorite: false,
+    acquiredAt: new Date().toISOString().slice(0, 10),
+  };
+}
+
+// Drop chance by tier
+function rpgShouldDropLoot(enemyTier) {
+  const chances = { easy: 0.40, medium: 0.65, hard: 0.85 };
+  return Math.random() < (chances[enemyTier] || 0.40);
+}
+
+// ── Workout stat boost helpers ────────────────────────────────────────────────
+function rpgGetStatBoostMultiplier(profile) {
+  const boost = profile.rpg?.statBoost;
+  if (!boost) return { atkMult: 1, defMult: 1, agiBonus: 0 };
+  const type = boost.type;
+  const bonus = 0.12; // 12% base — tunable later
+  if (type === 'push')  return { atkMult: 1 + bonus, defMult: 1, agiBonus: 0 };
+  if (type === 'pull')  return { atkMult: 1, defMult: 1, agiBonus: 0 }; // DEX → crit handled in formula
+  if (type === 'legs')  return { atkMult: 1, defMult: 1, agiBonus: Math.floor(bonus * 50) };
+  if (type === 'core')  return { atkMult: 1, defMult: 1 + bonus, agiBonus: 0 };
+  return { atkMult: 1, defMult: 1, agiBonus: 0 };
+}
+
+// ── THE WILDS SCREEN ─────────────────────────────────────────────────────────
 function showRPGWilds() {
-  alert('The Wilds — coming in Phase 3');
+  const profile = rpgGetProfile();
+  const stats   = rpgPlayerStats(profile);
+  const band    = rpgLevelBand(stats.level);
+  const bp      = BAND_POWER[band];
+
+  const locations = [
+    { id:'field',   label:'Open Field',     tier:'easy',   icon:'🌾',
+      desc:'Wandering creatures and lesser threats.',
+      goldRange: `${Math.round(bp*0.16*0.9)}–${Math.round(bp*0.20*1.1)}g` },
+    { id:'forest',  label:'Dark Forest',    tier:'medium', icon:'🌲',
+      desc:'Dangerous beasts and cursed wanderers.',
+      goldRange: `${Math.round(bp*0.20*0.9)}–${Math.round(bp*0.24*1.1)}g` },
+    { id:'castle',  label:'Ancient Castle', tier:'hard',   icon:'🏰',
+      desc:'Elite knights, powerful undead. Come prepared.',
+      goldRange: `${Math.round(bp*0.24*0.9)}–${Math.round(bp*0.30*1.1)}g` },
+  ];
+
+  const html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);z-index:10">
+      <button onclick="showRPGHub()" style="background:none;border:none;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;padding:0">← Hub</button>
+      <span style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--str)">THE WILDS</span>
+      <div style="width:50px"></div>
+    </div>
+    <div style="padding:16px">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:16px">Choose a location to fight a random enemy.  Logging a workout heals you to full between fights.</div>
+      ${locations.map(loc => `
+        <div onclick="rpgStartRandomBattle('${loc.tier}')" style="
+          background:var(--surface);border:1px solid var(--border);border-radius:10px;
+          padding:16px;margin-bottom:12px;cursor:pointer;
+        ">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:24px">${loc.icon}</span>
+              <div>
+                <div style="font-size:14px;font-weight:500">${loc.label}</div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${loc.desc}</div>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:10px;color:var(--text-muted)">GOLD / FIGHT</div>
+              <div style="font-size:13px;color:#FFA726">${loc.goldRange}</div>
+            </div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('rpg-screen-body').innerHTML = html;
+  document.getElementById('screen-rpg').classList.add('active');
 }
-function showRPGCastle() {
-  alert('The Castle — coming in Phase 4');
+
+function rpgStartRandomBattle(tier) {
+  const profile = rpgGetProfile();
+  const stats   = rpgPlayerStats(profile);
+  const band    = rpgLevelBand(stats.level);
+  const enemy   = rpgRandomEnemy(stats.level, tier, stats);
+  if (!enemy) { alert('No enemies found for this tier.'); return; }
+
+  // Initialise currentHP if needed
+  if (!profile.rpg.currentHP) {
+    profile.rpg.currentHP = stats.maxHP;
+    rpgSaveProfile(profile);
+  }
+
+  const combatState = {
+    active: true,
+    questId: null,
+    location: tier === 'easy' ? 'field' : tier === 'medium' ? 'forest' : 'castle',
+    enemyIndex: 0,
+    enemy,
+    playerHP: profile.rpg.currentHP,
+    tickPosition: { player: stats.interval, enemy: enemy.interval },
+    battleLog: [],
+    goldEarned: 0,
+    pendingLoot: [],
+    goldMultiplier: 1,
+    battleHardenedActive: false,
+    hpOnStart: profile.rpg.currentHP,
+    emberTonicsUsed: 0,
+    isRandomBattle: true,
+    enemyTier: tier,
+    band,
+  };
+  rpgSaveCombat(combatState);
+  showRPGCombat();
 }
+
+// ── QUEST BOARD ──────────────────────────────────────────────────────────────
 function showRPGQuestBoard() {
-  alert('Quest Board — coming in Phase 3');
+  const profile  = rpgGetProfile();
+  const stats    = rpgPlayerStats(profile);
+  const band     = rpgLevelBand(stats.level);
+  const prevBand = rpgPrevBand(band);
+
+  // Get one quest per difficulty from current + previous band
+  const pool = RPG_QUESTS.filter(q => q.band === band || q.band === prevBand);
+  const easy   = pool.filter(q => q.difficulty === 'easy');
+  const medium = pool.filter(q => q.difficulty === 'medium');
+  const hard   = pool.filter(q => q.difficulty === 'hard');
+
+  // Daily quest selection — seeded by date + player level so it's consistent per day
+  const today = new Date().toISOString().slice(0, 10);
+  const seed = today.split('-').reduce((a, b) => a + parseInt(b), stats.level);
+  const pick = (arr) => arr.length ? arr[seed % arr.length] : null;
+
+  const questSlots = [pick(easy), pick(medium), pick(hard)].filter(Boolean);
+
+  // Refresh cost
+  const refreshCost = profile.rpg.questRefresh?.cost || 100;
+
+  const diffColors = { easy:'#4CAF50', medium:'#FFA726', hard:'#EF5350' };
+  const diffLabels = { easy:'Easy', medium:'Medium', hard:'Hard' };
+
+  const html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);z-index:10">
+      <button onclick="showRPGHub()" style="background:none;border:none;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;padding:0">← Hub</button>
+      <span style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--str)">QUEST BOARD</span>
+      <div style="width:50px"></div>
+    </div>
+    <div style="padding:16px">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:16px">Quests require defeating all enemies in sequence.  No healing from workouts mid-quest — logging a workout grants Battle Hardened (+25% gold).</div>
+
+      ${questSlots.map(q => {
+        const col = diffColors[q.difficulty];
+        const enemyNames = q.enemies.map(e => {
+          const def = RPG_ENEMIES.find(en => en.id === e.enemyId);
+          return (def?.name || e.enemyId) + (e.isBoss ? ' ⚠️' : '');
+        }).join(' → ');
+        return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+            <div style="font-size:14px;font-weight:500">${q.name}</div>
+            <span style="font-size:10px;background:${col}22;color:${col};padding:2px 8px;border-radius:4px;white-space:nowrap">${diffLabels[q.difficulty]}</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;font-style:italic">${q.flavor}</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-bottom:12px">${enemyNames}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:11px;color:#FFA726">${q.goldMin}–${q.goldMax}g + loot</div>
+            <button onclick="rpgStartQuest('${q.id}')" style="
+              background:none;border:1px solid ${col};border-radius:6px;
+              color:${col};font-family:'DM Mono',monospace;font-size:11px;
+              padding:6px 14px;cursor:pointer;
+            ">Begin Quest</button>
+          </div>
+        </div>`;
+      }).join('')}
+
+      <div style="text-align:center;margin-top:8px">
+        <button onclick="rpgRefreshQuests()" style="
+          background:none;border:1px solid var(--border);border-radius:8px;
+          color:var(--text-muted);font-family:'DM Mono',monospace;font-size:11px;
+          padding:10px 20px;cursor:pointer;
+        ">Refresh Quests — ${refreshCost}g</button>
+      </div>
+    </div>`;
+
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('rpg-screen-body').innerHTML = html;
+  document.getElementById('screen-rpg').classList.add('active');
 }
+
+function rpgPrevBand(band) {
+  const bands = ['1-5','6-10','11-15','16-20','21-25','26-30','31-35','36-40','41-45','46-50'];
+  const idx = bands.indexOf(band);
+  return idx > 0 ? bands[idx - 1] : band;
+}
+
+function rpgRefreshQuests() {
+  const profile = rpgGetProfile();
+  const cost = profile.rpg.questRefresh?.cost || 100;
+  if ((profile.rpg.gold || 0) < cost) {
+    alert(`Not enough gold.  You need ${cost}g to refresh quests.`);
+    return;
+  }
+  profile.rpg.gold -= cost;
+  profile.rpg.questRefresh = {
+    cost: cost * 2,
+    count: (profile.rpg.questRefresh?.count || 0) + 1,
+    lastReset: profile.rpg.questRefresh?.lastReset || new Date().toISOString().slice(0,10),
+  };
+  rpgSaveProfile(profile);
+  showRPGQuestBoard();
+}
+
+function rpgStartQuest(questId) {
+  const quest = RPG_QUESTS.find(q => q.id === questId);
+  if (!quest) return;
+  const profile = rpgGetProfile();
+  const stats   = rpgPlayerStats(profile);
+
+  if (!profile.rpg.currentHP) {
+    profile.rpg.currentHP = stats.maxHP;
+    rpgSaveProfile(profile);
+  }
+
+  // Boss gate — check if first enemy is a boss (single-enemy hard quests)
+  // or if any enemy in the quest is a boss that requires entry HP check.
+  // Gate only applies at quest START — never mid-fight during enemy advancement.
+  const firstEnemy = quest.enemies[0];
+  if (firstEnemy.isBoss && quest.bossGateHP) {
+    const hpRequired = Math.round(stats.maxHP * quest.bossGateHP);
+    if (profile.rpg.currentHP < hpRequired) {
+      const bossName = RPG_ENEMIES.find(e => e.id === firstEnemy.enemyId)?.name || 'the boss';
+      alert(`⚠️ You need ${hpRequired} HP to begin this quest (you have ${profile.rpg.currentHP}).  Log a workout to heal first.`);
+      return;
+    }
+  }
+  // For multi-enemy quests where the boss is the final enemy,
+  // check gate at start so player must prepare before committing.
+  const lastEnemy = quest.enemies[quest.enemies.length - 1];
+  if (lastEnemy.isBoss && quest.bossGateHP && quest.enemies.length > 1) {
+    const hpRequired = Math.round(stats.maxHP * quest.bossGateHP);
+    if (profile.rpg.currentHP < hpRequired) {
+      alert(`⚠️ This quest ends with a boss.  You need at least ${hpRequired} HP to begin (you have ${profile.rpg.currentHP}).  Log a workout to heal first.`);
+      return;
+    }
+  }
+
+  const firstQuestEnemy = rpgSpawnEnemy(quest.enemies[0].enemyId, stats);
+  const combatState = {
+    active: true,
+    questId,
+    questName: quest.name,
+    location: 'quest',
+    enemyIndex: 0,
+    enemy: firstQuestEnemy,
+    isBoss: quest.enemies[0].isBoss,
+    playerHP: profile.rpg.currentHP,
+    tickPosition: { player: stats.interval, enemy: firstQuestEnemy.interval },
+    battleLog: [],
+    goldEarned: 0,
+    pendingLoot: [],
+    goldMultiplier: 1,
+    battleHardenedActive: false,
+    hpOnStart: profile.rpg.currentHP,
+    emberTonicsUsed: 0,
+    isRandomBattle: false,
+    band: quest.band,
+    enemyTier: quest.difficulty,
+  };
+  rpgSaveCombat(combatState);
+  showRPGCombat();
+}
+
+// ── COMBAT SCREEN ────────────────────────────────────────────────────────────
+function showRPGCombat() {
+  const combat  = rpgGetCombat();
+  if (!combat || !combat.active) { showRPGHub(); return; }
+
+  const profile = rpgGetProfile();
+  const stats   = rpgPlayerStats(profile);
+  const boosts  = rpgGetStatBoostMultiplier(profile);
+
+  const playerHP    = combat.playerHP;
+  const playerMaxHP = stats.maxHP;
+  const playerHPPct = Math.max(0, Math.round((playerHP / playerMaxHP) * 100));
+  const playerHPCol = playerHPPct > 60 ? '#4CAF50' : playerHPPct > 30 ? '#FFA726' : '#EF5350';
+
+  const enemy       = combat.enemy;
+  const enemyHPPct  = Math.max(0, Math.round((enemy.currentHP / enemy.maxHP) * 100));
+  const enemyHPCol  = enemyHPPct > 60 ? '#4CAF50' : enemyHPPct > 30 ? '#FFA726' : '#EF5350';
+
+  const tonics    = profile.rpg.emberTonics || 0;
+  const tonicHeal = Math.round(rpgTonicHealPct(profile) * playerMaxHP);
+
+  // Next attack indicator
+  const pt = combat.tickPosition.player;
+  const et = combat.tickPosition.enemy;
+  const nextIsPlayer = pt <= et;
+  const nextTicks    = Math.min(pt, et);
+  const nextLabel    = nextIsPlayer ? '⚡ YOUR TURN' : '⚡ ENEMY TURN';
+  const nextColor    = nextIsPlayer ? 'var(--str)' : '#EF5350';
+
+  // Battle log (last 6 entries)
+  const logLines = (combat.battleLog || []).slice(-6).reverse().map((line, i) => `
+    <div style="font-size:11px;color:${i === 0 ? 'var(--text)' : 'var(--text-muted)'};padding:3px 0;border-bottom:1px solid var(--border)">${line}</div>`
+  ).join('');
+
+  // Quest progress
+  let questProgress = '';
+  if (!combat.isRandomBattle) {
+    const quest = RPG_QUESTS.find(q => q.id === combat.questId);
+    if (quest) {
+      questProgress = `<div style="font-size:10px;color:var(--text-muted);text-align:center;margin-bottom:8px">
+        ${quest.name} — Enemy ${combat.enemyIndex + 1} of ${quest.enemies.length}
+        ${combat.battleHardenedActive ? ' · <span style="color:var(--str)">Battle Hardened</span>' : ''}
+      </div>`;
+    }
+  }
+
+  const html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);z-index:10">
+      <button onclick="rpgFleeCombat()" style="background:none;border:none;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;padding:0">← Flee</button>
+      <span style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--str)">COMBAT</span>
+      <div style="font-size:11px;color:#FFA726">${(combat.goldEarned||0)}g</div>
+    </div>
+
+    <div style="padding:12px 16px">
+      ${questProgress}
+
+      <!-- Enemy card -->
+      <div style="background:var(--surface);border:1px solid #EF535044;border-radius:10px;padding:14px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <div>
+            <div style="font-size:15px;font-weight:500">${enemy.name}</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px;font-style:italic">${enemy.flavor || ''}</div>
+          </div>
+          <span style="font-size:10px;background:#EF535022;color:#EF5350;padding:2px 8px;border-radius:4px">${enemy.tier}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-bottom:3px">
+          <span>HP</span><span>${Math.max(0,enemy.currentHP)} / ${enemy.maxHP}</span>
+        </div>
+        <div style="background:var(--border);border-radius:3px;height:6px;overflow:hidden">
+          <div style="width:${enemyHPPct}%;height:100%;background:${enemyHPCol};border-radius:3px;transition:width 0.3s"></div>
+        </div>
+      </div>
+
+      <!-- Next attack indicator -->
+      <div style="text-align:center;padding:8px 0;font-family:'DM Mono',monospace;font-size:12px;color:${nextColor};letter-spacing:0.05em">
+        ${nextLabel} <span style="color:var(--text-muted)">(${nextTicks} ticks)</span>
+      </div>
+
+      <!-- Player card -->
+      <div style="background:var(--surface);border:1px solid var(--str)44;border-radius:10px;padding:14px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-size:14px;font-weight:500">${profile.name || 'Athlete'}</div>
+          <div style="font-size:11px;color:var(--text-muted)">ATK ${Math.round(stats.atk * boosts.atkMult)}</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-bottom:3px">
+          <span>HP</span><span>${Math.max(0,playerHP)} / ${playerMaxHP}</span>
+        </div>
+        <div style="background:var(--border);border-radius:3px;height:6px;overflow:hidden">
+          <div id="player-hp-bar" style="width:${playerHPPct}%;height:100%;background:${playerHPCol};border-radius:3px;transition:width 1.5s ease"></div>
+        </div>
+        ${profile.rpg.statBoost ? `<div style="font-size:10px;color:var(--str);margin-top:6px">▲ ${profile.rpg.statBoost.type} boost active</div>` : ''}
+      </div>
+
+      <!-- Battle log -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:12px;min-height:80px">
+        ${logLines || '<div style="font-size:11px;color:var(--text-muted);font-style:italic">Combat begins...</div>'}
+      </div>
+
+      <!-- Action buttons -->
+      <div style="display:flex;gap:10px">
+        <button onclick="rpgUseTonic()" ${tonics <= 0 ? 'disabled' : ''} style="
+          flex:1;padding:14px;background:none;
+          border:1px solid ${tonics > 0 ? 'var(--str)' : 'var(--border)'};
+          border-radius:8px;
+          color:${tonics > 0 ? 'var(--str)' : 'var(--text-muted)'};
+          font-family:'DM Mono',monospace;font-size:12px;cursor:${tonics > 0 ? 'pointer' : 'default'};
+        ">🧪 Tonic (${tonics}) +${tonicHeal}HP</button>
+        <button onclick="rpgAttack()" style="
+          flex:2;padding:14px;background:var(--str);
+          border:none;border-radius:8px;
+          color:#fff;font-family:'DM Mono',monospace;
+          font-size:14px;font-weight:500;cursor:pointer;letter-spacing:0.05em;
+        ">⚔️ ATTACK</button>
+      </div>
+    </div>`;
+
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('rpg-screen-body').innerHTML = html;
+  document.getElementById('screen-rpg').classList.add('active');
+}
+
+// ── Tonic usage (free action — does not consume attack turn) ─────────────────
+function rpgUseTonic() {
+  const profile = rpgGetProfile();
+  if ((profile.rpg.emberTonics || 0) <= 0) return;
+
+  const stats    = rpgPlayerStats(profile);
+  const combat   = rpgGetCombat();
+  if (!combat) return;
+
+  const healAmt  = Math.round(rpgTonicHealPct(profile) * stats.maxHP);
+  const newHP    = Math.min(stats.maxHP, combat.playerHP + healAmt);
+  combat.playerHP = newHP;
+  combat.battleLog.push(`You drink an Ember Tonic.  +${healAmt} HP → ${newHP}/${stats.maxHP}`);
+  combat.emberTonicsUsed++;
+  rpgSaveCombat(combat);
+
+  profile.rpg.emberTonics--;
+  rpgSaveProfile(profile);
+
+  showRPGCombat();
+}
+
+// ── Attack action ─────────────────────────────────────────────────────────────
+function rpgAttack() {
+  const profile = rpgGetProfile();
+  const stats   = rpgPlayerStats(profile);
+  const boosts  = rpgGetStatBoostMultiplier(profile);
+  const combat  = rpgGetCombat();
+  if (!combat || !combat.active) return;
+
+  const playerATK = Math.round(stats.atk * boosts.atkMult);
+  const mit       = stats.mitigation * (boosts.defMult > 1 ? boosts.defMult - 1 + 1 : 1);
+  let   pHP       = combat.playerHP;
+  let   eHP       = combat.enemy.currentHP;
+  let   pt        = combat.tickPosition.player;
+  let   et        = combat.tickPosition.enemy;
+  const log       = [...(combat.battleLog || [])];
+
+  // Advance ticks until player's next action
+  const advance = pt; // ticks until player acts
+  et -= advance;
+  pt = 0;
+
+  // Process any enemy attacks that fall in this window
+  while (et <= 0 && eHP > 0) {
+    const rawDmg  = Math.round(combat.enemy.atk * (0.9 + Math.random() * 0.2));
+    const actDmg  = Math.max(1, Math.round(rawDmg * (1 - stats.mitigation)));
+    pHP = Math.max(0, pHP - actDmg);
+    log.push(`${combat.enemy.name} attacks for ${actDmg} damage.  Your HP: ${pHP}/${stats.maxHP}`);
+    et += combat.enemy.interval;
+    if (pHP <= 0) break;
+  }
+
+  // Player attacks
+  if (pHP > 0 && eHP > 0) {
+    const variance = 0.9 + Math.random() * 0.2;
+    const isCrit   = Math.random() < stats.critChance;
+    let dmg        = Math.round(playerATK * variance);
+    if (isCrit) dmg = Math.round(dmg * 1.75);
+    eHP = Math.max(0, eHP - dmg);
+    log.push(`You ${isCrit ? '⚡ critically strike' : 'attack'} for ${dmg} damage.  Enemy HP: ${eHP}/${combat.enemy.maxHP}`);
+    pt += stats.interval;
+  } else if (pHP > 0) {
+    pt += stats.interval;
+  }
+
+  combat.enemy.currentHP = eHP;
+  combat.playerHP = pHP;
+  combat.tickPosition = { player: pt, enemy: et };
+  combat.battleLog = log;
+
+  // ── Player defeated ────────────────────────────────────────────────────────
+  if (pHP <= 0) {
+    log.push(`You have been defeated.`);
+    combat.active = false;
+    rpgSaveCombat(combat);
+    // Save current HP as 1 (barely alive — not 0)
+    profile.rpg.currentHP = 1;
+    rpgSaveProfile(profile);
+    showRPGDefeat(combat);
+    return;
+  }
+
+  // ── Enemy defeated ─────────────────────────────────────────────────────────
+  if (eHP <= 0) {
+    log.push(`${combat.enemy.name} defeated!`);
+
+    // Gold from this enemy
+    const goldMult = combat.goldMultiplier || 1;
+    const goldDrop = Math.round(combat.enemy.goldDrop * goldMult);
+    combat.goldEarned = (combat.goldEarned || 0) + goldDrop;
+    log.push(`+${goldDrop}g`);
+
+    // Loot roll
+    if (rpgShouldDropLoot(combat.enemy.tier)) {
+      const forgeLevel = profile.rpg.castle?.forge || 0;
+      const loot = rpgRollLootDrop(combat.band, combat.enemy.tier, combat.isBoss || false, forgeLevel);
+      if (loot) combat.pendingLoot.push(loot);
+    }
+
+    // Check if this was a random battle or the last quest enemy
+    if (combat.isRandomBattle) {
+      combat.active = false;
+      rpgSaveCombat(combat);
+      profile.rpg.currentHP = pHP;
+      rpgSaveProfile(profile);
+      showRPGReward(combat, false);
+      return;
+    }
+
+    // Quest — advance to next enemy
+    const quest = RPG_QUESTS.find(q => q.id === combat.questId);
+    const nextIdx = combat.enemyIndex + 1;
+
+    if (!quest || nextIdx >= quest.enemies.length) {
+      // Quest complete
+      combat.active = false;
+
+      // HP-remaining bonus
+      const hpPct = pHP / stats.maxHP;
+      let hpBonus = 0;
+      if (hpPct >= 1.0)      hpBonus = Math.round(combat.goldEarned * 0.5);
+      else if (hpPct >= 0.8) hpBonus = Math.round(combat.goldEarned * 0.3);
+      else if (hpPct >= 0.6) hpBonus = Math.round(combat.goldEarned * 0.1);
+      if (hpBonus > 0) {
+        combat.goldEarned += hpBonus;
+        log.push(`HP bonus: +${hpBonus}g`);
+      }
+
+      rpgSaveCombat(combat);
+      profile.rpg.currentHP = pHP;
+      rpgSaveProfile(profile);
+      showRPGReward(combat, true);
+      return;
+    }
+
+    // Next enemy in quest
+    const nextEnemyDef = quest.enemies[nextIdx];
+    const nextEnemy = rpgSpawnEnemy(nextEnemyDef.enemyId, stats);
+    combat.enemy = nextEnemy;
+    combat.isBoss = nextEnemyDef.isBoss;
+    combat.enemyIndex = nextIdx;
+    combat.tickPosition = { player: stats.interval, enemy: nextEnemy.interval };
+    combat.bossGateBlocked = false;
+  }
+
+  rpgSaveCombat(combat);
+  // Update profile HP
+  profile.rpg.currentHP = pHP;
+  rpgSaveProfile(profile);
+  showRPGCombat();
+}
+
+// ── Flee combat ───────────────────────────────────────────────────────────────
+function rpgFleeCombat() {
+  const combat = rpgGetCombat();
+  const profile = rpgGetProfile();
+  if (combat) {
+    // Keep any gold earned so far from random battles; quests lose it all on flee
+    if (combat.isRandomBattle && (combat.goldEarned || 0) > 0) {
+      profile.rpg.gold = (profile.rpg.gold || 0) + combat.goldEarned;
+    }
+    profile.rpg.currentHP = combat.playerHP;
+    rpgSaveProfile(profile);
+    rpgSaveCombat(null);
+  }
+  showRPGWilds();
+}
+
+// ── Defeat screen ─────────────────────────────────────────────────────────────
+function showRPGDefeat(combat) {
+  const html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid var(--border)">
+      <div style="width:50px"></div>
+      <span style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#EF5350">DEFEATED</span>
+      <div style="width:50px"></div>
+    </div>
+    <div style="padding:32px 16px;text-align:center">
+      <div style="font-size:48px;margin-bottom:16px">💀</div>
+      <div style="font-size:15px;font-weight:500;margin-bottom:8px">You have fallen.</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:32px">Log a workout to restore your HP and try again.</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">Gold earned this run: ${combat.goldEarned || 0}g (lost on defeat)</div>
+      <button onclick="showRPGHub()" style="
+        width:100%;padding:14px;background:none;
+        border:1px solid var(--border);border-radius:8px;
+        color:var(--text);font-family:'DM Mono',monospace;
+        font-size:13px;cursor:pointer;
+      ">← Return to Hub</button>
+    </div>`;
+
+  document.getElementById('rpg-screen-body').innerHTML = html;
+}
+
+// ── Reward screen ─────────────────────────────────────────────────────────────
+function showRPGReward(combat, isQuestComplete) {
+  const profile = rpgGetProfile();
+
+  // Award gold
+  profile.rpg.gold = (profile.rpg.gold || 0) + (combat.goldEarned || 0);
+  rpgSaveProfile(profile);
+  rpgSaveCombat(null);
+
+  const loot = combat.pendingLoot || [];
+  // Track kept items for saving to inventory
+  const keptItems = [];
+
+  let lootHtml = '';
+  if (loot.length > 0) {
+    lootHtml = `<div style="margin-top:20px">
+      <div style="font-size:11px;color:var(--text-muted);letter-spacing:0.05em;margin-bottom:10px">LOOT DROPS</div>
+      ${loot.map((item, idx) => `
+        <div id="loot-item-${idx}" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+            <div>
+              <div style="font-size:13px;font-weight:500">${item.name} +${item.tier}${item.isUnique ? ' ✦' : ''}</div>
+              <div style="font-size:10px;color:var(--str);margin-top:2px">${rpgItemStatDisplay(item)}</div>
+            </div>
+            <button onclick="rpgRewardToggleFav(${idx})" id="fav-btn-${idx}" style="background:none;border:none;cursor:pointer;font-size:18px;padding:0">${item.favorite ? '⭐' : '☆'}</button>
+          </div>
+          <div style="display:flex;gap:8px" id="loot-actions-${idx}">
+            <button onclick="rpgRewardKeep(${idx})" style="${rpgBtnStyle('var(--str)')}padding:8px;font-size:11px;text-align:center;flex:1">Keep</button>
+            <button onclick="rpgRewardSell(${idx})" style="${rpgBtnStyle('#4CAF50')}padding:8px;font-size:11px;text-align:center;flex:1">Sell ${rpgItemPrice(item.tier, rpgBandIndex(item.band||'1-5'))}g</button>
+            <button onclick="rpgRewardSalvage(${idx})" style="${rpgBtnStyle('#FFA726')}padding:8px;font-size:11px;text-align:center;flex:1">Salvage</button>
+          </div>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  const html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid var(--border)">
+      <div style="width:50px"></div>
+      <span style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--str)">${isQuestComplete ? 'QUEST COMPLETE' : 'VICTORY'}</span>
+      <div style="width:50px"></div>
+    </div>
+    <div style="padding:16px" id="reward-screen-body">
+      <div style="background:#1A1408;border:1px solid #C4732A;border-radius:10px;padding:16px;text-align:center">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">GOLD EARNED</div>
+        <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#FFA726">+${combat.goldEarned || 0}g</div>
+        ${combat.battleHardenedActive ? '<div style="font-size:10px;color:var(--str);margin-top:4px">✦ Battle Hardened bonus included</div>' : ''}
+      </div>
+      ${lootHtml}
+      <button onclick="rpgRewardDone()" style="
+        width:100%;padding:14px;margin-top:20px;
+        background:var(--str);border:none;border-radius:8px;
+        color:#fff;font-family:'DM Mono',monospace;
+        font-size:14px;font-weight:500;cursor:pointer;
+      ">Continue ›</button>
+    </div>`;
+
+  // Store loot on window for reward actions
+  window._rpgRewardLoot = loot.map(i => ({...i}));
+  window._rpgRewardKept = new Set();
+  window._rpgRewardSold = new Set();
+  window._rpgRewardSalvaged = new Set();
+
+  document.getElementById('rpg-screen-body').innerHTML = html;
+}
+
+// Reward screen loot actions
+function rpgRewardToggleFav(idx) {
+  if (!window._rpgRewardLoot) return;
+  window._rpgRewardLoot[idx].favorite = !window._rpgRewardLoot[idx].favorite;
+  const btn = document.getElementById(`fav-btn-${idx}`);
+  if (btn) btn.textContent = window._rpgRewardLoot[idx].favorite ? '⭐' : '☆';
+}
+
+function rpgRewardKeep(idx) {
+  window._rpgRewardKept?.add(idx);
+  rpgRewardMarkDone(idx, 'Kept ✓', 'var(--str)');
+}
+
+function rpgRewardSell(idx) {
+  const item = window._rpgRewardLoot?.[idx];
+  if (!item) return;
+  const price = rpgItemPrice(item.tier, rpgBandIndex(item.band || '1-5'));
+  const profile = rpgGetProfile();
+  profile.rpg.gold = (profile.rpg.gold || 0) + price;
+  rpgSaveProfile(profile);
+  window._rpgRewardSold?.add(idx);
+  rpgRewardMarkDone(idx, `Sold +${price}g ✓`, '#4CAF50');
+}
+
+function rpgRewardSalvage(idx) {
+  const item = window._rpgRewardLoot?.[idx];
+  if (!item) return;
+  const salvage = item.isUnique ? rpgSalvageYieldUnique() : rpgSalvageYield(item.tier);
+  const profile = rpgGetProfile();
+  if (!profile.rpg.materials) profile.rpg.materials = { copper:0, iron:0, mithril:0, darksteel:0, voidShards:0 };
+  profile.rpg.materials[salvage.material] = (profile.rpg.materials[salvage.material] || 0) + salvage.qty;
+  rpgSaveProfile(profile);
+  window._rpgRewardSalvaged?.add(idx);
+  rpgRewardMarkDone(idx, `Salvaged: ${salvage.qty}× ${rpgMaterialLabel(salvage.material)} ✓`, '#FFA726');
+}
+
+function rpgRewardMarkDone(idx, label, color) {
+  const actionsEl = document.getElementById(`loot-actions-${idx}`);
+  if (actionsEl) actionsEl.innerHTML = `<div style="font-size:12px;color:${color};padding:8px 0">${label}</div>`;
+}
+
+function rpgRewardDone() {
+  // Add kept items to inventory
+  const kept = window._rpgRewardKept || new Set();
+  const loot = window._rpgRewardLoot || [];
+  if (kept.size > 0) {
+    const inv = rpgGetInventory();
+    kept.forEach(idx => { if (loot[idx]) inv.push(loot[idx]); });
+    rpgSaveInventory(inv);
+  }
+  window._rpgRewardLoot = null;
+  window._rpgRewardKept = null;
+  showRPGHub();
+}
+
+
+// ============================================================
+// PHASE 4 — CASTLE & SHOP
+// ============================================================
+
+// ── Castle building definitions ───────────────────────────────────────────────
+const RPG_CASTLE_BUILDINGS = [
+  { id:'barracks',        name:'Barracks',         maxLevel:5, icon:'⚔️',
+    desc: (lvl) => lvl === 0 ? 'Increases attack damage.' : `+${lvl*3}% ATK damage`,
+    next: (lvl) => `+${(lvl+1)*3}% ATK damage` },
+  { id:'infirmary',       name:'Infirmary',         maxLevel:5, icon:'🏥',
+    desc: (lvl) => lvl === 0 ? 'Post-fight HP regen.' : `+${lvl*3}% max HP regen after each fight`,
+    next: (lvl) => `+${(lvl+1)*3}% HP regen after fights` },
+  { id:'training_grounds',name:'Training Grounds',  maxLevel:5, icon:'🏋️',
+    desc: (lvl) => lvl === 0 ? 'Increases max HP.' : `+${lvl*10}% max HP`,
+    next: (lvl) => `+${(lvl+1)*10}% max HP` },
+  { id:'vault',           name:'Vault',             maxLevel:5, icon:'💰',
+    desc: (lvl) => lvl === 0 ? 'Increases gold from combat.' : `+${lvl*5}% gold from all combat`,
+    next: (lvl) => `+${(lvl+1)*5}% combat gold` },
+  { id:'watchtower',      name:'Watchtower',        maxLevel:3, icon:'🗼',
+    desc: (lvl) => ['Reveals nothing yet.','Reveals enemy ATK and HP.','Also reveals enemy gold drop.','Reveals difficulty score.'][lvl],
+    next: (lvl) => ['Reveals enemy ATK and HP.','Also reveals gold drop.','Reveals difficulty score.'][lvl] },
+  { id:'trophy_hall',     name:'Trophy Hall',       maxLevel:3, icon:'🏆',
+    desc: (lvl) => lvl === 0 ? 'Displays earned achievements.' : `${lvl} achievement display${lvl>1?'s':''}`,
+    next: (lvl) => `${lvl+1} achievement display${lvl+1>1?'s':''}` },
+  { id:'apothecary',      name:'Apothecary',        maxLevel:2, icon:'⚗️',
+    desc: (lvl) => `Ember Tonic cap: ${1+lvl}`,
+    next: (lvl) => `Ember Tonic cap: ${2+lvl}` },
+  { id:'herbalist',       name:'Herbalist',         maxLevel:5, icon:'🌿',
+    desc: (lvl) => `Ember Tonic heals ${[25,30,35,40,45,50][lvl]}% max HP`,
+    next: (lvl) => `Heals ${[30,35,40,45,50][lvl]}% max HP` },
+  { id:'forge',           name:'Forge',             maxLevel:5, icon:'🔨',
+    desc: (lvl) => lvl === 0 ? 'Standard loot weights.' : `+${lvl} tier weight to loot drops`,
+    next: (lvl) => `+${lvl+1} tier weight shift` },
+  { id:'market',          name:'Market',            maxLevel:3, icon:'🛒',
+    desc: (lvl) => [`3 shop items daily.`,`4 shop items daily.`,`5 shop items daily.`,`5 items + 1 high-tier daily.`][lvl],
+    next: (lvl) => [`4 shop items daily.`,`5 shop items daily.`,`5 items + 1 high-tier daily.`][lvl] },
+];
+
+// ── CASTLE SCREEN ─────────────────────────────────────────────────────────────
+function showRPGCastle() {
+  const profile = rpgGetProfile();
+  const gold    = profile.rpg.gold || 0;
+  const castle  = profile.rpg.castle || {};
+
+  const buildingCards = RPG_CASTLE_BUILDINGS.map(b => {
+    const lvl      = castle[b.id] || 0;
+    const isMax    = lvl >= b.maxLevel;
+    const cost     = isMax ? null : rpgCastleUpgradeCost(lvl);
+    const canAfford = cost !== null && gold >= cost;
+
+    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:20px">${b.icon}</span>
+          <div>
+            <div style="font-size:14px;font-weight:500">${b.name}</div>
+            <div style="font-size:10px;color:var(--text-muted)">Level ${lvl} / ${b.maxLevel}</div>
+          </div>
+        </div>
+        ${isMax ? `<span style="font-size:10px;color:var(--str);background:var(--str)22;padding:2px 8px;border-radius:4px">MAXED</span>` : ''}
+      </div>
+      <div style="font-size:12px;color:var(--text);margin-bottom:${isMax?'0':'10px'}">${b.desc(lvl)}</div>
+      ${!isMax ? `
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Next: ${b.next(lvl)}</div>
+        <button onclick="rpgUpgradeBuilding('${b.id}')" ${canAfford?'':'disabled'} style="
+          width:100%;padding:10px;background:none;
+          border:1px solid ${canAfford?'var(--str)':'var(--border)'};
+          border-radius:8px;color:${canAfford?'var(--str)':'var(--text-muted)'};
+          font-family:'DM Mono',monospace;font-size:12px;cursor:${canAfford?'pointer':'default'};
+        ">${canAfford ? `Upgrade — ${cost.toLocaleString()}g` : `${(cost||0).toLocaleString()}g needed`}</button>
+      ` : ''}
+    </div>`;
+  }).join('');
+
+  const html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);z-index:10">
+      <button onclick="showRPGHub()" style="background:none;border:none;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;padding:0">← Hub</button>
+      <span style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--str)">THE CASTLE</span>
+      <div style="font-size:12px;color:#FFA726">${gold.toLocaleString()}g</div>
+    </div>
+    <div style="padding:16px">${buildingCards}</div>`;
+
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('rpg-screen-body').innerHTML = html;
+  document.getElementById('screen-rpg').classList.add('active');
+}
+
+function rpgUpgradeBuilding(buildingId) {
+  const profile  = rpgGetProfile();
+  const building = RPG_CASTLE_BUILDINGS.find(b => b.id === buildingId);
+  if (!building) return;
+  const lvl = (profile.rpg.castle[buildingId] || 0);
+  if (lvl >= building.maxLevel) return;
+  const cost = rpgCastleUpgradeCost(lvl);
+  if (cost === null || (profile.rpg.gold || 0) < cost) {
+    alert(`Not enough gold.  You need ${(cost||0).toLocaleString()}g.`);
+    return;
+  }
+  profile.rpg.gold -= cost;
+  profile.rpg.castle[buildingId] = lvl + 1;
+  rpgSaveProfile(profile);
+  showRPGCastle();
+}
+
+// ── SHOP SCREEN ───────────────────────────────────────────────────────────────
+
+function rpgGenerateShopItems(profile, stats) {
+  const castle    = profile.rpg.castle || {};
+  const marketLvl = castle.market || 0;
+  const forgeLvl  = castle.forge  || 0;
+  const band      = rpgLevelBand(stats.level);
+  const bandIdx   = rpgBandIndex(band);
+  const bands     = ['1-5','6-10','11-15','16-20','21-25','26-30','31-35','36-40','41-45','46-50'];
+  const nextBand  = bands[Math.min(bandIdx+1, 9)];
+  const slotCount = [3,4,5,5][marketLvl] || 3;
+  const hasHighTier = marketLvl >= 3;
+
+  // Deterministic seed — same stock all day
+  const today = new Date().toISOString().slice(0,10);
+  let seedVal = [...(today + stats.level)].reduce((a,c) => a + c.charCodeAt(0), 0);
+  const sr = () => { seedVal = (seedVal * 1664525 + 1013904223) & 0xffffffff; return Math.abs(seedVal) / 0xffffffff; };
+
+  const slots = ['weapon','shield','helmet','body_armor','boots','jewelry'];
+  return Array.from({ length: slotCount }, (_, i) => {
+    const useBand = sr() < 0.8 ? band : nextBand;
+    const slot    = slots[Math.floor(sr() * slots.length)];
+    const mats    = RPG_BAND_MATERIALS[useBand] || ['Copper'];
+    const mat     = mats[Math.floor(sr() * mats.length)];
+    const types   = RPG_SLOT_TYPES[slot] || ['Item'];
+    const type    = types[Math.floor(sr() * types.length)];
+    const maxT    = hasHighTier && i === slotCount-1 ? 5 : RPG_TIER_SHOP_MAX;
+    const tw      = [50,30,15,5,0].slice(0, maxT).map((w,ti) => ti===0?w:w+forgeLvl*3);
+    const tt      = tw.reduce((a,b)=>a+b,0);
+    let tr = sr()*tt, tier = 1;
+    for (let t=0;t<tw.length;t++){tr-=tw[t];if(tr<=0){tier=t+1;break;}}
+    const bidx  = rpgBandIndex(useBand);
+    const scale = RPG_GEAR_SCALE[slot] || RPG_GEAR_SCALE.weapon;
+    const baseV = scale.base[bidx]+(tier-1)*scale.inc[bidx];
+    const rolled = Math.max(1, Math.round(baseV*(0.9+sr()*0.2)));
+    const rs = {};
+    const ps = RPG_SLOT_STAT[slot];
+    if (ps==='STR') rs.effectiveSTR=rolled;
+    else if(ps==='END') rs.effectiveEND=rolled;
+    else if(ps==='AGI') rs.effectiveAGI=rolled;
+    else if(ps==='DEX') rs.effectiveDEX=rolled;
+    if (slot==='body_armor'){const hs=RPG_GEAR_SCALE.body_armor_hp;rs.flatHP=Math.max(1,Math.round((hs.base[bidx]+(tier-1)*hs.inc[bidx])*(0.9+sr()*0.2)));}
+    let name = `${mat} ${type}`;
+    if (slot==='jewelry'){const gk=Object.keys(RPG_JEWELRY_GEMS);const gm=RPG_JEWELRY_GEMS[gk[Math.floor(sr()*gk.length)]];name=`${mat} ${gm} ${type}`;}
+    return { instanceId:`shop_${i}_${today}`, name, slot, band:useBand, tier, rolledStats:rs,
+             isUnique:false, favorite:false, price:rpgItemPrice(tier,bidx), acquiredAt:today };
+  });
+}
+
 function showRPGShop() {
-  alert('Shop — coming in Phase 4');
+  const profile   = rpgGetProfile();
+  const stats     = rpgPlayerStats(profile);
+  const gold      = profile.rpg.gold || 0;
+  const castle    = profile.rpg.castle || {};
+  const tonicMax  = 1 + (castle.apothecary || 0);
+  const tonics    = profile.rpg.emberTonics || 0;
+  const tonicRoom = tonicMax - tonics;
+  const tonicPct  = Math.round(rpgTonicHealPct(profile) * 100);
+  const shopItems = rpgGenerateShopItems(profile, stats);
+  window._rpgShopItems = shopItems;
+
+  const itemCards = shopItems.map((item, idx) => {
+    const canAfford = gold >= item.price;
+    const statLine  = rpgItemStatDisplay(item);
+    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <div>
+          <div style="font-size:13px;font-weight:500">${item.name} +${item.tier}</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:2px">${rpgSlotLabel(item.slot)} · ${item.band} band</div>
+          <div style="font-size:11px;color:var(--str);margin-top:3px">${statLine}</div>
+        </div>
+        <div style="font-size:14px;color:#FFA726;font-weight:500;white-space:nowrap">${item.price.toLocaleString()}g</div>
+      </div>
+      <button onclick="rpgBuyItem(${idx})" ${canAfford?'':'disabled'} style="
+        width:100%;padding:9px;background:none;
+        border:1px solid ${canAfford?'var(--str)':'var(--border)'};
+        border-radius:7px;color:${canAfford?'var(--str)':'var(--text-muted)'};
+        font-family:'DM Mono',monospace;font-size:12px;cursor:${canAfford?'pointer':'default'};
+      ">${canAfford?'Buy':'Need '+(item.price-gold).toLocaleString()+'g more'}</button>
+    </div>`;
+  }).join('');
+
+  const tonicSection = `
+    <div style="padding-top:16px;border-top:1px solid var(--border);margin-top:4px">
+      <div style="font-size:11px;color:var(--text-muted);letter-spacing:0.05em;margin-bottom:10px">CONSUMABLES</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px">
+        <div style="font-size:13px;font-weight:500;margin-bottom:4px">🧪 Ember Tonic</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Restores ${tonicPct}% max HP mid-combat.  You have ${tonics}/${tonicMax} charges.</div>
+        <div style="display:flex;gap:8px">
+          <button onclick="rpgBuyTonic(1)" ${tonicRoom>=1&&gold>=250?'':'disabled'} style="
+            flex:1;padding:9px;background:none;
+            border:1px solid ${tonicRoom>=1&&gold>=250?'var(--str)':'var(--border)'};
+            border-radius:7px;color:${tonicRoom>=1&&gold>=250?'var(--str)':'var(--text-muted)'};
+            font-family:'DM Mono',monospace;font-size:11px;cursor:${tonicRoom>=1&&gold>=250?'pointer':'default'};
+          ">1 charge · 250g</button>
+          <button onclick="rpgBuyTonic(3)" ${tonicRoom>=1&&gold>=600?'':'disabled'} style="
+            flex:1;padding:9px;background:none;
+            border:1px solid ${tonicRoom>=1&&gold>=600?'#FFA726':'var(--border)'};
+            border-radius:7px;color:${tonicRoom>=1&&gold>=600?'#FFA726':'var(--text-muted)'};
+            font-family:'DM Mono',monospace;font-size:11px;cursor:${tonicRoom>=1&&gold>=600?'pointer':'default'};
+          ">Bundle · 600g</button>
+        </div>
+        ${tonicRoom===0?'<div style="font-size:10px;color:var(--text-muted);margin-top:8px;text-align:center">Tonics full — upgrade Apothecary for more capacity</div>':''}
+      </div>
+    </div>`;
+
+  const html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);z-index:10">
+      <button onclick="showRPGHub()" style="background:none;border:none;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;padding:0">← Hub</button>
+      <span style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--str)">SHOP</span>
+      <div style="font-size:12px;color:#FFA726">${gold.toLocaleString()}g</div>
+    </div>
+    <div style="padding:16px">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px">Stock refreshes daily at midnight.</div>
+      ${itemCards}
+      ${tonicSection}
+    </div>`;
+
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('rpg-screen-body').innerHTML = html;
+  document.getElementById('screen-rpg').classList.add('active');
+}
+
+function rpgBuyItem(idx) {
+  const item = window._rpgShopItems?.[idx];
+  if (!item) return;
+  const profile = rpgGetProfile();
+  if ((profile.rpg.gold||0) < item.price) { alert('Not enough gold.'); return; }
+  profile.rpg.gold -= item.price;
+  rpgSaveProfile(profile);
+  const inv = rpgGetInventory();
+  const owned = { ...item, instanceId: rpgUUID() };
+  delete owned.price;
+  inv.push(owned);
+  rpgSaveInventory(inv);
+  showRPGShop();
+}
+
+function rpgBuyTonic(qty) {
+  const profile  = rpgGetProfile();
+  const tonicMax = 1 + (profile.rpg.castle?.apothecary || 0);
+  const current  = profile.rpg.emberTonics || 0;
+  const room     = tonicMax - current;
+  if (room <= 0) { alert('Tonic charges are full.'); return; }
+  const cost = qty === 1 ? 250 : 600;
+  if ((profile.rpg.gold||0) < cost) { alert('Not enough gold.'); return; }
+  profile.rpg.gold -= cost;
+  profile.rpg.emberTonics = Math.min(tonicMax, current + Math.min(qty, room));
+  rpgSaveProfile(profile);
+  showRPGShop();
 }
 
 // ── Close RPG, return to training ────────────────────────────────────────────
@@ -1483,6 +2512,62 @@ function rpgInitRetroactiveGold(profile) {
 }
 
 window.rpgLoaded = true;
+
+// ── Mid-combat workout hook ───────────────────────────────────────────────────
+// Called from ppl_workout.html after a session is saved (gold hook already runs)
+// Handles heal (random battle) or Battle Hardened (quest)
+function rpgOnWorkoutSaved(sessionType) {
+  const combat  = rpgGetCombat();
+  const profile = rpgGetProfile();
+  const stats   = rpgPlayerStats(profile);
+
+  // Always apply stat boost
+  profile.rpg.statBoost = {
+    type: sessionType,
+    appliedAt: new Date().toISOString(),
+  };
+
+  if (!combat || !combat.active) {
+    // No active combat — heal to full (random battle context)
+    const prevHP = profile.rpg.currentHP || stats.maxHP;
+    profile.rpg.currentHP = stats.maxHP;
+    rpgSaveProfile(profile);
+    // Animate HP bar if on combat/hub screen
+    requestAnimationFrame(() => {
+      const bar = document.getElementById('player-hp-bar');
+      if (bar) bar.style.width = '100%';
+    });
+    return;
+  }
+
+  if (combat.isRandomBattle) {
+    // Heal to full in random battles
+    const oldHP = combat.playerHP;
+    combat.playerHP = stats.maxHP;
+    combat.battleLog.push(`Workout logged!  Healed to full HP.  Stat boost: ${sessionType}.`);
+    rpgSaveCombat(combat);
+    profile.rpg.currentHP = stats.maxHP;
+    rpgSaveProfile(profile);
+    // Animate HP bar fill
+    requestAnimationFrame(() => {
+      const bar = document.getElementById('player-hp-bar');
+      if (bar) {
+        bar.style.transition = 'width 1.5s ease';
+        bar.style.width = '100%';
+        bar.style.background = '#4CAF50';
+      }
+    });
+    setTimeout(() => showRPGCombat(), 100);
+  } else {
+    // Quest — Battle Hardened buff, no heal
+    combat.goldMultiplier = 1.25;
+    combat.battleHardenedActive = true;
+    combat.battleLog.push(`Workout logged!  Battle Hardened: +25% gold for remaining enemies.  Stat boost: ${sessionType}.`);
+    rpgSaveCombat(combat);
+    rpgSaveProfile(profile);
+    setTimeout(() => showRPGCombat(), 100);
+  }
+}
 
 // Run retroactive gold on first load
 (function() {
