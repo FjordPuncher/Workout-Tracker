@@ -1971,6 +1971,22 @@ function setActiveNav(id) {
   window.scrollTo(0, 0);
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// RPG — LAZY LOADER
+// ppl_rpg.js is loaded once on first call, then showRPGHub() is called
+// directly on subsequent calls. Character card on home screen still goes
+// to Profile — only the RPG nav tab calls this function.
+// ════════════════════════════════════════════════════════════════════════════
+
+function openRPG() {
+  if (window.rpgLoaded) { showRPGHub(); return; }
+  const script = document.createElement('script');
+  script.src = 'ppl_rpg.js';
+  script.onerror = () => console.error('ppl_rpg.js failed to load');
+  document.head.appendChild(script);
+  // showRPGHub() is called automatically at end of ppl_rpg.js
+}
+
 function showHome() {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-home').classList.add('active');
@@ -6702,9 +6718,17 @@ const ACHIEVEMENTS = [
   { id:'freight',      cat:'volume',      icon:'🚂', name:'Freight Train',          desc:'Move 100,000 lbs total. Repeats every 100,000 lbs.', repeatable: true,  check: (s,_,m) => totalLbs(s) >= 100000,                countFn: (s,_,m) => Math.floor(totalLbs(s) / 100000),    progressFn: (s,_,m) => (totalLbs(s) % 100000) / 100000,                    title: 'Unstoppable Force' },
   { id:'million',      cat:'volume',      icon:'💀', name:'A Million Pounds',       desc:'Move 1,000,000 lbs total. Repeats every million lbs.', repeatable: true, check: (s,_,m) => totalLbs(s) >= 1000000,               countFn: (s,_,m) => Math.floor(totalLbs(s) / 1000000),  progressFn: (s,_,m) => (totalLbs(s) % 1000000) / 1000000,                  title: 'Superhuman' },
   // Running
-  { id:'first_mile',   cat:'running',     icon:'👟', name:'First Mile',             desc:'Log a 1-mile run.',                                  repeatable: false, check: (s,_,m) => maxRunDist(s) >= 1,                   countFn: null,                                           progressFn: (s,_,m) => Math.min(1, maxRunDist(s) / 1),                      title: null },
-  { id:'five_k',       cat:'running',     icon:'🏃', name:'5K',                     desc:'Run 3.1+ miles in one session. Repeats for every time you hit 3.1+ miles.', repeatable: true, check: (s,_,m) => maxRunDist(s) >= 3.1,                countFn: (s,_,m) => runSessionsOver(s, 3.1),            progressFn: (s,_,m) => Math.min(1, maxRunDist(s) / 3.1),                   title: null },
-  { id:'marathon',     cat:'running',     icon:'🏅', name:'Marathoner',             desc:'Run 26.2+ miles cumulative. Repeats every 26.2 miles.', repeatable: true, check: (s,_,m) => totalRunMiles(s) >= 26.2, countFn: (s,_,m) => Math.floor(totalRunMiles(s) / 26.2), progressFn: (s,_,m) => (totalRunMiles(s) % 26.2) / 26.2, title: 'The Marathoner' },
+  { id:'first_mile',    cat:'running',     icon:'👟', name:'First Mile',             desc:'Log a 1-mile run.',                                                             repeatable: false, check: (s,_,m) => maxRunDist(s) >= 1,                        countFn: null,                                                progressFn: (s,_,m) => Math.min(1, maxRunDist(s) / 1),          title: null },
+  { id:'five_k',        cat:'running',     icon:'🏃', name:'5K',                     desc:'Run 3.1+ miles in one session. Repeats for every time you hit 3.1+ miles.',     repeatable: true,  check: (s,_,m) => maxRunDist(s) >= 3.1,                       countFn: (s,_,m) => runSessionsOver(s, 3.1),                  progressFn: (s,_,m) => Math.min(1, maxRunDist(s) / 3.1),        title: null },
+  { id:'marathon',      cat:'running',     icon:'🏅', name:'Marathoner',             desc:'Run 26.2+ miles cumulative. Repeats every 26.2 miles.',                         repeatable: true,  check: (s,_,m) => totalRunMiles(s) >= 26.2,                   countFn: (s,_,m) => Math.floor(totalRunMiles(s) / 26.2),       progressFn: (s,_,m) => (totalRunMiles(s) % 26.2) / 26.2,       title: 'The Marathoner' },
+  { id:'the_runner',    cat:'running',     icon:'🏃', name:'The Runner',             desc:'Run 50 miles cumulative. Repeats every 50 miles.',                              repeatable: true,  check: (s,_,m) => totalRunMiles(s) >= 50,                     countFn: (s,_,m) => Math.floor(totalRunMiles(s) / 50),         progressFn: (s,_,m) => (totalRunMiles(s) % 50) / 50,           title: null },
+  { id:'the_flash',     cat:'running',     icon:'⚡', name:'The Flash',              desc:'Run 100 miles cumulative. Repeats every 100 miles.',                            repeatable: true,  check: (s,_,m) => totalRunMiles(s) >= 100,                    countFn: (s,_,m) => Math.floor(totalRunMiles(s) / 100),        progressFn: (s,_,m) => (totalRunMiles(s) % 100) / 100,         title: 'The Flash' },
+  { id:'trail_blazer',  cat:'running',     icon:'🔥', name:'Trail Blazer',           desc:'Run 250 miles cumulative. Repeats every 250 miles.',                            repeatable: true,  check: (s,_,m) => totalRunMiles(s) >= 250,                    countFn: (s,_,m) => Math.floor(totalRunMiles(s) / 250),        progressFn: (s,_,m) => (totalRunMiles(s) % 250) / 250,         title: 'Trail Blazer' },
+  { id:'the_distance',  cat:'running',     icon:'🗺️', name:'The Distance',           desc:'Run 500 miles cumulative. Repeats every 500 miles.',                            repeatable: true,  check: (s,_,m) => totalRunMiles(s) >= 500,                    countFn: (s,_,m) => Math.floor(totalRunMiles(s) / 500),        progressFn: (s,_,m) => (totalRunMiles(s) % 500) / 500,         title: 'The Wanderer' },
+  { id:'the_long_road', cat:'running',     icon:'🛣️', name:'The Long Road',          desc:'Run 1000 miles cumulative. Repeats every 1000 miles.',                          repeatable: true,  check: (s,_,m) => totalRunMiles(s) >= 1000,                   countFn: (s,_,m) => Math.floor(totalRunMiles(s) / 1000),       progressFn: (s,_,m) => (totalRunMiles(s) % 1000) / 1000,       title: 'The Nomad' },
+  { id:'pace_10',       cat:'running',     icon:'⏱️', name:'Ten Minute Club',        desc:'Log a run with an average pace under 10:00/mi.',                                repeatable: false, check: (s,_,m) => { const p = bestPace(s); return p && p.pace < 10; }, countFn: null,                                          progressFn: (s,_,m) => { const p = bestPace(s); return p ? Math.min(1, 10/Math.max(p.pace,7)) : 0; }, title: null },
+  { id:'pace_9',        cat:'running',     icon:'⏱️', name:'The Nine',               desc:'Log a run with an average pace under 9:00/mi.',                                 repeatable: false, check: (s,_,m) => { const p = bestPace(s); return p && p.pace < 9; },  countFn: null,                                          progressFn: (s,_,m) => { const p = bestPace(s); return p ? Math.min(1, 9/Math.max(p.pace,6)) : 0; },  title: null },
+  { id:'pace_8',        cat:'running',     icon:'⚡', name:'Sub-Eight',              desc:'Log a run with an average pace under 8:00/mi.',                                 repeatable: false, check: (s,_,m) => { const p = bestPace(s); return p && p.pace < 8; },  countFn: null,                                          progressFn: (s,_,m) => { const p = bestPace(s); return p ? Math.min(1, 8/Math.max(p.pace,5)) : 0; },  title: 'The Pacer' },
   // Biking
   { id:'first_ride',   cat:'biking',      icon:'🚴', name:'First Ride',             desc:'Log your first bike ride.',                          repeatable: false, check: (s,_,m) => maxBikeDist(s) >= 0.1,                countFn: null,                                           progressFn: (s,_,m) => Math.min(1, maxBikeDist(s) > 0 ? 1 : 0),            title: null },
   { id:'ten_mile_ride',cat:'biking',      icon:'🚵', name:'Ten Miler',              desc:'Bike 10+ miles in one session. Repeats each time.', repeatable: true,  check: (s,_,m) => maxBikeDist(s) >= 10,                 countFn: (s,_,m) => bikeSessionsOver(s, 10),            progressFn: (s,_,m) => Math.min(1, maxBikeDist(s) / 10),                   title: null },
@@ -7517,6 +7541,7 @@ function buildProfileHTML() {
     'pulling_power','hold_it','time_under_tension','iron_hold',
     'stiff_as_board','year_of_gains','iron_body','complete_mastery',
     'well_rounded_diet','varsity','crunch_time','captain_crunch','not_just_body_building','raw_strength',
+    'first_mile','pace_10','pace_9','pace_8',
   ]);
   // Count-only achievements — show count not a bar
   const COUNT_ONLY_IDS = new Set(['five_k','breakthrough','ten_mile_ride']);
@@ -7608,6 +7633,10 @@ function buildProfileHTML() {
   }
 
   html += `<div style="height:20px"></div>`;
+
+  // ── DEBUG: RPG test button (temporary) ──
+  html += `<div style="padding:0 16px 24px"><button onclick="openRPG()" style="width:100%;padding:12px;background:none;border:1px dashed var(--str);border-radius:8px;color:var(--str);font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;letter-spacing:0.05em;">⚔️  RPG Test</button></div>`;
+
   return html;
 }
 
