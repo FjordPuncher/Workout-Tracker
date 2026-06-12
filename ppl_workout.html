@@ -7236,6 +7236,23 @@ function showXPOverlay(summary) {
     });
   }
 
+  // ── RPG Gold Card ──────────────────────────────────────────────────────
+  if (summary.rpgGoldEarned > 0) {
+    html += `<div style="
+      background:#1A1408;
+      border:1px solid #C4732A;
+      border-radius:10px;
+      padding:14px 16px;
+      margin-top:20px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+    ">
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted)">Gold generated for The Realm</div>
+      <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#FFA726">+${summary.rpgGoldEarned}g</div>
+    </div>`;
+  }
+
   body.innerHTML = html;
   body.innerHTML += `<button class="xp-continue-btn" onclick="dismissXPOverlay()">Continue ›</button>`;
   const overlay = document.getElementById('xp-overlay');
@@ -7375,6 +7392,25 @@ function computeAndShowXP(savedSessionId) {
   Object.keys(priorAttrXP).forEach(k => { newAttrXP[k] = (priorAttrXP[k]||0) + (attrGains[k]||0); });
   const charLevelAfter = computeCharLevel(newAttrXP);
 
+  // ── RPG GOLD AWARD ──────────────────────────────────────────────────────
+  // Award half composite XP as gold. Works regardless of whether ppl_rpg.js
+  // has been loaded — reads/writes localStorage directly so fitness side
+  // never depends on RPG being open.
+  let rpgGoldEarned = 0;
+  try {
+    const compositeXP = Object.values(attrGains).reduce((a, b) => a + b, 0);
+    rpgGoldEarned = Math.floor(compositeXP / 2);
+    if (rpgGoldEarned > 0) {
+      const rawProfile = JSON.parse(localStorage.getItem('ppl_profile') || '{}');
+      if (!rawProfile.rpg) rawProfile.rpg = { gold: 0, emberTonics: 1 };
+      if (!rawProfile.rpg.gold) rawProfile.rpg.gold = 0;
+      rawProfile.rpg.gold += rpgGoldEarned;
+      localStorage.setItem('ppl_profile', JSON.stringify(rawProfile));
+      // If RPG is loaded, refresh widget
+      if (window.rpgLoaded) renderHomeRPGWidget();
+    }
+  } catch(e) { console.warn('RPG gold award failed:', e); }
+
   setTimeout(() => {
     showXPOverlay({
       session: latest,
@@ -7389,6 +7425,7 @@ function computeAndShowXP(savedSessionId) {
       activityPBs,
       charLevelBefore: charLevelBefore.level,
       charLevelAfter: charLevelAfter.level,
+      rpgGoldEarned,
     });
   }, 1400); // show after the "Session saved" toast fades
 }

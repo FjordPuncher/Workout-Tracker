@@ -834,6 +834,8 @@ function showRPGHub() {
 
   const hpPct = Math.round((curHP / maxHP) * 100);
   const hpColor = hpPct > 60 ? '#4CAF50' : hpPct > 30 ? '#FFA726' : '#EF5350';
+  const apothecary = profile.rpg.castle?.apothecary || 0;
+  const tonicMax = 1 + apothecary;
 
   const html = `
   <!-- Topbar -->
@@ -903,8 +905,14 @@ function showRPGHub() {
       <div style="font-size:15px;font-weight:500;color:#FFA726">${gold.toLocaleString()}g</div>
     </div>
     <div style="text-align:center">
-      <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">EMBER TONICS</div>
-      <div style="font-size:15px;font-weight:500;color:var(--str)">${tonics}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">EMBER TONICS</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:6px">
+        ${Array.from({length: tonicMax}, (_,i) => {
+          const full = i < tonics;
+          return `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${full ? 'var(--str)' : '#2A2018'};border:1px solid ${full ? 'var(--str)' : '#3A3020'};${full ? 'box-shadow:0 0 6px 2px rgba(196,115,42,0.8),0 0 14px 4px rgba(196,115,42,0.4);' : ''}"></span>`;
+        }).join('')}
+      </div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:4px">${tonics} / ${tonicMax}</div>
     </div>
   </div>`;
 
@@ -918,9 +926,512 @@ function showRPGHub() {
 
 // ── Stub screens (Phase 1+ will implement these) ──────────────────────────────
 
-function showRPGCharacterSheet() {
-  alert('Character Sheet — coming in Phase 2');
+// ============================================================
+// PHASE 2 — CHARACTER SHEET
+// ============================================================
+
+// ── Item helpers ─────────────────────────────────────────────────────────────
+
+function rpgSalvageYield(tier) {
+  if (tier <= 2) return { material:'copper', qty: Math.floor(Math.random()*2)+1 };
+  if (tier <= 4) return { material:'iron',   qty: Math.floor(Math.random()*2)+1 };
+  if (tier <= 6) return { material:'mithril',qty: Math.floor(Math.random()*2)+1 };
+  if (tier <= 8) return { material:'darksteel',qty:Math.floor(Math.random()*2)+1 };
+  return { material:'darksteel', qty:1, voidShardChance:true };
 }
+
+function rpgSalvageYieldUnique() {
+  return { material:'voidShards', qty:1 };
+}
+
+function rpgMaterialLabel(mat) {
+  const labels = {
+    copper:'Copper Bar', iron:'Iron Bar', mithril:'Mithril Bar',
+    darksteel:'Darksteel Bar', voidShards:'Void Shard',
+  };
+  return labels[mat] || mat;
+}
+
+function rpgStatLabel(stat) {
+  return { STR:'Strength', END:'Endurance', AGI:'Agility', DEX:'Dexterity' }[stat] || stat;
+}
+
+function rpgSlotLabel(slot) {
+  return { weapon:'Weapon', shield:'Shield', helmet:'Helmet',
+    body_armor:'Body Armor', boots:'Boots', jewelry:'Jewelry' }[slot] || slot;
+}
+
+function rpgSlotIcon(slot) {
+  return { weapon:'⚔️', shield:'🛡️', helmet:'🪖', body_armor:'🧥', boots:'👢', jewelry:'💍' }[slot] || '📦';
+}
+
+// Compute rolled stat value for an instance (for display)
+function rpgItemStatDisplay(inst) {
+  if (!inst) return '';
+  if (inst.rolledStats) {
+    const rs = inst.rolledStats;
+    const parts = [];
+    if (rs.effectiveSTR) parts.push(`+${rs.effectiveSTR} STR`);
+    if (rs.effectiveEND) parts.push(`+${rs.effectiveEND} END`);
+    if (rs.effectiveAGI) parts.push(`+${rs.effectiveAGI} AGI`);
+    if (rs.effectiveDEX) parts.push(`+${rs.effectiveDEX} DEX`);
+    if (rs.flatHP)       parts.push(`+${rs.flatHP} HP`);
+    return parts.join('  ');
+  }
+  return '';
+}
+
+// ── Bottom sheet system ───────────────────────────────────────────────────────
+
+function rpgShowSheet(html) {
+  let overlay = document.getElementById('rpg-sheet-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'rpg-sheet-overlay';
+    overlay.style.cssText = `
+      position:fixed;inset:0;z-index:1000;
+      background:rgba(0,0,0,0.6);
+      display:flex;align-items:flex-end;
+    `;
+    overlay.onclick = (e) => { if (e.target === overlay) rpgDismissSheet(); };
+    document.body.appendChild(overlay);
+  }
+  overlay.innerHTML = `
+    <div style="
+      width:100%;max-height:85vh;overflow-y:auto;
+      background:var(--card);
+      border-radius:16px 16px 0 0;
+      padding:0 0 40px;
+      font-family:'DM Mono',monospace;
+    ">
+      <div style="width:40px;height:4px;background:var(--border);border-radius:2px;margin:12px auto 0"></div>
+      ${html}
+    </div>`;
+  overlay.style.display = 'flex';
+}
+
+function rpgDismissSheet() {
+  const overlay = document.getElementById('rpg-sheet-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+// ── Item detail sheet ─────────────────────────────────────────────────────────
+// context: 'equipped' | 'inventory'
+// slot: the equipment slot key
+// instanceId: the item's UUID (null if slot is empty)
+
+function rpgShowItemSheet(instanceId, slot, context) {
+  const inv = rpgGetInventory();
+  const inst = inv.find(i => i.instanceId === instanceId);
+  const profile = rpgGetProfile();
+
+  if (!inst) {
+    // Empty slot — navigate to filtered inventory
+    showRPGCharacterSheet('inventory', slot);
+    return;
+  }
+
+  const price    = rpgItemPrice(inst.tier, rpgBandIndex(inst.band || '1-5'));
+  const salvage  = inst.isUnique ? rpgSalvageYieldUnique() : rpgSalvageYield(inst.tier);
+  const isFav    = inst.favorite || false;
+  const statLine = rpgItemStatDisplay(inst);
+  const isEquipped = context === 'equipped';
+
+  let passiveLine = '';
+  if (inst.isUnique && inst.passive) {
+    passiveLine = `<div style="font-size:11px;color:var(--str);margin-top:6px">✦ ${inst.passive.desc}</div>`;
+  }
+
+  // ── Stat comparison (inventory items only) ────────────────────────────────
+  let comparisonHtml = '';
+  if (!isEquipped) {
+    const equipped = profile.rpg.equipped || {};
+    const eqRef = equipped[inst.slot];
+    const eqInst = eqRef ? inv.find(i => i.instanceId === eqRef.instanceId) : null;
+
+    const statKeys = ['effectiveSTR','effectiveEND','effectiveAGI','effectiveDEX','flatHP'];
+    const statNames = { effectiveSTR:'STR', effectiveEND:'END', effectiveAGI:'AGI', effectiveDEX:'DEX', flatHP:'HP' };
+
+    const thisStats  = inst.rolledStats || {};
+    const eqStats    = eqInst?.rolledStats || {};
+
+    // Collect all stat keys present in either item
+    const allKeys = [...new Set([...Object.keys(thisStats), ...Object.keys(eqStats)])].filter(k => statKeys.includes(k));
+
+    if (allKeys.length > 0) {
+      let rows = allKeys.map(k => {
+        const thisVal = thisStats[k] || 0;
+        const eqVal   = eqStats[k]   || 0;
+        const delta   = thisVal - eqVal;
+        const deltaColor = delta > 0 ? '#4CAF50' : delta < 0 ? '#EF5350' : 'var(--text-muted)';
+        const deltaStr = delta === 0 ? '—' : (delta > 0 ? `+${delta}` : `${delta}`);
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-top:1px solid var(--border)">
+          <span style="font-size:11px;color:var(--text-muted)">${statNames[k]}</span>
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-size:12px">${thisVal}</span>
+            <span style="font-size:11px;color:${deltaColor};min-width:28px;text-align:right">${deltaStr}</span>
+          </div>
+        </div>`;
+      }).join('');
+
+      const eqLabel = eqInst
+        ? `vs. ${eqInst.name} +${eqInst.tier}`
+        : `vs. [empty slot]`;
+
+      // Passive comparison for uniques
+      let passiveComp = '';
+      if (inst.isUnique && inst.passive) {
+        const eqPassive = eqInst?.isUnique && eqInst?.passive ? eqInst.passive.desc : null;
+        passiveComp = `<div style="padding:7px 0;border-top:1px solid var(--border)">
+          <div style="font-size:10px;color:var(--text-muted);margin-bottom:3px">PASSIVE</div>
+          <div style="font-size:11px;color:var(--str)">${inst.passive.desc}</div>
+          ${eqPassive ? `<div style="font-size:10px;color:var(--text-muted);margin-top:4px">Replaces: ${eqPassive}</div>` : ''}
+        </div>`;
+      }
+
+      comparisonHtml = `
+        <div style="padding:12px 20px 0">
+          <div style="font-size:10px;color:var(--text-muted);letter-spacing:0.05em;margin-bottom:6px">COMPARISON — ${eqLabel}</div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0 12px">
+            ${rows}
+            ${passiveComp}
+          </div>
+        </div>`;
+    }
+  }
+
+  const actionsHtml = isEquipped
+    ? `<button onclick="rpgUnequipItem('${slot}')" style="${rpgBtnStyle('var(--border)')}">Unequip</button>`
+    : `<button onclick="rpgEquipItem('${instanceId}')" style="${rpgBtnStyle('var(--str)')}">Equip</button>
+       <button onclick="rpgConfirmSell('${instanceId}',${price})" style="${rpgBtnStyle('#4CAF50')}">Sell ${price}g</button>
+       <button onclick="rpgConfirmSalvage('${instanceId}')" style="${rpgBtnStyle('#FFA726')}">Salvage → ${salvage.qty}× ${rpgMaterialLabel(salvage.material)}</button>`;
+
+  rpgShowSheet(`
+    <div style="padding:20px 20px 8px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:15px;font-weight:500;color:var(--text)">${inst.name || 'Unknown Item'} +${inst.tier}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:3px">${rpgSlotLabel(inst.slot)} · ${inst.band || ''} band</div>
+        </div>
+        <button onclick="rpgToggleFavorite('${instanceId}')" style="background:none;border:none;cursor:pointer;font-size:22px;padding:0;line-height:1">
+          ${isFav ? '⭐' : '☆'}
+        </button>
+      </div>
+      <div style="margin-top:12px;font-size:13px;color:var(--str)">${statLine}</div>
+      ${passiveLine}
+      ${inst.isUnique ? '<div style="font-size:10px;color:var(--dex);margin-top:6px;letter-spacing:0.05em">UNIQUE ITEM</div>' : ''}
+    </div>
+    ${comparisonHtml}
+    <div style="border-top:1px solid var(--border);padding:16px 20px;display:flex;flex-direction:column;gap:10px;margin-top:12px">
+      ${actionsHtml}
+    </div>`);
+}
+
+function rpgBtnStyle(borderColor) {
+  return `width:100%;padding:12px;background:none;border:1px solid ${borderColor};
+    border-radius:8px;color:var(--text);font-family:'DM Mono',monospace;
+    font-size:13px;cursor:pointer;text-align:left;`;
+}
+
+// ── Confirm steps ─────────────────────────────────────────────────────────────
+
+function rpgConfirmSell(instanceId, price) {
+  const inv = rpgGetInventory();
+  const inst = inv.find(i => i.instanceId === instanceId);
+  if (!inst) return;
+  rpgShowSheet(`
+    <div style="padding:24px 20px;text-align:center">
+      <div style="font-size:15px;font-weight:500;margin-bottom:6px">Sell ${inst.name} +${inst.tier}?</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:24px">You will receive <span style="color:#FFA726">${price}g</span>. This cannot be undone.</div>
+      <div style="display:flex;gap:12px">
+        <button onclick="rpgDismissSheet()" style="${rpgBtnStyle('var(--border)')}text-align:center;">Cancel</button>
+        <button onclick="rpgExecuteSell('${instanceId}',${price})" style="${rpgBtnStyle('#4CAF50')}text-align:center;color:#4CAF50;">Confirm Sell</button>
+      </div>
+    </div>`);
+}
+
+function rpgConfirmSalvage(instanceId) {
+  const inv = rpgGetInventory();
+  const inst = inv.find(i => i.instanceId === instanceId);
+  if (!inst) return;
+  const salvage = inst.isUnique ? rpgSalvageYieldUnique() : rpgSalvageYield(inst.tier);
+  rpgShowSheet(`
+    <div style="padding:24px 20px;text-align:center">
+      <div style="font-size:15px;font-weight:500;margin-bottom:6px">Salvage ${inst.name} +${inst.tier}?</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:24px">You will receive <span style="color:#FFA726">${salvage.qty}× ${rpgMaterialLabel(salvage.material)}</span>. This cannot be undone.</div>
+      <div style="display:flex;gap:12px">
+        <button onclick="rpgDismissSheet()" style="${rpgBtnStyle('var(--border)')}text-align:center;">Cancel</button>
+        <button onclick="rpgExecuteSalvage('${instanceId}')" style="${rpgBtnStyle('#FFA726')}text-align:center;color:#FFA726;">Confirm Salvage</button>
+      </div>
+    </div>`);
+}
+
+// ── Item actions ──────────────────────────────────────────────────────────────
+
+function rpgEquipItem(instanceId) {
+  const inv = rpgGetInventory();
+  const inst = inv.find(i => i.instanceId === instanceId);
+  if (!inst) return;
+  const profile = rpgGetProfile();
+  const slot = inst.slot;
+  // Return currently equipped item to inventory (it's already in inv array — just clear equipped)
+  profile.rpg.equipped[slot] = { instanceId: inst.instanceId, slot };
+  rpgSaveProfile(profile);
+  rpgDismissSheet();
+  showRPGCharacterSheet('stats');
+}
+
+function rpgUnequipItem(slot) {
+  const profile = rpgGetProfile();
+  profile.rpg.equipped[slot] = null;
+  rpgSaveProfile(profile);
+  rpgDismissSheet();
+  showRPGCharacterSheet('stats');
+}
+
+function rpgToggleFavorite(instanceId) {
+  const inv = rpgGetInventory();
+  const inst = inv.find(i => i.instanceId === instanceId);
+  if (!inst) return;
+  inst.favorite = !inst.favorite;
+  rpgSaveInventory(inv);
+  // Re-open the sheet with updated state — detect context from equipped slots
+  const profile = rpgGetProfile();
+  const isEquipped = Object.values(profile.rpg.equipped).some(e => e?.instanceId === instanceId);
+  rpgShowItemSheet(instanceId, inst.slot, isEquipped ? 'equipped' : 'inventory');
+}
+
+function rpgExecuteSell(instanceId, price) {
+  const inv = rpgGetInventory();
+  const idx = inv.findIndex(i => i.instanceId === instanceId);
+  if (idx < 0) return;
+  inv.splice(idx, 1);
+  rpgSaveInventory(inv);
+  const profile = rpgGetProfile();
+  profile.rpg.gold = (profile.rpg.gold || 0) + price;
+  rpgSaveProfile(profile);
+  rpgDismissSheet();
+  showRPGCharacterSheet('inventory');
+}
+
+function rpgExecuteSalvage(instanceId) {
+  const inv = rpgGetInventory();
+  const inst = inv.find(i => i.instanceId === instanceId);
+  if (!inst) return;
+  const salvage = inst.isUnique ? rpgSalvageYieldUnique() : rpgSalvageYield(inst.tier);
+  const idx = inv.findIndex(i => i.instanceId === instanceId);
+  inv.splice(idx, 1);
+  rpgSaveInventory(inv);
+  const profile = rpgGetProfile();
+  if (!profile.rpg.materials) profile.rpg.materials = { copper:0, iron:0, mithril:0, darksteel:0, voidShards:0 };
+  profile.rpg.materials[salvage.material] = (profile.rpg.materials[salvage.material] || 0) + salvage.qty;
+  rpgSaveProfile(profile);
+  rpgDismissSheet();
+  showRPGCharacterSheet('inventory');
+}
+
+// ── Character sheet main screen ───────────────────────────────────────────────
+
+function showRPGCharacterSheet(activeTab, filterSlot) {
+  activeTab = activeTab || 'stats';
+  const profile  = rpgGetProfile();
+  const stats    = rpgPlayerStats(profile);
+  const inv      = rpgGetInventory();
+  const equipped = profile.rpg.equipped || {};
+
+  // ── Stats tab ────────────────────────────────────────────────────────────
+  function buildStatsTab() {
+    const slots = ['weapon','shield','helmet','body_armor','boots','jewelry'];
+
+    // Attribute rows
+    const attrRows = [
+      ['STR', stats.realSTR, stats.gearSTR, stats.effSTR, '#E57373'],
+      ['END', stats.realEND, stats.gearEND, stats.effEND, '#64B5F6'],
+      ['AGI', stats.realAGI, stats.gearAGI, stats.effAGI, '#81C784'],
+      ['DEX', stats.realDEX, stats.gearDEX, stats.effDEX, '#CE93D8'],
+    ];
+
+    let html = `
+      <!-- Header -->
+      <div style="padding:16px 16px 8px;text-align:center">
+        <div style="font-size:16px;font-weight:500">${profile.name || 'Athlete'}</div>
+        <div style="font-size:11px;color:var(--str);margin-top:2px">${profile.equippedTitle || 'Newcomer'} · Lv ${stats.level}</div>
+      </div>
+
+      <!-- Attributes -->
+      <div style="margin:0 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;font-size:9px;color:var(--text-muted);padding:8px 12px 4px;letter-spacing:0.05em">
+          <span>ATTR</span><span style="text-align:right">REAL</span><span style="text-align:right">GEAR</span><span style="text-align:right">EFF</span>
+        </div>
+        ${attrRows.map(([label, real, gear, eff, col]) => `
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;padding:8px 12px;border-top:1px solid var(--border)">
+            <span style="font-size:12px;color:${col}">${label}</span>
+            <span style="font-size:12px;text-align:right">${real}</span>
+            <span style="font-size:12px;text-align:right;color:${gear > 0 ? '#FFA726' : 'var(--text-muted)'}">${gear > 0 ? '+'+gear : '—'}</span>
+            <span style="font-size:13px;font-weight:500;text-align:right;color:${col}">${eff}</span>
+          </div>`).join('')}
+      </div>
+
+      <!-- Derived stats -->
+      <div style="margin:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+        ${[
+          ['ATK', stats.atk],
+          ['HP',  stats.maxHP],
+          ['DEF mitigation', Math.round(stats.mitigation * 100) + '%'],
+          ['Crit chance',    Math.round(stats.critChance * 100) + '%'],
+          ['Attack interval',stats.interval + ' ticks'],
+        ].map(([label, val]) => `
+          <div style="display:flex;justify-content:space-between;padding:9px 12px;border-top:1px solid var(--border)">
+            <span style="font-size:11px;color:var(--text-muted)">${label}</span>
+            <span style="font-size:12px;font-weight:500">${val}</span>
+          </div>`).join('')}
+      </div>
+
+      <!-- Equipped gear — paper doll -->
+      <div style="margin:0 16px 8px;font-size:10px;color:var(--text-muted);letter-spacing:0.05em">EQUIPPED GEAR</div>
+      <div style="margin:0 16px;display:flex;flex-direction:column;gap:8px">
+        ${slots.map(slot => {
+          const eq = equipped[slot];
+          const inst = eq ? inv.find(i => i.instanceId === eq.instanceId) : null;
+          const label = rpgSlotLabel(slot);
+          const icon  = rpgSlotIcon(slot);
+          const statLine = inst ? rpgItemStatDisplay(inst) : '';
+          return `<div onclick="rpgShowItemSheet(${inst ? "'"+inst.instanceId+"'" : 'null'},'${slot}','equipped')" style="
+            background:var(--surface);border:1px solid ${inst ? 'var(--border)' : 'var(--border)'};
+            border-radius:8px;padding:10px 12px;cursor:pointer;
+            display:flex;align-items:center;justify-content:space-between;
+          ">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:16px">${icon}</span>
+              <div>
+                <div style="font-size:10px;color:var(--text-muted)">${label}</div>
+                <div style="font-size:13px;color:${inst ? 'var(--text)' : 'var(--text-muted)'}">
+                  ${inst ? (inst.name + ' +' + inst.tier) : '[empty]'}
+                  ${inst?.favorite ? ' ⭐' : ''}
+                </div>
+                ${statLine ? `<div style="font-size:10px;color:var(--str);margin-top:1px">${statLine}</div>` : ''}
+              </div>
+            </div>
+            <span style="color:var(--text-muted);font-size:16px">›</span>
+          </div>`;
+        }).join('')}
+      </div>`;
+    return html;
+  }
+
+  // ── Inventory tab ────────────────────────────────────────────────────────
+  function buildInventoryTab() {
+    const slots = ['weapon','shield','helmet','body_armor','boots','jewelry'];
+    const materials = profile.rpg.materials || {};
+    const matTotal = Object.values(materials).reduce((a, b) => a + b, 0);
+
+    // Sort inventory: favorites first within each slot, then by tier desc
+    const sortedInv = [...inv].sort((a, b) => {
+      if (b.favorite && !a.favorite) return 1;
+      if (a.favorite && !b.favorite) return -1;
+      return b.tier - a.tier;
+    });
+
+    let html = '';
+
+    slots.forEach(slot => {
+      const items = sortedInv.filter(i => i.slot === slot);
+      const isFiltered = filterSlot === slot;
+      const open = isFiltered || items.length > 0;
+
+      html += `
+        <div style="margin:0 16px 8px">
+          <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'"
+            style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:8px 0">
+            <span style="font-size:11px;color:var(--text-muted);letter-spacing:0.05em">${rpgSlotIcon(slot)} ${rpgSlotLabel(slot).toUpperCase()} (${items.length})</span>
+            <span style="color:var(--text-muted);font-size:12px">${open ? '▾' : '▸'}</span>
+          </div>
+          <div style="display:${open ? 'block' : 'none'}">
+            ${items.length === 0
+              ? `<div style="font-size:12px;color:var(--text-muted);padding:8px 0;font-style:italic">No items</div>`
+              : items.map(inst => {
+                  const statLine = rpgItemStatDisplay(inst);
+                  return `<div onclick="rpgShowItemSheet('${inst.instanceId}','${inst.slot}','inventory')" style="
+                    background:var(--surface);border:1px solid var(--border);border-radius:8px;
+                    padding:10px 12px;margin-bottom:6px;cursor:pointer;
+                    display:flex;align-items:center;justify-content:space-between;
+                  ">
+                    <div>
+                      <div style="font-size:13px">${inst.name} +${inst.tier}${inst.favorite ? ' ⭐' : ''}${inst.isUnique ? ' ✦' : ''}</div>
+                      <div style="font-size:10px;color:var(--str);margin-top:2px">${statLine}</div>
+                    </div>
+                    <span style="color:var(--text-muted);font-size:16px">›</span>
+                  </div>`;
+                }).join('')
+            }
+          </div>
+        </div>`;
+    });
+
+    // Materials section
+    html += `
+      <div style="margin:0 16px 8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0">
+          <span style="font-size:11px;color:var(--text-muted);letter-spacing:0.05em">🪨 MATERIALS (${matTotal})</span>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+          ${[
+            ['copper',    'Copper Bar',    materials.copper    || 0],
+            ['iron',      'Iron Bar',      materials.iron      || 0],
+            ['mithril',   'Mithril Bar',   materials.mithril   || 0],
+            ['darksteel', 'Darksteel Bar', materials.darksteel || 0],
+            ['voidShards','Void Shard',    materials.voidShards|| 0],
+          ].map(([key, label, qty]) => `
+            <div style="display:flex;justify-content:space-between;padding:9px 12px;border-top:1px solid var(--border)">
+              <span style="font-size:12px;color:var(--text-muted)">${label}</span>
+              <span style="font-size:12px;font-weight:500;color:${qty > 0 ? 'var(--str)' : 'var(--text-muted)'}">${qty}</span>
+            </div>`).join('')}
+        </div>
+      </div>`;
+
+    return html;
+  }
+
+  // ── Full screen HTML ──────────────────────────────────────────────────────
+  const statsContent = buildStatsTab();
+  const invContent   = buildInventoryTab();
+
+  const html = `
+    <!-- Topbar -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);z-index:10">
+      <button onclick="showRPGHub()" style="background:none;border:none;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;padding:0">← Hub</button>
+      <span style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--str)">CHARACTER</span>
+      <div style="width:50px"></div>
+    </div>
+
+    <!-- Tab bar -->
+    <div style="display:flex;border-bottom:1px solid var(--border)">
+      <button id="cs-tab-stats" onclick="showRPGCharacterSheet('stats')" style="
+        flex:1;padding:12px;background:none;border:none;
+        font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;
+        color:${activeTab==='stats' ? 'var(--str)' : 'var(--text-muted)'};
+        border-bottom:2px solid ${activeTab==='stats' ? 'var(--str)' : 'transparent'};
+      ">Stats</button>
+      <button id="cs-tab-inv" onclick="showRPGCharacterSheet('inventory')" style="
+        flex:1;padding:12px;background:none;border:none;
+        font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;
+        color:${activeTab==='inventory' ? 'var(--str)' : 'var(--text-muted)'};
+        border-bottom:2px solid ${activeTab==='inventory' ? 'var(--str)' : 'transparent'};
+      ">Inventory (${inv.length})</button>
+    </div>
+
+    <!-- Tab content -->
+    <div style="padding-bottom:40px">
+      ${activeTab === 'stats' ? statsContent : invContent}
+    </div>`;
+
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const body = document.getElementById('rpg-screen-body');
+  if (body) body.innerHTML = html;
+  const screen = document.getElementById('screen-rpg');
+  if (screen) screen.classList.add('active');
+}
+
 function showRPGWilds() {
   alert('The Wilds — coming in Phase 3');
 }
@@ -944,7 +1455,85 @@ function closeRPG() {
 
 // ── Entry point called by openRPG() in ppl_workout.html ──────────────────────
 
+// Retroactive gold: award half composite XP for all existing sessions
+// on first ever RPG load (profile.rpg didn't exist before)
+function rpgInitRetroactiveGold(profile) {
+  if (profile.rpg._retroDone) return;
+  let totalGold = 0;
+  let runningPBs = {};
+  sessions.forEach((s, idx) => {
+    const prior = sessions.slice(0, idx);
+    const { attrGains } = calcSessionXP(s, prior, runningPBs);
+    const compositeXP = Object.values(attrGains).reduce((a, b) => a + b, 0);
+    totalGold += Math.floor(compositeXP / 2);
+    // update running PBs
+    s.exercises.forEach(ex => {
+      if (!runningPBs[ex.name]) runningPBs[ex.name] = { weight:0, reps:0 };
+      ex.sets.forEach(st => {
+        const w = parseFloat(st.weight)||0, r = parseFloat(st.reps)||0;
+        if (w > runningPBs[ex.name].weight) runningPBs[ex.name].weight = w;
+        if (r > runningPBs[ex.name].reps) runningPBs[ex.name].reps = r;
+      });
+    });
+  });
+  profile.rpg.gold = totalGold;
+  profile.rpg._retroDone = true;
+  rpgSaveProfile(profile);
+  console.log(`RPG: retroactive gold awarded — ${totalGold}g from ${sessions.length} sessions`);
+}
+
 window.rpgLoaded = true;
+
+// Run retroactive gold on first load
+(function() {
+  const p = rpgGetProfile();
+  if (!p.rpg._retroDone) rpgInitRetroactiveGold(p);
+})();
+
 showRPGHub();
+
+// Patch renderHomeRPGWidget to also show RPG gold + tonics
+const _origRenderHomeRPGWidget = renderHomeRPGWidget;
+renderHomeRPGWidget = function() {
+  _origRenderHomeRPGWidget();
+  try {
+    const el = document.getElementById('home-rpg-widget');
+    if (!el) return;
+    const rawProfile = JSON.parse(localStorage.getItem('ppl_profile') || '{}');
+    const rpg = rawProfile.rpg || {};
+    const gold   = (rpg.gold || 0).toLocaleString();
+    const tonics = rpg.emberTonics || 1;
+    // Tonic cap from Apothecary level: 0→1, 1→2, 2→3
+    const apothecary = (rpg.castle && rpg.castle.apothecary) || 0;
+    const tonicMax = 1 + apothecary;
+
+    // Build glowing dots
+    const dots = Array.from({ length: tonicMax }, (_, i) => {
+      const full = i < tonics;
+      return `<span style="
+        display:inline-block;
+        width:8px;height:8px;border-radius:50%;
+        margin-left:4px;
+        background:${full ? 'var(--str)' : '#2A2018'};
+        border:1px solid ${full ? 'var(--str)' : '#3A3020'};
+        ${full ? 'box-shadow:0 0 5px 1px rgba(196,115,42,0.8),0 0 10px 2px rgba(196,115,42,0.4);' : ''}
+      "></span>`;
+    }).join('');
+
+    const existing = el.querySelector('#rpg-status-line');
+    if (existing) existing.remove();
+    const line = document.createElement('div');
+    line.id = 'rpg-status-line';
+    line.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:6px 14px 8px;font-family:"DM Mono",monospace;border-top:1px solid var(--border);margin-top:6px';
+    line.innerHTML = `
+      <span style="font-size:11px;color:#FFA726">⚔️ ${gold}g</span>
+      <span style="display:flex;align-items:center;font-size:10px;color:var(--text-muted)">🧪${dots}</span>
+    `;
+    el.appendChild(line);
+  } catch(e) { /* silent */ }
+};
+
+// Immediately update widget with gold/tonic line
+renderHomeRPGWidget();
 
 console.log(`ppl_rpg.js ${RPG_VERSION} loaded — ${RPG_ENEMIES.length} enemies, ${RPG_QUESTS.length} quests`);
