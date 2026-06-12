@@ -2040,7 +2040,7 @@ function renderHome() {
           gap:8px;cursor:pointer">
         <div style="width:22px;height:22px;border-radius:50%;background:#2A2820;
           border:1.5px solid var(--dex);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <span style="color:var(--dex);font-size:16px;font-weight:400;line-height:1;font-family:Arial,sans-serif">★</span>
+          <span style="color:var(--dex);font-size:12px;font-weight:700;line-height:1;font-family:Arial,sans-serif;display:block;margin-top:-1px">★</span>
         </div>
         <div style="text-align:left">
           <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text-muted)">My Workouts</div>
@@ -4203,6 +4203,7 @@ function bestDistance(sessionList) {
 function bestPace(sessionList) {
   let best = { pace: Infinity, paceStr: null, date: null };
   sessionList.forEach(s => {
+    if (!isRunningSession(s)) return;   // running only — exclude biking
     const d = parseFloat(s.distance);
     const t = parseFloat(s.duration);
     if (d > 0 && t > 0) {
@@ -7456,6 +7457,45 @@ function computeAndShowXP(savedSessionId) {
       }
     }
   } catch(e) { console.warn('RPG gold award failed:', e); }
+
+  // ── RPG GOLD — Achievements ───────────────────────────────────────────────
+  // 25g common, 50g uncommon (repeatable with title=null), 75g rare, 100g legendary (title set)
+  try {
+    if (newAchievements && newAchievements.length > 0) {
+      const rawProfile2 = JSON.parse(localStorage.getItem('ppl_profile') || '{}');
+      if (!rawProfile2.rpg) rawProfile2.rpg = { gold: 0 };
+      let achGold = 0;
+      newAchievements.forEach(a => {
+        const isFirstUnlock = (priorAchievementCounts[a.id] || 0) === 0;
+        const isLegendary   = !!a.title;
+        const isRepeatable  = !!a.repeatable;
+        let g = 25; // common default
+        if (isLegendary)          g = 100;
+        else if (!isRepeatable)   g = 75;  // non-repeatable non-title = rare one-time
+        else                      g = 50;  // repeatable no title = uncommon
+        if (!isFirstUnlock && isRepeatable) g = 25; // repeat triggers get 25g flat
+        achGold += g;
+      });
+      if (achGold > 0) {
+        rawProfile2.rpg.gold = (rawProfile2.rpg.gold || 0) + achGold;
+        rpgGoldEarned += achGold;
+        localStorage.setItem('ppl_profile', JSON.stringify(rawProfile2));
+      }
+    }
+  } catch(e) { console.warn('RPG achievement gold failed:', e); }
+
+  // ── RPG GOLD — Personal Bests ──────────────────────────────────────────────
+  // 50g per PB regardless of exercise or magnitude
+  try {
+    if (activityPBs && activityPBs.length > 0) {
+      const rawProfile3 = JSON.parse(localStorage.getItem('ppl_profile') || '{}');
+      if (!rawProfile3.rpg) rawProfile3.rpg = { gold: 0 };
+      const pbGold = activityPBs.length * 50;
+      rawProfile3.rpg.gold = (rawProfile3.rpg.gold || 0) + pbGold;
+      rpgGoldEarned += pbGold;
+      localStorage.setItem('ppl_profile', JSON.stringify(rawProfile3));
+    }
+  } catch(e) { console.warn('RPG PB gold failed:', e); }
 
   setTimeout(() => {
     showXPOverlay({

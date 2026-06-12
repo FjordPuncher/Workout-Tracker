@@ -32,10 +32,16 @@ const BAND_POWER = {
 // Castle upgrade tier costs (level 1–5)
 const CASTLE_TIER_COSTS = [1000, 2000, 4000, 7000, 11000];
 
+function rpgCastleUpgradeCost(currentLevel) {
+  // currentLevel is 0-based — returns cost to upgrade TO currentLevel+1
+  // Returns null if already at max (no more upgrades)
+  return CASTLE_TIER_COSTS[currentLevel] || null;
+}
+
 // ── INTERVAL TYPES ───────────────────────────────────────────────────────────
 // fast: 9–12 ticks  |  standard: 12–14  |  slow: 15–18
 function spawnInterval(type) {
-  const ranges = { fast: [9, 12], standard: [12, 14], slow: [15, 18] };
+  const ranges = { fast: [14, 18], standard: [18, 22], slow: [22, 26] };
   const [lo, hi] = ranges[type] || ranges.standard;
   return lo + Math.floor(Math.random() * (hi - lo + 1));
 }
@@ -55,9 +61,9 @@ const RPG_ENEMIES = [
 
   // ── BAND 1-5 ─────────────────────────────────────────────────────────────
 
-  { id:'mud_rat',          name:'Mud Rat',          band:'1-5',   tier:'easy',   atkMult:0.16, hpMult:1.40, goldMin:5,   goldMax:10,  diffScore:50,  intervalType:'fast',     flavor:'Skitters from the shadows.  More teeth than sense.' },
-  { id:'feral_hound',      name:'Feral Hound',      band:'1-5',   tier:'easy',   atkMult:0.16, hpMult:1.60, goldMin:6,   goldMax:12,  diffScore:51,  intervalType:'standard', flavor:'Ribs showing, eyes wild.  Hunger makes it fearless.' },
-  { id:'bog_sprite',       name:'Bog Sprite',       band:'1-5',   tier:'easy',   atkMult:0.16, hpMult:1.45, goldMin:5,   goldMax:9,   diffScore:48,  intervalType:'fast',     flavor:'Tiny.  Vicious.  Travels in silence, arrives in pain.' },
+  { id:'mud_rat',          name:'Mud Rat',          band:'1-5',   tier:'easy',   atkMult:0.12, hpMult:0.65, goldMin:5,   goldMax:10,  diffScore:50,  intervalType:'fast',     flavor:'Skitters from the shadows.  More teeth than sense.' },
+  { id:'feral_hound',      name:'Feral Hound',      band:'1-5',   tier:'easy',   atkMult:0.12, hpMult:0.70, goldMin:6,   goldMax:12,  diffScore:51,  intervalType:'standard', flavor:'Ribs showing, eyes wild.  Hunger makes it fearless.' },
+  { id:'bog_sprite',       name:'Bog Sprite',       band:'1-5',   tier:'easy',   atkMult:0.12, hpMult:0.60, goldMin:5,   goldMax:9,   diffScore:48,  intervalType:'fast',     flavor:'Tiny.  Vicious.  Travels in silence, arrives in pain.' },
   { id:'goblin_scrapper',  name:'Goblin Scrapper',  band:'1-5',   tier:'medium', atkMult:0.20, hpMult:2.60, goldMin:12,  goldMax:20,  diffScore:75,  intervalType:'fast',     flavor:'Barely armed.  Makes up for it with spite.' },
   { id:'hollow_shade',     name:'Hollow Shade',     band:'1-5',   tier:'medium', atkMult:0.20, hpMult:2.80, goldMin:11,  goldMax:18,  diffScore:73,  intervalType:'standard', flavor:'Darker than the dark around it.' },
   { id:'bog_toad',         name:'Bog Toad',         band:'1-5',   tier:'medium', atkMult:0.20, hpMult:3.00, goldMin:13,  goldMax:22,  diffScore:77,  intervalType:'slow',     flavor:'Slow until it isn\'t.  Its tongue is the last thing you see.' },
@@ -67,9 +73,9 @@ const RPG_ENEMIES = [
 
   // ── BAND 6-10 ────────────────────────────────────────────────────────────
 
-  { id:'giant_rat',        name:'Giant Rat',        band:'6-10',  tier:'easy',   atkMult:0.16, hpMult:1.40, goldMin:8,   goldMax:15,  diffScore:50,  intervalType:'fast',     flavor:'The size of a dog.  The temperament of a nightmare.' },
-  { id:'scabwing_bat',     name:'Scabwing Bat',     band:'6-10',  tier:'easy',   atkMult:0.16, hpMult:1.45, goldMin:7,   goldMax:14,  diffScore:50,  intervalType:'fast',     flavor:'Cave-blind and cave-mean.  Echolocates your regret.' },
-  { id:'swamp_leech',      name:'Swamp Leech',      band:'6-10',  tier:'easy',   atkMult:0.16, hpMult:1.55, goldMin:8,   goldMax:14,  diffScore:52,  intervalType:'slow',     flavor:'The water looked safe.  It wasn\'t.' },
+  { id:'giant_rat',        name:'Giant Rat',        band:'6-10',  tier:'easy',   atkMult:0.12, hpMult:0.70, goldMin:8,   goldMax:15,  diffScore:50,  intervalType:'fast',     flavor:'The size of a dog.  The temperament of a nightmare.' },
+  { id:'scabwing_bat',     name:'Scabwing Bat',     band:'6-10',  tier:'easy',   atkMult:0.12, hpMult:0.72, goldMin:7,   goldMax:14,  diffScore:50,  intervalType:'fast',     flavor:'Cave-blind and cave-mean.  Echolocates your regret.' },
+  { id:'swamp_leech',      name:'Swamp Leech',      band:'6-10',  tier:'easy',   atkMult:0.12, hpMult:0.75, goldMin:8,   goldMax:14,  diffScore:52,  intervalType:'slow',     flavor:'The water looked safe.  It wasn\'t.' },
   { id:'goblin_bruiser',   name:'Goblin Bruiser',   band:'6-10',  tier:'medium', atkMult:0.20, hpMult:2.60, goldMin:18,  goldMax:28,  diffScore:78,  intervalType:'standard', flavor:'Found a club.  Considers itself nobility.' },
   { id:'spore_wisp',       name:'Spore Wisp',       band:'6-10',  tier:'medium', atkMult:0.22, hpMult:2.50, goldMin:17,  goldMax:26,  diffScore:77,  intervalType:'fast',     flavor:'Beautiful from a distance.  Toxic at any range.' },
   { id:'mossclaw_bear',    name:'Mossclaw Bear',    band:'6-10',  tier:'medium', atkMult:0.22, hpMult:3.00, goldMin:20,  goldMax:32,  diffScore:82,  intervalType:'slow',     flavor:'Has been eating travelers since before the road was built.' },
@@ -79,9 +85,9 @@ const RPG_ENEMIES = [
 
   // ── BAND 11-15 ───────────────────────────────────────────────────────────
 
-  { id:'dire_rat',         name:'Dire Rat',         band:'11-15', tier:'easy',   atkMult:0.16, hpMult:1.40, goldMin:12,  goldMax:20,  diffScore:51,  intervalType:'fast',     flavor:'Old, scarred, and mean.  Survived everything the forest threw at it.' },
-  { id:'thornback_wolf',   name:'Thornback Wolf',   band:'11-15', tier:'easy',   atkMult:0.16, hpMult:1.60, goldMin:14,  goldMax:22,  diffScore:55,  intervalType:'standard', flavor:'Spine-quilled and silent.  You hear the pack after the first bite.' },
-  { id:'crumble_golem',    name:'Crumble Golem',    band:'11-15', tier:'easy',   atkMult:0.16, hpMult:1.90, goldMin:13,  goldMax:21,  diffScore:56,  intervalType:'slow',     flavor:'Half-finished.  The half that works is the dangerous half.' },
+  { id:'dire_rat',         name:'Dire Rat',         band:'11-15', tier:'easy',   atkMult:0.12, hpMult:0.75, goldMin:12,  goldMax:20,  diffScore:51,  intervalType:'fast',     flavor:'Old, scarred, and mean.  Survived everything the forest threw at it.' },
+  { id:'thornback_wolf',   name:'Thornback Wolf',   band:'11-15', tier:'easy',   atkMult:0.12, hpMult:0.80, goldMin:14,  goldMax:22,  diffScore:55,  intervalType:'standard', flavor:'Spine-quilled and silent.  You hear the pack after the first bite.' },
+  { id:'crumble_golem',    name:'Crumble Golem',    band:'11-15', tier:'easy',   atkMult:0.12, hpMult:0.90, goldMin:13,  goldMax:21,  diffScore:56,  intervalType:'slow',     flavor:'Half-finished.  The half that works is the dangerous half.' },
   { id:'hobgoblin_warrior',name:'Hobgoblin Warrior',band:'11-15', tier:'medium', atkMult:0.20, hpMult:2.60, goldMin:25,  goldMax:40,  diffScore:82,  intervalType:'standard', flavor:'Organized.  Armored.  Angry about it.' },
   { id:'venomfang_asp',    name:'Venomfang Asp',    band:'11-15', tier:'medium', atkMult:0.22, hpMult:2.50, goldMin:24,  goldMax:38,  diffScore:80,  intervalType:'fast',     flavor:'Coiled in the grass.  Patient as stone.' },
   { id:'frostborn_wraith', name:'Frostborn Wraith', band:'11-15', tier:'medium', atkMult:0.22, hpMult:2.80, goldMin:26,  goldMax:42,  diffScore:83,  intervalType:'standard', flavor:'Killed in winter.  Never warmed up to the idea of staying dead.' },
@@ -91,9 +97,9 @@ const RPG_ENEMIES = [
 
   // ── BAND 16-20 ───────────────────────────────────────────────────────────
 
-  { id:'plague_rat',       name:'Plague Rat',       band:'16-20', tier:'easy',   atkMult:0.16, hpMult:1.40, goldMin:16,  goldMax:26,  diffScore:52,  intervalType:'fast',     flavor:'The bite is the least of your concerns.' },
-  { id:'razorwing_harpy',  name:'Razorwing Harpy',  band:'16-20', tier:'easy',   atkMult:0.16, hpMult:1.50, goldMin:17,  goldMax:27,  diffScore:54,  intervalType:'fast',     flavor:'Circling.  Always circling.' },
-  { id:'mud_elemental',    name:'Mud Elemental',    band:'16-20', tier:'easy',   atkMult:0.16, hpMult:1.90, goldMin:15,  goldMax:24,  diffScore:56,  intervalType:'slow',     flavor:'Older than the swamp.  Angrier than the rain.' },
+  { id:'plague_rat',       name:'Plague Rat',       band:'16-20', tier:'easy',   atkMult:0.12, hpMult:1.40, goldMin:16,  goldMax:26,  diffScore:52,  intervalType:'fast',     flavor:'The bite is the least of your concerns.' },
+  { id:'razorwing_harpy',  name:'Razorwing Harpy',  band:'16-20', tier:'easy',   atkMult:0.12, hpMult:1.50, goldMin:17,  goldMax:27,  diffScore:54,  intervalType:'fast',     flavor:'Circling.  Always circling.' },
+  { id:'mud_elemental',    name:'Mud Elemental',    band:'16-20', tier:'easy',   atkMult:0.12, hpMult:0.95, goldMin:15,  goldMax:24,  diffScore:56,  intervalType:'slow',     flavor:'Older than the swamp.  Angrier than the rain.' },
   { id:'troll_whelp',      name:'Troll Whelp',      band:'16-20', tier:'medium', atkMult:0.20, hpMult:2.80, goldMin:35,  goldMax:55,  diffScore:86,  intervalType:'slow',     flavor:'Half grown.  Twice as reckless for it.' },
   { id:'shadowmeld_panther',name:'Shadowmeld Panther',band:'16-20',tier:'medium',atkMult:0.22, hpMult:2.60, goldMin:33,  goldMax:52,  diffScore:85,  intervalType:'fast',     flavor:'The shadow that moves wrong.' },
   { id:'corrupted_dryad',  name:'Corrupted Dryad',  band:'16-20', tier:'medium', atkMult:0.20, hpMult:3.00, goldMin:36,  goldMax:56,  diffScore:87,  intervalType:'standard', flavor:'The forest is sick.  So is she.' },
@@ -103,9 +109,9 @@ const RPG_ENEMIES = [
 
   // ── BAND 21-25 ───────────────────────────────────────────────────────────
 
-  { id:'marsh_wraith',     name:'Marsh Wraith',     band:'21-25', tier:'easy',   atkMult:0.16, hpMult:1.50, goldMin:20,  goldMax:32,  diffScore:55,  intervalType:'standard', flavor:'It was something once.  Now it haunts the edges of things.' },
-  { id:'stoneback_boar',   name:'Stoneback Boar',   band:'21-25', tier:'easy',   atkMult:0.16, hpMult:1.70, goldMin:22,  goldMax:35,  diffScore:59,  intervalType:'slow',     flavor:'Hides like granite.  Charges like an avalanche.' },
-  { id:'gloom_imp',        name:'Gloom Imp',        band:'21-25', tier:'easy',   atkMult:0.16, hpMult:1.40, goldMin:19,  goldMax:30,  diffScore:53,  intervalType:'fast',     flavor:'Small, irritating, and somehow everywhere at once.' },
+  { id:'marsh_wraith',     name:'Marsh Wraith',     band:'21-25', tier:'easy',   atkMult:0.12, hpMult:1.50, goldMin:20,  goldMax:32,  diffScore:55,  intervalType:'standard', flavor:'It was something once.  Now it haunts the edges of things.' },
+  { id:'stoneback_boar',   name:'Stoneback Boar',   band:'21-25', tier:'easy',   atkMult:0.12, hpMult:1.70, goldMin:22,  goldMax:35,  diffScore:59,  intervalType:'slow',     flavor:'Hides like granite.  Charges like an avalanche.' },
+  { id:'gloom_imp',        name:'Gloom Imp',        band:'21-25', tier:'easy',   atkMult:0.12, hpMult:1.40, goldMin:19,  goldMax:30,  diffScore:53,  intervalType:'fast',     flavor:'Small, irritating, and somehow everywhere at once.' },
   { id:'forest_troll',     name:'Forest Troll',     band:'21-25', tier:'medium', atkMult:0.20, hpMult:3.00, goldMin:45,  goldMax:70,  diffScore:90,  intervalType:'slow',     flavor:'Older than the trees.  Angrier than the storm.' },
   { id:'emberclaw_drake',  name:'Emberclaw Drake',  band:'21-25', tier:'medium', atkMult:0.22, hpMult:2.80, goldMin:44,  goldMax:68,  diffScore:90,  intervalType:'standard', flavor:'Too young to breathe fire properly.  Still trying.' },
   { id:'blightwood_spider',name:'Blightwood Spider',band:'21-25', tier:'medium', atkMult:0.22, hpMult:2.60, goldMin:46,  goldMax:72,  diffScore:91,  intervalType:'fast',     flavor:'The web covers two trees.  She covers three.' },
@@ -115,9 +121,9 @@ const RPG_ENEMIES = [
 
   // ── BAND 26-30 ───────────────────────────────────────────────────────────
 
-  { id:'phantom_hound',    name:'Phantom Hound',    band:'26-30', tier:'easy',   atkMult:0.16, hpMult:1.43, goldMin:26,  goldMax:40,  diffScore:57,  intervalType:'standard', flavor:'Leaves no tracks.  Makes no sound.  Already behind you.' },
-  { id:'cursed_scarecrow', name:'Cursed Scarecrow', band:'26-30', tier:'easy',   atkMult:0.16, hpMult:2.00, goldMin:24,  goldMax:38,  diffScore:58,  intervalType:'slow',     flavor:'The field it guards has been dead for years.' },
-  { id:'barbed_viper',     name:'Barbed Viper',     band:'26-30', tier:'easy',   atkMult:0.16, hpMult:1.40, goldMin:25,  goldMax:39,  diffScore:56,  intervalType:'fast',     flavor:'A second set of fangs.  For emergencies.' },
+  { id:'phantom_hound',    name:'Phantom Hound',    band:'26-30', tier:'easy',   atkMult:0.12, hpMult:1.43, goldMin:26,  goldMax:40,  diffScore:57,  intervalType:'standard', flavor:'Leaves no tracks.  Makes no sound.  Already behind you.' },
+  { id:'cursed_scarecrow', name:'Cursed Scarecrow', band:'26-30', tier:'easy',   atkMult:0.12, hpMult:2.00, goldMin:24,  goldMax:38,  diffScore:58,  intervalType:'slow',     flavor:'The field it guards has been dead for years.' },
+  { id:'barbed_viper',     name:'Barbed Viper',     band:'26-30', tier:'easy',   atkMult:0.12, hpMult:1.40, goldMin:25,  goldMax:39,  diffScore:56,  intervalType:'fast',     flavor:'A second set of fangs.  For emergencies.' },
   { id:'dark_ranger',      name:'Dark Ranger',      band:'26-30', tier:'medium', atkMult:0.20, hpMult:4.00, goldMin:55,  goldMax:85,  diffScore:92,  intervalType:'standard', flavor:'Served the kingdom.  The kingdom is gone.  The arrows remain.' },
   { id:'scalehide_drake',  name:'Scalehide Drake',  band:'26-30', tier:'medium', atkMult:0.24, hpMult:2.57, goldMin:56,  goldMax:88,  diffScore:96,  intervalType:'slow',     flavor:'Graduated from singed to scorched.' },
   { id:'thornwraith',      name:'Thornwraith',      band:'26-30', tier:'medium', atkMult:0.24, hpMult:3.14, goldMin:54,  goldMax:84,  diffScore:94,  intervalType:'standard', flavor:'Roots, thorn, and old hatred.  The forest\'s revenge.' },
@@ -127,9 +133,9 @@ const RPG_ENEMIES = [
 
   // ── BAND 31-35 ───────────────────────────────────────────────────────────
 
-  { id:'wight',            name:'Wight',            band:'31-35', tier:'easy',   atkMult:0.16, hpMult:1.50, goldMin:32,  goldMax:50,  diffScore:59,  intervalType:'standard', flavor:'Cold intelligence behind empty eyes.' },
-  { id:'stone_gargoyle',   name:'Stone Gargoyle',   band:'31-35', tier:'easy',   atkMult:0.16, hpMult:1.90, goldMin:34,  goldMax:53,  diffScore:62,  intervalType:'slow',     flavor:'Perched so long it forgot it could move.  Now it remembers.' },
-  { id:'razorfin_serpent', name:'Razorfin Serpent', band:'31-35', tier:'easy',   atkMult:0.16, hpMult:1.45, goldMin:30,  goldMax:48,  diffScore:59,  intervalType:'fast',     flavor:'River-dwelling.  Highly territorial.  You\'re in the river.' },
+  { id:'wight',            name:'Wight',            band:'31-35', tier:'easy',   atkMult:0.12, hpMult:1.50, goldMin:32,  goldMax:50,  diffScore:59,  intervalType:'standard', flavor:'Cold intelligence behind empty eyes.' },
+  { id:'stone_gargoyle',   name:'Stone Gargoyle',   band:'31-35', tier:'easy',   atkMult:0.12, hpMult:1.90, goldMin:34,  goldMax:53,  diffScore:62,  intervalType:'slow',     flavor:'Perched so long it forgot it could move.  Now it remembers.' },
+  { id:'razorfin_serpent', name:'Razorfin Serpent', band:'31-35', tier:'easy',   atkMult:0.12, hpMult:1.45, goldMin:30,  goldMax:48,  diffScore:59,  intervalType:'fast',     flavor:'River-dwelling.  Highly territorial.  You\'re in the river.' },
   { id:'ancient_troll',    name:'Ancient Troll',    band:'31-35', tier:'medium', atkMult:0.20, hpMult:3.00, goldMin:70,  goldMax:105, diffScore:100, intervalType:'slow',     flavor:'The forest grew around it.  The forest is afraid of it.' },
   { id:'infernus_drake',   name:'Infernus Drake',   band:'31-35', tier:'medium', atkMult:0.22, hpMult:2.80, goldMin:68,  goldMax:102, diffScore:99,  intervalType:'standard', flavor:'Finally figured out the fire thing.  Very enthusiastic about it.' },
   { id:'plague_knight',    name:'Plague Knight',    band:'31-35', tier:'medium', atkMult:0.22, hpMult:2.60, goldMin:72,  goldMax:108, diffScore:101, intervalType:'standard', flavor:'The sickness spread.  He made it a weapon.' },
@@ -139,9 +145,9 @@ const RPG_ENEMIES = [
 
   // ── BAND 36-40 ───────────────────────────────────────────────────────────
 
-  { id:'dusk_specter',     name:'Dusk Specter',     band:'36-40', tier:'easy',   atkMult:0.16, hpMult:1.50, goldMin:40,  goldMax:62,  diffScore:61,  intervalType:'fast',     flavor:'Exists between moments.  Strikes in the gaps.' },
-  { id:'ironhide_beetle',  name:'Ironhide Beetle',  band:'36-40', tier:'easy',   atkMult:0.16, hpMult:2.00, goldMin:38,  goldMax:60,  diffScore:64,  intervalType:'slow',     flavor:'Its carapace has turned away swords.  Many swords.' },
-  { id:'ashwing_gargoyle', name:'Ashwing Gargoyle', band:'36-40', tier:'easy',   atkMult:0.16, hpMult:1.60, goldMin:39,  goldMax:61,  diffScore:63,  intervalType:'standard', flavor:'The stone form was a disguise.  Barely.' },
+  { id:'dusk_specter',     name:'Dusk Specter',     band:'36-40', tier:'easy',   atkMult:0.12, hpMult:1.50, goldMin:40,  goldMax:62,  diffScore:61,  intervalType:'fast',     flavor:'Exists between moments.  Strikes in the gaps.' },
+  { id:'ironhide_beetle',  name:'Ironhide Beetle',  band:'36-40', tier:'easy',   atkMult:0.12, hpMult:2.00, goldMin:38,  goldMax:60,  diffScore:64,  intervalType:'slow',     flavor:'Its carapace has turned away swords.  Many swords.' },
+  { id:'ashwing_gargoyle', name:'Ashwing Gargoyle', band:'36-40', tier:'easy',   atkMult:0.12, hpMult:1.60, goldMin:39,  goldMax:61,  diffScore:63,  intervalType:'standard', flavor:'The stone form was a disguise.  Barely.' },
   { id:'void_stalker',     name:'Void Stalker',     band:'36-40', tier:'medium', atkMult:0.22, hpMult:2.80, goldMin:85,  goldMax:130, diffScore:104, intervalType:'fast',     flavor:'Hunts in the spaces between light and shadow.' },
   { id:'magma_drake',      name:'Magma Drake',      band:'36-40', tier:'medium', atkMult:0.22, hpMult:3.00, goldMin:86,  goldMax:132, diffScore:105, intervalType:'slow',     flavor:'Swam up from below the castle.  Still dripping.' },
   { id:'deathshroud_ranger',name:'Deathshroud Ranger',band:'36-40',tier:'medium',atkMult:0.20, hpMult:2.60, goldMin:84,  goldMax:128, diffScore:103, intervalType:'fast',     flavor:'The arrows are cursed.  The aim is not.' },
@@ -151,9 +157,9 @@ const RPG_ENEMIES = [
 
   // ── BAND 41-45 ───────────────────────────────────────────────────────────
 
-  { id:'abyssal_hound',    name:'Abyssal Hound',    band:'41-45', tier:'easy',   atkMult:0.16, hpMult:1.60, goldMin:50,  goldMax:75,  diffScore:66,  intervalType:'fast',     flavor:'Bred in the dark.  Never seen the sun.  Does not miss it.' },
-  { id:'dread_wisp',       name:'Dread Wisp',       band:'41-45', tier:'easy',   atkMult:0.16, hpMult:1.50, goldMin:48,  goldMax:72,  diffScore:62,  intervalType:'standard', flavor:'Ancient light turned malevolent.  It remembers being warm.' },
-  { id:'void_imp',         name:'Void Imp',         band:'41-45', tier:'easy',   atkMult:0.16, hpMult:1.40, goldMin:46,  goldMax:70,  diffScore:62,  intervalType:'fast',     flavor:'Consumed by something worse.' },
+  { id:'abyssal_hound',    name:'Abyssal Hound',    band:'41-45', tier:'easy',   atkMult:0.12, hpMult:1.60, goldMin:50,  goldMax:75,  diffScore:66,  intervalType:'fast',     flavor:'Bred in the dark.  Never seen the sun.  Does not miss it.' },
+  { id:'dread_wisp',       name:'Dread Wisp',       band:'41-45', tier:'easy',   atkMult:0.12, hpMult:1.50, goldMin:48,  goldMax:72,  diffScore:62,  intervalType:'standard', flavor:'Ancient light turned malevolent.  It remembers being warm.' },
+  { id:'void_imp',         name:'Void Imp',         band:'41-45', tier:'easy',   atkMult:0.12, hpMult:1.40, goldMin:46,  goldMax:70,  diffScore:62,  intervalType:'fast',     flavor:'Consumed by something worse.' },
   { id:'nightmare_ranger', name:'Nightmare Ranger', band:'41-45', tier:'medium', atkMult:0.22, hpMult:2.80, goldMin:105, goldMax:160, diffScore:110, intervalType:'fast',     flavor:'Arrows that find you regardless of cover.' },
   { id:'elder_drake',      name:'Elder Drake',      band:'41-45', tier:'medium', atkMult:0.22, hpMult:3.00, goldMin:107, goldMax:162, diffScore:112, intervalType:'slow',     flavor:'Has mastered the fire.  Is working on the patience.' },
   { id:'primordial_troll', name:'Primordial Troll', band:'41-45', tier:'medium', atkMult:0.20, hpMult:3.14, goldMin:108, goldMax:165, diffScore:112, intervalType:'slow',     flavor:'The Ancient Troll\'s older, quieter sibling.  Much quieter.' },
@@ -163,9 +169,9 @@ const RPG_ENEMIES = [
 
   // ── BAND 46-50 ───────────────────────────────────────────────────────────
 
-  { id:'soul_eater',       name:'Soul Eater',       band:'46-50', tier:'easy',   atkMult:0.16, hpMult:1.60, goldMin:60,  goldMax:90,  diffScore:68,  intervalType:'fast',     flavor:'Takes more than your HP.' },
-  { id:'void_wraith',      name:'Void Wraith',      band:'46-50', tier:'easy',   atkMult:0.16, hpMult:1.70, goldMin:62,  goldMax:93,  diffScore:69,  intervalType:'standard', flavor:'The last thing the old kingdom\'s mages created.  The last thing they did.' },
-  { id:'abyss_crawler',    name:'Abyss Crawler',    band:'46-50', tier:'easy',   atkMult:0.16, hpMult:1.90, goldMin:58,  goldMax:88,  diffScore:69,  intervalType:'slow',     flavor:'Climbed up from somewhere deeper than the castle goes.' },
+  { id:'soul_eater',       name:'Soul Eater',       band:'46-50', tier:'easy',   atkMult:0.12, hpMult:1.60, goldMin:60,  goldMax:90,  diffScore:68,  intervalType:'fast',     flavor:'Takes more than your HP.' },
+  { id:'void_wraith',      name:'Void Wraith',      band:'46-50', tier:'easy',   atkMult:0.12, hpMult:1.70, goldMin:62,  goldMax:93,  diffScore:69,  intervalType:'standard', flavor:'The last thing the old kingdom\'s mages created.  The last thing they did.' },
+  { id:'abyss_crawler',    name:'Abyss Crawler',    band:'46-50', tier:'easy',   atkMult:0.12, hpMult:1.90, goldMin:58,  goldMax:88,  diffScore:69,  intervalType:'slow',     flavor:'Climbed up from somewhere deeper than the castle goes.' },
   { id:'elder_void_stalker',name:'Elder Void Stalker',band:'46-50',tier:'medium',atkMult:0.22, hpMult:3.00, goldMin:130, goldMax:200, diffScore:120, intervalType:'fast',     flavor:'Has hunted longer than most kingdoms have existed.' },
   { id:'legendary_drake',  name:'Legendary Drake',  band:'46-50', tier:'medium', atkMult:0.22, hpMult:2.80, goldMin:132, goldMax:202, diffScore:120, intervalType:'slow',     flavor:'Named in three languages.  Feared in all of them.' },
   { id:'wraith_sovereign', name:'Wraith Sovereign', band:'46-50', tier:'medium', atkMult:0.24, hpMult:3.14, goldMin:134, goldMax:205, diffScore:121, intervalType:'standard', flavor:'Rules the dead in the way the living never managed the living.' },
@@ -743,12 +749,14 @@ function rpgPlayerStats(profile) {
   const trainingBonus   = 1 + (castle.training_grounds || 0) * 0.10;
 
   // Derived stats
-  const baseHP   = 200 + (realEND * 6) + (level * 10) + gearHP;
+  const baseHP   = 200 + (realEND * 10) + (level * 10) + gearHP;
   const maxHP    = Math.round(baseHP * trainingBonus);
-  const rawATK  = Math.round(effSTR * 1.4 * barracksBonus);
+  const rawATK  = Math.round(effSTR * 2.0 * barracksBonus);
   const atk     = Math.max(10 + level, rawATK);
-  const mitigation = effEND / (effEND + 300);
-  const critChance = effDEX / (effDEX + 200);
+  const endMit  = effEND / (effEND + 300);
+  const agiMit  = (effAGI * 0.5) / (effAGI + 100);
+  const mitigation = Math.min(0.85, endMit + agiMit);  // hard cap at 85%
+  const critChance = effDEX / (effDEX + 120);
   const interval = Math.max(4, 20 - Math.floor(effAGI / 8));
 
   return {
@@ -823,7 +831,7 @@ function showRPGHub() {
   const profile = rpgGetProfile();
   const stats   = rpgPlayerStats(profile);
   const gold    = profile.rpg.gold || 0;
-  const tonics  = profile.rpg.emberTonics || 1;
+  const tonics  = profile.rpg.emberTonics ?? 0;
   const maxHP   = stats.maxHP;
   const curHP   = profile.rpg.currentHP ?? maxHP;
 
@@ -1114,9 +1122,13 @@ function rpgShowItemSheet(instanceId, slot, context) {
           <div style="font-size:15px;font-weight:500;color:var(--text)">${inst.name || 'Unknown Item'} +${inst.tier}</div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:3px">${rpgSlotLabel(inst.slot)} · ${inst.band || ''} band</div>
         </div>
-        <button onclick="rpgToggleFavorite('${instanceId}')" style="background:none;border:none;cursor:pointer;font-size:22px;padding:0;line-height:1">
-          ${isFav ? '⭐' : '☆'}
-        </button>
+        <button onclick="rpgToggleFavorite('${instanceId}')" style="
+          background:${isFav ? 'rgba(255,180,0,0.15)' : 'var(--surface)'};
+          border:1px solid ${isFav ? '#FFA726' : 'var(--border)'};
+          border-radius:8px;cursor:pointer;
+          font-size:18px;padding:6px 10px;line-height:1;
+          color:${isFav ? '#FFA726' : 'var(--text-muted)'};
+        ">${isFav ? '★' : '☆'}</button>
       </div>
       <div style="margin-top:12px;font-size:13px;color:var(--str)">${statLine}</div>
       ${passiveLine}
@@ -1326,6 +1338,11 @@ function showRPGCharacterSheet(activeTab, filterSlot) {
     const materials = profile.rpg.materials || {};
     const matTotal = Object.values(materials).reduce((a, b) => a + b, 0);
 
+    // Build set of equipped instanceIds for quick lookup
+    const equippedIds = new Set(
+      Object.values(equipped).filter(Boolean).map(e => e.instanceId)
+    );
+
     // Sort inventory: favorites first within each slot, then by tier desc
     const sortedInv = [...inv].sort((a, b) => {
       if (b.favorite && !a.favorite) return 1;
@@ -1351,14 +1368,20 @@ function showRPGCharacterSheet(activeTab, filterSlot) {
             ${items.length === 0
               ? `<div style="font-size:12px;color:var(--text-muted);padding:8px 0;font-style:italic">No items</div>`
               : items.map(inst => {
-                  const statLine = rpgItemStatDisplay(inst);
+                  const statLine  = rpgItemStatDisplay(inst);
+                  const isEquipped = equippedIds.has(inst.instanceId);
                   return `<div onclick="rpgShowItemSheet('${inst.instanceId}','${inst.slot}','inventory')" style="
-                    background:var(--surface);border:1px solid var(--border);border-radius:8px;
+                    background:var(--surface);
+                    border:1px solid ${isEquipped ? 'var(--str)' : 'var(--border)'};
+                    border-radius:8px;
                     padding:10px 12px;margin-bottom:6px;cursor:pointer;
                     display:flex;align-items:center;justify-content:space-between;
                   ">
                     <div>
-                      <div style="font-size:13px">${inst.name} +${inst.tier}${inst.favorite ? ' ⭐' : ''}${inst.isUnique ? ' ✦' : ''}</div>
+                      <div style="font-size:13px">
+                        ${inst.name} +${inst.tier}${inst.favorite ? ' ⭐' : ''}${inst.isUnique ? ' ✦' : ''}
+                        ${isEquipped ? '<span style="font-size:10px;color:var(--str);background:var(--str)22;padding:1px 6px;border-radius:3px;margin-left:6px;vertical-align:middle">equipped</span>' : ''}
+                      </div>
                       <div style="font-size:10px;color:var(--str);margin-top:2px">${statLine}</div>
                     </div>
                     <span style="color:var(--text-muted);font-size:16px">›</span>
@@ -1615,7 +1638,7 @@ function rpgStartRandomBattle(tier) {
     battleLog: [],
     goldEarned: 0,
     pendingLoot: [],
-    goldMultiplier: 1,
+    goldMultiplier: 1 + (profile.rpg.castle?.vault || 0) * 0.05,
     battleHardenedActive: false,
     hpOnStart: profile.rpg.currentHP,
     emberTonicsUsed: 0,
@@ -1630,6 +1653,15 @@ function rpgStartRandomBattle(tier) {
 // ── QUEST BOARD ──────────────────────────────────────────────────────────────
 function showRPGQuestBoard() {
   const profile  = rpgGetProfile();
+  const today    = new Date().toISOString().slice(0, 10);
+
+  // Reset refresh cost at midnight on board open
+  const qr = profile.rpg.questRefresh || { cost:100, count:0, lastReset:null };
+  if (qr.lastReset !== today) {
+    profile.rpg.questRefresh = { cost:100, count:0, lastReset:today };
+    rpgSaveProfile(profile);
+  }
+
   const stats    = rpgPlayerStats(profile);
   const band     = rpgLevelBand(stats.level);
   const prevBand = rpgPrevBand(band);
@@ -1641,7 +1673,6 @@ function showRPGQuestBoard() {
   const hard   = pool.filter(q => q.difficulty === 'hard');
 
   // Daily quest selection — seeded by date + player level so it's consistent per day
-  const today = new Date().toISOString().slice(0, 10);
   const seed = today.split('-').reduce((a, b) => a + parseInt(b), stats.level);
   const pick = (arr) => arr.length ? arr[seed % arr.length] : null;
 
@@ -1708,7 +1739,18 @@ function rpgPrevBand(band) {
 
 function rpgRefreshQuests() {
   const profile = rpgGetProfile();
-  const cost = profile.rpg.questRefresh?.cost || 100;
+  const today   = new Date().toISOString().slice(0, 10);
+
+  // Reset doubling cost at midnight
+  const qr = profile.rpg.questRefresh || { cost:100, count:0, lastReset:null };
+  if (qr.lastReset !== today) {
+    qr.cost      = 100;
+    qr.count     = 0;
+    qr.lastReset = today;
+    profile.rpg.questRefresh = qr;
+  }
+
+  const cost = qr.cost;
   if ((profile.rpg.gold || 0) < cost) {
     alert(`Not enough gold.  You need ${cost}g to refresh quests.`);
     return;
@@ -1716,8 +1758,8 @@ function rpgRefreshQuests() {
   profile.rpg.gold -= cost;
   profile.rpg.questRefresh = {
     cost: cost * 2,
-    count: (profile.rpg.questRefresh?.count || 0) + 1,
-    lastReset: profile.rpg.questRefresh?.lastReset || new Date().toISOString().slice(0,10),
+    count: qr.count + 1,
+    lastReset: today,
   };
   rpgSaveProfile(profile);
   showRPGQuestBoard();
@@ -1771,7 +1813,7 @@ function rpgStartQuest(questId) {
     battleLog: [],
     goldEarned: 0,
     pendingLoot: [],
-    goldMultiplier: 1,
+    goldMultiplier: 1 + (profile.rpg.castle?.vault || 0) * 0.05,
     battleHardenedActive: false,
     hpOnStart: profile.rpg.currentHP,
     emberTonicsUsed: 0,
@@ -2008,8 +2050,11 @@ function rpgAttack() {
     if (combat.isRandomBattle) {
       combat.active = false;
       rpgSaveCombat(combat);
-      profile.rpg.currentHP = pHP;
+      // Infirmary post-fight regen
+      const infirmaryRegen = _rpgInfirmaryRegen(pHP, stats.maxHP, profile);
+      profile.rpg.currentHP = infirmaryRegen.newHP;
       rpgSaveProfile(profile);
+      if (infirmaryRegen.amount > 0) log.push(`Infirmary regen: +${infirmaryRegen.amount} HP`);
       showRPGReward(combat, false);
       return;
     }
@@ -2034,7 +2079,9 @@ function rpgAttack() {
       }
 
       rpgSaveCombat(combat);
-      profile.rpg.currentHP = pHP;
+      // Infirmary post-fight regen applies after quests too
+      const questRegen = _rpgInfirmaryRegen(pHP, stats.maxHP, profile);
+      profile.rpg.currentHP = questRegen.newHP;
       rpgSaveProfile(profile);
       showRPGReward(combat, true);
       return;
@@ -2256,8 +2303,21 @@ const RPG_CASTLE_BUILDINGS = [
     next: (lvl) => [`4 shop items daily.`,`5 shop items daily.`,`5 items + 1 high-tier daily.`][lvl] },
 ];
 
-// ── CASTLE SCREEN ─────────────────────────────────────────────────────────────
+// ── Infirmary post-fight HP regen ─────────────────────────────────────────────
+// Called after every fight win. Heals % of max HP based on Infirmary level.
+// Level 0 = no regen. Level 1-5 = 3/6/9/12/15% of max HP.
+function _rpgInfirmaryRegen(currentHP, maxHP, profile) {
+  const infirmaryLvl = profile.rpg.castle?.infirmary || 0;
+  if (infirmaryLvl === 0) return { newHP: currentHP, amount: 0 };
+  const pct    = infirmaryLvl * 0.03;  // 3% per level
+  const amount = Math.round(maxHP * pct);
+  const newHP  = Math.min(maxHP, currentHP + amount);
+  return { newHP, amount: newHP - currentHP };
+}
+
+
 function showRPGCastle() {
+  try {
   const profile = rpgGetProfile();
   const gold    = profile.rpg.gold || 0;
   const castle  = profile.rpg.castle || {};
@@ -2303,6 +2363,13 @@ function showRPGCastle() {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('rpg-screen-body').innerHTML = html;
   document.getElementById('screen-rpg').classList.add('active');
+  } catch(e) {
+    console.error('showRPGCastle error:', e);
+    const body = document.getElementById('rpg-screen-body');
+    if (body) body.innerHTML = `<div style="padding:24px;color:#EF5350;font-family:'DM Mono',monospace;font-size:12px">Castle error: ${e.message}<br><br>Check browser console for details.</div>`;
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-rpg').classList.add('active');
+  }
 }
 
 function rpgUpgradeBuilding(buildingId) {
@@ -2381,28 +2448,35 @@ function showRPGShop() {
   const tonicRoom = tonicMax - tonics;
   const tonicPct  = Math.round(rpgTonicHealPct(profile) * 100);
   const shopItems = rpgGenerateShopItems(profile, stats);
-  window._rpgShopItems = shopItems;
+  // Filter out already-purchased items for today
+  const today2 = new Date().toISOString().slice(0,10);
+  const purchased = (profile.rpg.shopPurchased?.[today2]) || [];
+  const availableItems = shopItems.filter((_, idx) => !purchased.includes(idx));
+  window._rpgShopItems = shopItems; // keep full array so indices stay stable
 
-  const itemCards = shopItems.map((item, idx) => {
-    const canAfford = gold >= item.price;
-    const statLine  = rpgItemStatDisplay(item);
-    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
-        <div>
-          <div style="font-size:13px;font-weight:500">${item.name} +${item.tier}</div>
-          <div style="font-size:10px;color:var(--text-muted);margin-top:2px">${rpgSlotLabel(item.slot)} · ${item.band} band</div>
-          <div style="font-size:11px;color:var(--str);margin-top:3px">${statLine}</div>
-        </div>
-        <div style="font-size:14px;color:#FFA726;font-weight:500;white-space:nowrap">${item.price.toLocaleString()}g</div>
-      </div>
-      <button onclick="rpgBuyItem(${idx})" ${canAfford?'':'disabled'} style="
-        width:100%;padding:9px;background:none;
-        border:1px solid ${canAfford?'var(--str)':'var(--border)'};
-        border-radius:7px;color:${canAfford?'var(--str)':'var(--text-muted)'};
-        font-family:'DM Mono',monospace;font-size:12px;cursor:${canAfford?'pointer':'default'};
-      ">${canAfford?'Buy':'Need '+(item.price-gold).toLocaleString()+'g more'}</button>
-    </div>`;
-  }).join('');
+  const itemCards = availableItems.length === 0
+    ? `<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;font-style:italic">All items purchased today.<br>Stock refreshes at midnight.</div>`
+    : availableItems.map((item) => {
+        const idx = shopItems.indexOf(item); // use original index for buy action
+        const canAfford = gold >= item.price;
+        const statLine  = rpgItemStatDisplay(item);
+        return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+            <div>
+              <div style="font-size:13px;font-weight:500">${item.name} +${item.tier}</div>
+              <div style="font-size:10px;color:var(--text-muted);margin-top:2px">${rpgSlotLabel(item.slot)} · ${item.band} band</div>
+              <div style="font-size:11px;color:var(--str);margin-top:3px">${statLine}</div>
+            </div>
+            <div style="font-size:14px;color:#FFA726;font-weight:500;white-space:nowrap">${item.price.toLocaleString()}g</div>
+          </div>
+          <button onclick="rpgBuyItem(${idx})" ${canAfford?'':'disabled'} style="
+            width:100%;padding:9px;background:none;
+            border:1px solid ${canAfford?'var(--str)':'var(--border)'};
+            border-radius:7px;color:${canAfford?'var(--str)':'var(--text-muted)'};
+            font-family:'DM Mono',monospace;font-size:12px;cursor:${canAfford?'pointer':'default'};
+          ">${canAfford?'Buy':'Need '+(item.price-gold).toLocaleString()+'g more'}</button>
+        </div>`;
+      }).join('');
 
   const tonicSection = `
     <div style="padding-top:16px;border-top:1px solid var(--border);margin-top:4px">
@@ -2451,6 +2525,11 @@ function rpgBuyItem(idx) {
   const profile = rpgGetProfile();
   if ((profile.rpg.gold||0) < item.price) { alert('Not enough gold.'); return; }
   profile.rpg.gold -= item.price;
+  // Track purchased slot so it disappears from shop
+  const today = new Date().toISOString().slice(0,10);
+  if (!profile.rpg.shopPurchased) profile.rpg.shopPurchased = {};
+  if (!profile.rpg.shopPurchased[today]) profile.rpg.shopPurchased[today] = [];
+  profile.rpg.shopPurchased[today].push(idx);
   rpgSaveProfile(profile);
   const inv = rpgGetInventory();
   const owned = { ...item, instanceId: rpgUUID() };
@@ -2587,7 +2666,7 @@ renderHomeRPGWidget = function() {
     const rawProfile = JSON.parse(localStorage.getItem('ppl_profile') || '{}');
     const rpg = rawProfile.rpg || {};
     const gold   = (rpg.gold || 0).toLocaleString();
-    const tonics = rpg.emberTonics || 1;
+    const tonics = rpg.emberTonics ?? 0;
     // Tonic cap from Apothecary level: 0→1, 1→2, 2→3
     const apothecary = (rpg.castle && rpg.castle.apothecary) || 0;
     const tonicMax = 1 + apothecary;
