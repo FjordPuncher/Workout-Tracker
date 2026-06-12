@@ -1208,10 +1208,28 @@ function rpgToggleFavorite(instanceId) {
   if (!inst) return;
   inst.favorite = !inst.favorite;
   rpgSaveInventory(inv);
-  // Re-open the sheet with updated state — detect context from equipped slots
-  const profile = rpgGetProfile();
-  const isEquipped = Object.values(profile.rpg.equipped).some(e => e?.instanceId === instanceId);
-  rpgShowItemSheet(instanceId, inst.slot, isEquipped ? 'equipped' : 'inventory');
+
+  // Update the star button in-place — no sheet rebuild so action buttons stay visible
+  const btn = document.querySelector(`[onclick="rpgToggleFavorite('${instanceId}')"]`);
+  if (btn) {
+    const isFav = inst.favorite;
+    btn.style.background   = isFav ? 'rgba(255,180,0,0.15)' : 'var(--surface)';
+    btn.style.borderColor  = isFav ? '#FFA726' : 'var(--border)';
+    btn.style.color        = isFav ? '#FFA726' : 'var(--text-muted)';
+    btn.textContent        = isFav ? '★' : '☆';
+  }
+
+  // Also update any inline star on the inventory/stats list without full re-render
+  // by refreshing the character sheet if it's currently visible
+  const screenBody = document.getElementById('rpg-screen-body');
+  if (screenBody && screenBody.innerHTML.includes('cs-tab-inv') || 
+      screenBody && screenBody.innerHTML.includes('cs-tab-stats')) {
+    const profile = rpgGetProfile();
+    const isEquipped = Object.values(profile.rpg.equipped).some(e => e?.instanceId === instanceId);
+    showRPGCharacterSheet(
+      screenBody.innerHTML.includes('cs-tab-inv') ? 'inventory' : 'stats'
+    );
+  }
 }
 
 function rpgExecuteSell(instanceId, price) {
@@ -1612,6 +1630,7 @@ function showRPGWilds() {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('rpg-screen-body').innerHTML = html;
   document.getElementById('screen-rpg').classList.add('active');
+  if (typeof setActiveNav === 'function') setActiveNav('bnav-rpg');
 }
 
 function rpgStartRandomBattle(tier) {
@@ -1729,6 +1748,7 @@ function showRPGQuestBoard() {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('rpg-screen-body').innerHTML = html;
   document.getElementById('screen-rpg').classList.add('active');
+  if (typeof setActiveNav === 'function') setActiveNav('bnav-rpg');
 }
 
 function rpgPrevBand(band) {
@@ -1944,6 +1964,7 @@ function showRPGCombat() {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('rpg-screen-body').innerHTML = html;
   document.getElementById('screen-rpg').classList.add('active');
+  if (typeof setActiveNav === 'function') setActiveNav('bnav-rpg');
 }
 
 // ── Tonic usage (free action — does not consume attack turn) ─────────────────
@@ -2363,12 +2384,14 @@ function showRPGCastle() {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('rpg-screen-body').innerHTML = html;
   document.getElementById('screen-rpg').classList.add('active');
+  if (typeof setActiveNav === 'function') setActiveNav('bnav-rpg');
   } catch(e) {
     console.error('showRPGCastle error:', e);
     const body = document.getElementById('rpg-screen-body');
     if (body) body.innerHTML = `<div style="padding:24px;color:#EF5350;font-family:'DM Mono',monospace;font-size:12px">Castle error: ${e.message}<br><br>Check browser console for details.</div>`;
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('screen-rpg').classList.add('active');
+    if (typeof setActiveNav === 'function') setActiveNav('bnav-rpg');
   }
 }
 
@@ -2517,6 +2540,7 @@ function showRPGShop() {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('rpg-screen-body').innerHTML = html;
   document.getElementById('screen-rpg').classList.add('active');
+  if (typeof setActiveNav === 'function') setActiveNav('bnav-rpg');
 }
 
 function rpgBuyItem(idx) {

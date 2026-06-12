@@ -1541,7 +1541,7 @@ html, body {
 
 <!-- ── RPG SCREEN ── -->
 <div id="screen-rpg" class="screen">
-  <div id="rpg-screen-body" style="height:100%;overflow-y:auto"></div>
+  <div id="rpg-screen-body" class="scroll-body" style="height:100%;overflow-y:auto"></div>
 </div>
 
 <!-- ── SESSION DETAIL SCREEN ── -->
@@ -1989,6 +1989,7 @@ function openRPG() {
   // Switch to RPG screen immediately using the app's screen pattern
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-rpg').classList.add('active');
+  setActiveNav('bnav-rpg');
   if (window.rpgLoaded) { showRPGHub(); return; }
   // Show a brief loading state while script fetches
   const body = document.getElementById('rpg-screen-body');
