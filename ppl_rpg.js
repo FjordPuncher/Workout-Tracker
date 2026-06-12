@@ -836,42 +836,21 @@ function showRPGHub() {
   const hpColor = hpPct > 60 ? '#4CAF50' : hpPct > 30 ? '#FFA726' : '#EF5350';
 
   const html = `
-<div id="rpg-screen" style="
-  min-height:100vh;
-  background:var(--bg);
-  font-family:'DM Mono',monospace;
-  color:var(--text);
-  display:flex;
-  flex-direction:column;
-">
-
   <!-- Topbar -->
   <div style="
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:14px 16px 10px;
-    border-bottom:1px solid var(--border);
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 16px 10px;border-bottom:1px solid var(--border);
+    position:sticky;top:0;background:var(--bg);z-index:10;
   ">
-    <button onclick="closeRPG()" style="
-      background:none;border:none;
-      color:var(--text-muted);
-      font-family:'DM Mono',monospace;
-      font-size:13px;cursor:pointer;
-      padding:0;
-    ">← Training</button>
+    <button onclick="closeRPG()" style="background:none;border:none;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;padding:0;">← Training</button>
     <span style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--str);letter-spacing:0.08em">THE REALM</span>
-    <div style="width:60px"></div>
+    <div style="width:70px"></div>
   </div>
 
   <!-- Character Card -->
   <div onclick="showRPGCharacterSheet()" style="
-    margin:16px;
-    background:var(--card);
-    border:1px solid var(--border);
-    border-radius:10px;
-    padding:14px 16px;
-    cursor:pointer;
+    margin:16px;background:var(--card);border:1px solid var(--border);
+    border-radius:10px;padding:14px 16px;cursor:pointer;
   ">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
       <div>
@@ -880,17 +859,14 @@ function showRPGHub() {
       </div>
       <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--str)">Lv ${stats.level}</div>
     </div>
-    <!-- HP bar -->
     <div style="margin-bottom:6px">
       <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-bottom:3px">
-        <span>HP</span>
-        <span>${curHP} / ${maxHP}</span>
+        <span>HP</span><span>${curHP} / ${maxHP}</span>
       </div>
       <div style="background:var(--border);border-radius:3px;height:6px;overflow:hidden">
         <div style="width:${hpPct}%;height:100%;background:${hpColor};border-radius:3px;transition:width 1.5s ease"></div>
       </div>
     </div>
-    <!-- Attributes -->
     <div style="display:flex;gap:12px;margin-top:8px">
       ${[['STR',stats.realSTR,'#E57373'],['END',stats.realEND,'#64B5F6'],['AGI',stats.realAGI,'#81C784'],['DEX',stats.realDEX,'#CE93D8']].map(([label,val,col])=>`
         <div style="text-align:center">
@@ -902,13 +878,7 @@ function showRPGHub() {
   </div>
 
   <!-- Destination Grid -->
-  <div style="
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:12px;
-    margin:0 16px;
-    flex:1;
-  ">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 16px;">
     ${[
       ['⚔️','The Wilds','Field · Forest · Castle','showRPGWilds()'],
       ['🏰','The Castle','Upgrades & buildings','showRPGCastle()'],
@@ -916,15 +886,8 @@ function showRPGHub() {
       ['🛒','Shop','Buy gear & tonics','showRPGShop()'],
     ].map(([icon,title,sub,fn])=>`
       <div onclick="${fn}" style="
-        background:var(--card);
-        border:1px solid var(--border);
-        border-radius:10px;
-        padding:16px 14px;
-        cursor:pointer;
-        display:flex;
-        flex-direction:column;
-        gap:6px;
-        min-height:90px;
+        background:var(--card);border:1px solid var(--border);border-radius:10px;
+        padding:16px 14px;cursor:pointer;display:flex;flex-direction:column;gap:6px;min-height:90px;
       ">
         <div style="font-size:22px">${icon}</div>
         <div style="font-size:13px;font-weight:500">${title}</div>
@@ -934,13 +897,7 @@ function showRPGHub() {
   </div>
 
   <!-- Status Line -->
-  <div style="
-    display:flex;
-    justify-content:space-around;
-    padding:14px 16px;
-    border-top:1px solid var(--border);
-    margin-top:16px;
-  ">
+  <div style="display:flex;justify-content:space-around;padding:14px 16px;border-top:1px solid var(--border);margin-top:16px;">
     <div style="text-align:center">
       <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">GOLD</div>
       <div style="font-size:15px;font-weight:500;color:#FFA726">${gold.toLocaleString()}g</div>
@@ -949,17 +906,14 @@ function showRPGHub() {
       <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">EMBER TONICS</div>
       <div style="font-size:15px;font-weight:500;color:var(--str)">${tonics}</div>
     </div>
-  </div>
+  </div>`;
 
-</div>`;
-
-  // Inject into main app content area
-  const main = document.getElementById('main-content') || document.body;
-  const prev = document.getElementById('rpg-screen');
-  if (prev) prev.remove();
-  const wrapper = document.createElement('div');
-  wrapper.innerHTML = html;
-  main.appendChild(wrapper.firstElementChild);
+  // Use the app's screen pattern
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const body = document.getElementById('rpg-screen-body');
+  if (body) body.innerHTML = html;
+  const screen = document.getElementById('screen-rpg');
+  if (screen) screen.classList.add('active');
 }
 
 // ── Stub screens (Phase 1+ will implement these) ──────────────────────────────
@@ -983,10 +937,9 @@ function showRPGShop() {
 // ── Close RPG, return to training ────────────────────────────────────────────
 
 function closeRPG() {
-  const screen = document.getElementById('rpg-screen');
-  if (screen) screen.remove();
-  // Return to home screen
-  showHome();   // main app function
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-home').classList.add('active');
+  showHome();
 }
 
 // ── Entry point called by openRPG() in ppl_workout.html ──────────────────────

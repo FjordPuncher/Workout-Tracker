@@ -1538,6 +1538,11 @@ html, body {
   <div class="scroll-body" id="progression-body"></div>
 </div>
 
+<!-- ── RPG SCREEN ── -->
+<div id="screen-rpg" class="screen">
+  <div id="rpg-screen-body" style="height:100%;overflow-y:auto"></div>
+</div>
+
 <!-- ── SESSION DETAIL SCREEN ── -->
 <div id="screen-session-detail" class="screen">
   <div class="topbar">
@@ -1979,10 +1984,18 @@ function setActiveNav(id) {
 // ════════════════════════════════════════════════════════════════════════════
 
 function openRPG() {
+  // Switch to RPG screen immediately using the app's screen pattern
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-rpg').classList.add('active');
   if (window.rpgLoaded) { showRPGHub(); return; }
+  // Show a brief loading state while script fetches
+  const body = document.getElementById('rpg-screen-body');
+  if (body) body.innerHTML = `<div style="padding:40px 16px;text-align:center;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:13px">Loading The Realm...</div>`;
   const script = document.createElement('script');
   script.src = 'ppl_rpg.js';
-  script.onerror = () => console.error('ppl_rpg.js failed to load');
+  script.onerror = () => {
+    if (body) body.innerHTML = `<div style="padding:40px 16px;text-align:center;color:#EF5350;font-family:'DM Mono',monospace;font-size:13px">Failed to load ppl_rpg.js — check the file is in the same directory.</div>`;
+  };
   document.head.appendChild(script);
   // showRPGHub() is called automatically at end of ppl_rpg.js
 }
