@@ -2546,7 +2546,7 @@ function renderBackfillScreen(existingSessions) {
           <div class="edit-ex-name" style="display:flex;align-items:center;justify-content:space-between">
             <div>
               <span>${bfEx.name}</span>
-              ${isActivity ? `<div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:2px">${bfEx.category || 'general'}</div>` : ''}
+              ${isActivity ? `<div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:2px">${bfEx.type || 'general'}</div>` : ''}
             </div>
             <button onclick="bfRemoveSpecificEx(${bi})"
               style="background:none;border:none;color:var(--text-dim);font-size:11px;cursor:pointer;padding:2px 4px">
@@ -2705,7 +2705,7 @@ function bfSelectPredefined(actKey) {
   const act = PREDEFINED_ACTIVITIES.find(a => a.key === actKey);
   if (!act) return;
   backfillCustomName = act.name;
-  backfillCategory = act.category || 'general';
+  backfillCategory = act.type || 'general';
   backfillSelectedKey = CUSTOM_KEY;
   renderBackfillScreen();
 }
@@ -2715,7 +2715,7 @@ function updateBackfillCustomName(val) {
   backfillSelectedKey = val.trim() ? CUSTOM_KEY : null;
   // Auto-set category from predefined activity if it matches
   const act = getActivity(val.trim());
-  if (act) backfillCategory = act.category || 'general';
+  if (act) backfillCategory = act.type || 'general';
   // Re-render just the save button state without wiping the input
   const btn = document.querySelector('.backfill-confirm-btn');
   if (btn) {
@@ -2750,7 +2750,7 @@ function renderBfExPickerList(q, listId = 'ex-picker-list-bf') {
     if (seen.has(act.name)) return; seen.add(act.name);
     groups.activity.push({
       name: act.name, isActivity: true,
-      category: act.category || 'general',
+      category: act.type || 'general',
       supportsDistance: !!act.supportsDistance,
       supportsNotes: !!act.supportsNotes
     });
@@ -2918,7 +2918,7 @@ function saveBackfillSession() {
       if (!backfillDuration && activityItems[0].duration) backfillDuration = activityItems[0].duration;
       if (!backfillDistance && activityItems[0].distance) backfillDistance = activityItems[0].distance;
       if (!backfillNotes && activityItems[0].activityNotes) backfillNotes = activityItems[0].activityNotes;
-      if (!backfillCategory) backfillCategory = activityItems[0].category || 'general';
+      if (!backfillCategory) backfillCategory = activityItems[0].type || 'general';
     } else {
       customName = activityItems.length ? activityItems.map(a => a.name.split('(')[0].trim()).join(' + ') : 'Specific exercises';
     }
@@ -4899,7 +4899,7 @@ function buildBestsHTML() {
 
   Object.entries(activityGroups).forEach(([groupLabel, items]) => {
     // Pick a color for the group header based on the first activity's category
-    const firstCat = items[0].act.category;
+    const firstCat = items[0].act.type;
     const groupColor = firstCat === 'cardio' ? 'var(--end)'
       : firstCat === 'core' ? 'var(--core)'
       : 'var(--agi)';
@@ -8143,7 +8143,7 @@ function saveQuickLog() {
     loggedAt: today,
     variationKey: CUSTOM_KEY,
     customName: ex.name,
-    category: ex.category || 'general',
+    category: ex.type || 'general',
     tab: 'main',
     exercises,
     notes: '',

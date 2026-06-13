@@ -844,9 +844,9 @@ function rpgPlayerStats(profile) {
   const trainingBonus   = 1 + (castle.training_grounds || 0) * 0.10;
 
   // Derived stats
-  const baseHP   = 200 + (realEND * 10) + (level * 10) + gearHP;
+  const baseHP   = 200 + (realEND * 18) + (level * 10) + gearHP;
   const maxHP    = Math.round(baseHP * trainingBonus);
-  const rawATK  = Math.round(effSTR * 2.0 * barracksBonus);
+  const rawATK  = Math.round(effSTR * 3.2 * barracksBonus);
   const atk     = Math.max(10 + level, rawATK);
   const endMit  = effEND / (effEND + 300);
   const agiMit  = (effAGI * 0.5) / (effAGI + 100);
@@ -1046,10 +1046,11 @@ function showRPGHub() {
 // ── Item helpers ─────────────────────────────────────────────────────────────
 
 function rpgSalvageYield(tier) {
-  if (tier <= 2) return { material:'copper', qty: Math.floor(Math.random()*2)+1 };
-  if (tier <= 4) return { material:'iron',   qty: Math.floor(Math.random()*2)+1 };
-  if (tier <= 6) return { material:'mithril',qty: Math.floor(Math.random()*2)+1 };
-  if (tier <= 8) return { material:'darksteel',qty:Math.floor(Math.random()*2)+1 };
+  // Fixed qty — no randomness so the confirmation display always matches what you receive
+  if (tier <= 2) return { material:'copper',    qty: 1 };
+  if (tier <= 4) return { material:'iron',      qty: 1 };
+  if (tier <= 6) return { material:'mithril',   qty: 1 };
+  if (tier <= 8) return { material:'darksteel', qty: 1 };
   return { material:'darksteel', qty:1, voidShardChance:true };
 }
 
@@ -1741,6 +1742,11 @@ function rpgRollLootDrop(band, tier, isQuestBoss, forgeLevel, forceHighTier) {
     utilityBonus = utils[Math.floor(Math.random() * utils.length)];
     const gem = Object.keys(RPG_JEWELRY_GEMS)[Math.floor(Math.random() * 4)];
     const gemName = RPG_JEWELRY_GEMS[gem];
+    // Assign primary stat based on gem type
+    if (gem === 'STR') rolledStats.effectiveSTR = rolled;
+    else if (gem === 'END') rolledStats.effectiveEND = rolled;
+    else if (gem === 'AGI') rolledStats.effectiveAGI = rolled;
+    else rolledStats.effectiveDEX = rolled;
     return {
       instanceId: rpgUUID(),
       name: `${material} ${gemName} ${type}`,
@@ -2090,10 +2096,12 @@ function showRPGQuestBoard() {
   const hard   = pool.filter(q => q.difficulty === 'hard');
 
   // Daily quest selection — seeded by date + player level so it's consistent per day
-  const seed = today.split('-').reduce((a, b) => a + parseInt(b), stats.level);
-  const pick = (arr) => arr.length ? arr[seed % arr.length] : null;
+  // Use a proper hash so rotation varies across different pool sizes each day
+  const dateStr = today.replace(/-/g,'');
+  const seed = (parseInt(dateStr, 10) * 31 + stats.level * 17) >>> 0;
+  const pick = (arr, offset) => arr.length ? arr[(seed + offset) % arr.length] : null;
 
-  const questSlots = [pick(easy), pick(medium), pick(hard)].filter(Boolean);
+  const questSlots = [pick(easy, 0), pick(medium, 7), pick(hard, 13)].filter(Boolean);
 
   // Refresh cost
   const refreshCost = profile.rpg.questRefresh?.cost || 100;
@@ -2997,7 +3005,16 @@ function rpgGenerateShopItems(profile, stats) {
     else if(ps==='DEX') rs.effectiveDEX=rolled;
     if (slot==='body_armor'){const hs=RPG_GEAR_SCALE.body_armor_hp;rs.flatHP=Math.max(1,Math.round((hs.base[bidx]+(tier-1)*hs.inc[bidx])*(0.9+sr()*0.2)));}
     let name = `${mat} ${type}`;
-    if (slot==='jewelry'){const gk=Object.keys(RPG_JEWELRY_GEMS);const gm=RPG_JEWELRY_GEMS[gk[Math.floor(sr()*gk.length)]];name=`${mat} ${gm} ${type}`;}
+    if (slot==='jewelry'){
+      const gk=Object.keys(RPG_JEWELRY_GEMS);
+      const gemKey=gk[Math.floor(sr()*gk.length)];
+      const gm=RPG_JEWELRY_GEMS[gemKey];
+      name=`${mat} ${gm} ${type}`;
+      if(gemKey==='STR') rs.effectiveSTR=rolled;
+      else if(gemKey==='END') rs.effectiveEND=rolled;
+      else if(gemKey==='AGI') rs.effectiveAGI=rolled;
+      else rs.effectiveDEX=rolled;
+    }
     return { instanceId:`shop_${rpgUUID()}_${today}`, name, slot, band:useBand, tier, rolledStats:rs,
              isUnique:false, favorite:false, price:rpgItemPrice(tier,bidx), acquiredAt:today };
   });
@@ -3277,11 +3294,12 @@ function rpgShowForgeSheet(instanceId) {
   const statNames = { effectiveSTR:'STR', effectiveEND:'END', effectiveAGI:'AGI', effectiveDEX:'DEX', flatHP:'HP' };
 
   const currentStats = inst.rolledStats || {};
-  // Project next tier stats — use same formula as rpgForgeUpgrade
+  // Project next tier stats — derive primary key from whichever stat the item actually has
   const projectedStats = { ...currentStats };
+  const statKeyMap = { STR:'effectiveSTR', END:'effectiveEND', AGI:'effectiveAGI', DEX:'effectiveDEX' };
+  // Find which primary stat key this item has (first non-zero match)
+  const primaryKey = ['effectiveSTR','effectiveEND','effectiveAGI','effectiveDEX'].find(k => currentStats[k]) || 'effectiveDEX';
   const baseVal = scale.base[bandIdx] + (nextTier - 1) * scale.inc[bandIdx];
-  const primaryKey = inst.primary === 'STR' ? 'effectiveSTR' : inst.primary === 'END' ? 'effectiveEND' :
-    inst.primary === 'AGI' ? 'effectiveAGI' : 'effectiveDEX';
   projectedStats[primaryKey] = Math.max(currentStats[primaryKey] || 0, Math.round(baseVal * 0.95));
   if (slot === 'body_armor' && currentStats.flatHP) {
     const hs = RPG_GEAR_SCALE.body_armor_hp;
