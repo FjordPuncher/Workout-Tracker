@@ -41,6 +41,7 @@
   --bg: #0A0A09;
   --surface: #141412;
   --surface2: #1C1C1A;
+  --card: #1C1C1A;
   --border: #2A2A27;
   --text: #F0EDE6;
   --text-muted: #888780;
@@ -1860,6 +1861,12 @@ const CUSTOM_KEY = '__custom__';
 const CUSTOM_WORKOUT_KEY = 'ppl_custom_workouts';
 
 // Predefined activities — appear in the backfill/custom workout picker
+// Resolves workout category from any object regardless of whether it uses
+// .category (sessions, picker items) or .type (exercise library entries)
+function resolveWorkoutType(obj) {
+  return obj?.category || obj?.type || 'general';
+}
+
 // Returns true if a session supports distance tracking
 function isCardioSession(variationKey, customCategory, customName) {
   if (variationKey !== CUSTOM_KEY) return false;
@@ -2546,7 +2553,7 @@ function renderBackfillScreen(existingSessions) {
           <div class="edit-ex-name" style="display:flex;align-items:center;justify-content:space-between">
             <div>
               <span>${bfEx.name}</span>
-              ${isActivity ? `<div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:2px">${bfEx.type || 'general'}</div>` : ''}
+              ${isActivity ? `<div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:2px">${resolveWorkoutType(bfEx)}</div>` : ''}
             </div>
             <button onclick="bfRemoveSpecificEx(${bi})"
               style="background:none;border:none;color:var(--text-dim);font-size:11px;cursor:pointer;padding:2px 4px">
@@ -2705,7 +2712,7 @@ function bfSelectPredefined(actKey) {
   const act = PREDEFINED_ACTIVITIES.find(a => a.key === actKey);
   if (!act) return;
   backfillCustomName = act.name;
-  backfillCategory = act.type || 'general';
+  backfillCategory = resolveWorkoutType(act);
   backfillSelectedKey = CUSTOM_KEY;
   renderBackfillScreen();
 }
@@ -2715,7 +2722,7 @@ function updateBackfillCustomName(val) {
   backfillSelectedKey = val.trim() ? CUSTOM_KEY : null;
   // Auto-set category from predefined activity if it matches
   const act = getActivity(val.trim());
-  if (act) backfillCategory = act.type || 'general';
+  if (act) backfillCategory = resolveWorkoutType(act);
   // Re-render just the save button state without wiping the input
   const btn = document.querySelector('.backfill-confirm-btn');
   if (btn) {
@@ -2741,7 +2748,7 @@ function renderBfExPickerList(q, listId = 'ex-picker-list-bf') {
     [...v.exercises, ...v.core].map(n => typeof n==='string'?getExercise(n):n).forEach((ex, i) => {
       if (seen.has(ex.name)) return; seen.add(ex.name);
       const type = i < v.exercises.length ? v.type : 'core';
-      groups[type].push({ name: ex.name, isActivity: false });
+      groups[type].push({ name: ex.name, isActivity: false, type });
     });
   });
 
@@ -2750,7 +2757,7 @@ function renderBfExPickerList(q, listId = 'ex-picker-list-bf') {
     if (seen.has(act.name)) return; seen.add(act.name);
     groups.activity.push({
       name: act.name, isActivity: true,
-      category: act.type || 'general',
+      category: resolveWorkoutType(act),
       supportsDistance: !!act.supportsDistance,
       supportsNotes: !!act.supportsNotes
     });
@@ -2768,7 +2775,7 @@ function renderBfExPickerList(q, listId = 'ex-picker-list-bf') {
     items.forEach(item => {
       const safeName = item.name.replace(/'/g, "\\'");
       const isAct = item.isActivity ? 'true' : 'false';
-      const cat = (item.category || '').replace(/'/g, "\\'");
+      const cat = resolveWorkoutType(item).replace(/'/g, "\\'");
       const dist = item.supportsDistance ? 'true' : 'false';
       const hasNotes = item.supportsNotes ? 'true' : 'false';
       html += `<button class="ex-picker-item"
@@ -2918,7 +2925,7 @@ function saveBackfillSession() {
       if (!backfillDuration && activityItems[0].duration) backfillDuration = activityItems[0].duration;
       if (!backfillDistance && activityItems[0].distance) backfillDistance = activityItems[0].distance;
       if (!backfillNotes && activityItems[0].activityNotes) backfillNotes = activityItems[0].activityNotes;
-      if (!backfillCategory) backfillCategory = activityItems[0].type || 'general';
+      if (!backfillCategory) backfillCategory = resolveWorkoutType(activityItems[0]);
     } else {
       customName = activityItems.length ? activityItems.map(a => a.name.split('(')[0].trim()).join(' + ') : 'Specific exercises';
     }
@@ -4899,7 +4906,7 @@ function buildBestsHTML() {
 
   Object.entries(activityGroups).forEach(([groupLabel, items]) => {
     // Pick a color for the group header based on the first activity's category
-    const firstCat = items[0].act.type;
+    const firstCat = resolveWorkoutType(items[0].act);
     const groupColor = firstCat === 'cardio' ? 'var(--end)'
       : firstCat === 'core' ? 'var(--core)'
       : 'var(--agi)';
@@ -8064,7 +8071,7 @@ function renderQLSearchResults(q) {
   EXERCISE_LIBRARY.forEach(ex => {
     const bucket = ex.isActivity ? groups.activity : (groups[ex.type] || groups.general);
     if (!bucket) return;
-    bucket.push({ name: ex.name, isActivity: !!ex.isActivity, category: ex.type || 'general', supportsDistance: !!ex.supportsDistance });
+    bucket.push({ name: ex.name, isActivity: !!ex.isActivity, category: resolveWorkoutType(ex), supportsDistance: !!ex.supportsDistance });
   });
 
   const lq = q.toLowerCase().trim();
@@ -8143,7 +8150,7 @@ function saveQuickLog() {
     loggedAt: today,
     variationKey: CUSTOM_KEY,
     customName: ex.name,
-    category: ex.type || 'general',
+    category: resolveWorkoutType(ex),
     tab: 'main',
     exercises,
     notes: '',
