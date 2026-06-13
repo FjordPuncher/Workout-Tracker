@@ -7438,26 +7438,6 @@ function computeAndShowXP(savedSessionId) {
       if (!rawProfile.rpg.stats) rawProfile.rpg.stats = {};
       rawProfile.rpg.stats.goldFromWorkouts = (rawProfile.rpg.stats.goldFromWorkouts || 0) + rpgGoldEarned;
       localStorage.setItem('ppl_profile', JSON.stringify(rawProfile));
-      // If RPG is loaded, trigger mid-combat workout hook
-      if (window.rpgLoaded && typeof rpgOnWorkoutSaved === 'function') {
-        // Derive session type from variation meta for accuracy.
-        // category is authoritative for core/custom sessions.
-        // For PPL sessions, the variation type is the source of truth.
-        let sessionType = 'push'; // safe default
-        if (latest.category === 'core') {
-          sessionType = 'core';
-        } else if (latest.tab === 'core') {
-          sessionType = 'core';
-        } else if (latest.variationKey && typeof getVariationMeta === 'function') {
-          const vm = getVariationMeta(latest.variationKey, latest.customName, latest.category, latest.customWorkoutId, latest.tab);
-          if (vm && vm.type) sessionType = vm.type;
-        } else if (latest.tab && latest.tab !== 'main') {
-          sessionType = latest.tab;
-        }
-        rpgOnWorkoutSaved(sessionType);
-      } else if (window.rpgLoaded) {
-        renderHomeRPGWidget();
-      }
     }
   } catch(e) { console.warn('RPG gold award failed:', e); }
 
@@ -7505,6 +7485,29 @@ function computeAndShowXP(savedSessionId) {
       localStorage.setItem('ppl_profile', JSON.stringify(rawProfile3));
     }
   } catch(e) { console.warn('RPG PB gold failed:', e); }
+
+  // ── RPG WORKOUT HOOK ─────────────────────────────────────────────────────
+  // Always fire rpgOnWorkoutSaved when RPG is loaded — regardless of whether
+  // gold was earned. Ensures heal + stat boost applies even for pure activity
+  // sessions (running, biking) that produce no set-based attrGains XP.
+  if (window.rpgLoaded && typeof rpgOnWorkoutSaved === 'function') {
+    try {
+      let sessionType = 'push'; // safe default
+      if (latest.category === 'core') {
+        sessionType = 'core';
+      } else if (latest.tab === 'core') {
+        sessionType = 'core';
+      } else if (latest.variationKey && typeof getVariationMeta === 'function') {
+        const vm = getVariationMeta(latest.variationKey, latest.customName, latest.category, latest.customWorkoutId, latest.tab);
+        if (vm && vm.type) sessionType = vm.type;
+      } else if (latest.tab && latest.tab !== 'main') {
+        sessionType = latest.tab;
+      }
+      rpgOnWorkoutSaved(sessionType);
+    } catch(e) { console.warn('RPG workout hook failed:', e); }
+  } else if (window.rpgLoaded) {
+    renderHomeRPGWidget();
+  }
 
   setTimeout(() => {
     showXPOverlay({
