@@ -7435,6 +7435,8 @@ function computeAndShowXP(savedSessionId) {
       if (!rawProfile.rpg) rawProfile.rpg = { gold: 0, emberTonics: 1 };
       if (!rawProfile.rpg.gold) rawProfile.rpg.gold = 0;
       rawProfile.rpg.gold += rpgGoldEarned;
+      if (!rawProfile.rpg.stats) rawProfile.rpg.stats = {};
+      rawProfile.rpg.stats.goldFromWorkouts = (rawProfile.rpg.stats.goldFromWorkouts || 0) + rpgGoldEarned;
       localStorage.setItem('ppl_profile', JSON.stringify(rawProfile));
       // If RPG is loaded, trigger mid-combat workout hook
       if (window.rpgLoaded && typeof rpgOnWorkoutSaved === 'function') {
@@ -7479,6 +7481,9 @@ function computeAndShowXP(savedSessionId) {
       });
       if (achGold > 0) {
         rawProfile2.rpg.gold = (rawProfile2.rpg.gold || 0) + achGold;
+        if (!rawProfile2.rpg.stats) rawProfile2.rpg.stats = {};
+        rawProfile2.rpg.stats.goldFromAchievements = (rawProfile2.rpg.stats.goldFromAchievements || 0) + achGold;
+        rawProfile2.rpg.stats.goldFromWorkouts = Math.max(0, (rawProfile2.rpg.stats.goldFromWorkouts || 0) - achGold); // already added above, correct to achievements
         rpgGoldEarned += achGold;
         localStorage.setItem('ppl_profile', JSON.stringify(rawProfile2));
       }
@@ -7493,6 +7498,9 @@ function computeAndShowXP(savedSessionId) {
       if (!rawProfile3.rpg) rawProfile3.rpg = { gold: 0 };
       const pbGold = activityPBs.length * 50;
       rawProfile3.rpg.gold = (rawProfile3.rpg.gold || 0) + pbGold;
+      if (!rawProfile3.rpg.stats) rawProfile3.rpg.stats = {};
+      rawProfile3.rpg.stats.goldFromPBs = (rawProfile3.rpg.stats.goldFromPBs || 0) + pbGold;
+      rawProfile3.rpg.stats.goldFromWorkouts = Math.max(0, (rawProfile3.rpg.stats.goldFromWorkouts || 0) - pbGold); // correct to PBs
       rpgGoldEarned += pbGold;
       localStorage.setItem('ppl_profile', JSON.stringify(rawProfile3));
     }

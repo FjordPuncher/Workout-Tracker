@@ -601,23 +601,57 @@ const RPG_UNIQUE_KEYWORDS = {
 
 // Unique item slot passives — scale by band group
 // bandGroup: 0=bands 1-10, 1=bands 11-25, 2=bands 26-40, 3=bands 41-50
-function rpgUniquePassive(slot, bandGroup) {
-  const pcts = [8, 10, 11, 12];
-  const p = pcts[bandGroup];
-  const dmgs = [8, 10, 11, 12];
-  const d = dmgs[bandGroup];
-  const ticks = [2, 3, 3, 4];
-  const t = ticks[bandGroup];
-  const hps = [8, 15, 38, 55];
-  const h = hps[bandGroup];
-  switch (slot) {
-    case 'weapon':     return { type:'lifesteal', value:p, desc:`Lifesteal — heal ${p}% of damage dealt per attack` };
-    case 'shield':     return { type:'reflect',   value:p, dmgReduce:d, desc:`Reflect — ${p}% chance to reduce incoming damage by ${d}` };
-    case 'helmet':     return { type:'sharp_eye', value:p, desc:`Sharp Eye — +${p}% crit chance` };
-    case 'body_armor': return { type:'thorns',    value:p, desc:`Thorns — enemy takes ${p}% of damage dealt to you` };
-    case 'boots':      return { type:'haste',     value:t, desc:`Haste — -${t} tick attack interval` };
-    case 'jewelry':    return { type:'resilience',value:h, desc:`Resilience — +${h} HP regen after each fight` };
+// Passive pools by item class
+const RPG_WEAPON_PASSIVES  = ['lifesteal', 'haste', 'sharp_eye'];
+const RPG_ARMOR_PASSIVES   = ['reflect', 'thorns', 'resilience'];
+
+function rpgIsWeaponSlot(slot) { return slot === 'weapon'; }
+
+// Compute passive value given type, bandGroup, and tier
+function rpgPassiveValue(type, bandGroup, tier) {
+  const bg = bandGroup;
+  const t  = tier;
+  const v = (base, inc) => Math.round(base + (t - 1) * inc);
+  switch (type) {
+    case 'lifesteal': {
+      const base = [10,14,17,21][bg]; const inc = [0.8,0.9,1.0,1.0][bg];
+      const pct = v(base, inc);
+      return { type, pct, desc:`Lifesteal — heal ${pct}% of damage dealt per attack` };
+    }
+    case 'sharp_eye': {
+      const base = [3,5,7,9][bg]; const inc = [0.4,0.5,0.5,0.5][bg];
+      const pct = v(base, inc);
+      return { type, pct, desc:`Sharp Eye — +${pct}% crit chance` };
+    }
+    case 'haste': {
+      const base = [1,2,3,4][bg]; const inc = [0.2,0.2,0.2,0.2][bg];
+      const ticks = Math.max(1, v(base, inc));
+      return { type, ticks, desc:`Haste — -${ticks} tick${ticks>1?'s':''} attack interval` };
+    }
+    case 'reflect': {
+      const cBase = [20,28,36,44][bg]; const cInc = [0.5,0.5,0.5,0.5][bg];
+      const dBase = [24,40,60,80][bg]; const dInc = [2,3,4,5][bg];
+      const chance = v(cBase, cInc); const dmgReduce = v(dBase, dInc);
+      return { type, chance, dmgReduce, desc:`Reflect — ${chance}% chance to reduce incoming damage by ${dmgReduce}` };
+    }
+    case 'thorns': {
+      const base = [6,9,12,15][bg]; const inc = [0.6,0.7,0.8,0.9][bg];
+      const pct = v(base, inc);
+      return { type, pct, desc:`Thorns — reflect ${pct}% of damage taken back to attacker` };
+    }
+    case 'resilience': {
+      const base = [5,12,30,50][bg]; const inc = [1.0,1.8,3.0,4.0][bg];
+      const hp = v(base, inc);
+      return { type, hp, desc:`Resilience — +${hp} HP regen after each fight` };
+    }
   }
+}
+
+// Roll a random passive for a unique item at drop time
+function rpgUniquePassive(slot, bandGroup, tier) {
+  const pool  = rpgIsWeaponSlot(slot) ? RPG_WEAPON_PASSIVES : RPG_ARMOR_PASSIVES;
+  const type  = pool[Math.floor(Math.random() * pool.length)];
+  return rpgPassiveValue(type, bandGroup, tier);
 }
 
 // Secondary stat per slot for unique items
@@ -678,8 +712,46 @@ function rpgGetProfile() {
       materials: { copper:0, iron:0, mithril:0, darksteel:0, voidShards:0 },
       questRefresh: { cost:100, count:0, lastReset:null },
       cosmetics: {},
+      shopPurchased: {},
+      stats: {
+        goldFromWorkouts: 0,
+        goldFromBattles: 0,
+        goldFromQuests: 0,
+        goldFromAchievements: 0,
+        goldFromPBs: 0,
+        goldSpentShop: 0,
+        goldSpentCastle: 0,
+        battlesWon: 0,
+        battlesLost: 0,
+        questsCompleted: 0,
+        enemiesDefeated: 0,
+        bossesDefeated: 0,
+        tonicsUsed: 0,
+        itemsSold: 0,
+        itemsSalvaged: 0,
+        itemsBought: 0,
+        totalDamageDealt: 0,
+        totalDamageTaken: 0,
+        biggestHit: 0,
+        biggestHitTaken: 0,
+        currentWinStreak: 0,
+        longestWinStreak: 0,
+        killCounts: {},
+      },
     };
     saveProfile(p);
+  }
+  if (!p.rpg.stats) {
+    p.rpg.stats = {
+      goldFromWorkouts:0, goldFromBattles:0, goldFromQuests:0,
+      goldFromAchievements:0, goldFromPBs:0, goldSpentShop:0, goldSpentCastle:0,
+      battlesWon:0, battlesLost:0, questsCompleted:0,
+      enemiesDefeated:0, bossesDefeated:0, tonicsUsed:0,
+      itemsSold:0, itemsSalvaged:0, itemsBought:0,
+      totalDamageDealt:0, totalDamageTaken:0,
+      biggestHit:0, biggestHitTaken:0,
+      currentWinStreak:0, longestWinStreak:0, killCounts:{},
+    };
   }
   return p;
 }
@@ -687,6 +759,24 @@ function rpgGetProfile() {
 function rpgSaveProfile(p) {
   saveProfile(p);   // delegates to main app saveProfile()
 }
+// ── Stat tracking helper ──────────────────────────────────────────────────────
+function rpgStat(profile, key, amount) {
+  if (!profile.rpg.stats) return;
+  if (typeof profile.rpg.stats[key] === 'number') {
+    profile.rpg.stats[key] += amount;
+  }
+}
+function rpgStatMax(profile, key, value) {
+  if (!profile.rpg.stats) return;
+  if (value > (profile.rpg.stats[key] || 0)) profile.rpg.stats[key] = value;
+}
+function rpgStatKill(profile, enemyId) {
+  if (!profile.rpg.stats) return;
+  if (!profile.rpg.stats.killCounts) profile.rpg.stats.killCounts = {};
+  profile.rpg.stats.killCounts[enemyId] = (profile.rpg.stats.killCounts[enemyId] || 0) + 1;
+}
+
+
 
 function rpgGetInventory() {
   try { return JSON.parse(localStorage.getItem(RPG_INVENTORY_KEY) || '[]'); }
@@ -845,6 +935,7 @@ function showRPGHub() {
   const hpColor = hpPct > 60 ? '#4CAF50' : hpPct > 30 ? '#FFA726' : '#EF5350';
   const apothecary = profile.rpg.castle?.apothecary || 0;
   const tonicMax = 1 + apothecary;
+  const forgeLvl = profile.rpg.castle?.forge || 0;
 
   const html = `
   <!-- Topbar -->
@@ -888,17 +979,25 @@ function showRPGHub() {
     </div>
   </div>
 
-  <!-- Destination Grid -->
+  <!-- Destination Grid — 2×3, Forge unlocks after first upgrade -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 16px;">
     ${[
-      ['⚔️','The Wilds','Field · Forest · Castle','showRPGWilds()'],
-      ['🏰','The Castle','Upgrades & buildings','showRPGCastle()'],
-      ['📋','Quest Board','Active quests','showRPGQuestBoard()'],
-      ['🛒','Shop','Buy gear & tonics','showRPGShop()'],
-    ].map(([icon,title,sub,fn])=>`
-      <div onclick="${fn}" style="
-        background:var(--card);border:1px solid var(--border);border-radius:10px;
-        padding:16px 14px;cursor:pointer;display:flex;flex-direction:column;gap:6px;min-height:90px;
+      ['⚔️','The Wilds','Field · Forest · Castle','showRPGWilds()',false],
+      ['📋','Quest Board','Active quests','showRPGQuestBoard()',false],
+      ['🏰','The Castle','Upgrades & buildings','showRPGCastle()',false],
+      ['🛒','Shop','Buy gear & tonics','showRPGShop()',false],
+      forgeLvl > 0
+        ? ['🔨','Forge','Upgrade your gear','showRPGForge()',false]
+        : ['🔨','Forge','Upgrade the Forge building to unlock','',true],
+      ['👤','Character','Stats · Inventory','showRPGCharacterSheet()',false],
+    ].filter(Boolean).map(([icon,title,sub,fn,locked])=>`
+      <div onclick="${locked ? '' : fn}" style="
+        background:var(--card);
+        border:1px solid ${locked ? 'var(--border)' : 'var(--border)'};
+        border-radius:10px;
+        padding:16px 14px;cursor:${locked ? 'default' : 'pointer'};
+        display:flex;flex-direction:column;gap:6px;min-height:90px;
+        opacity:${locked ? '0.4' : '1'};
       ">
         <div style="font-size:22px">${icon}</div>
         <div style="font-size:13px;font-weight:500">${title}</div>
@@ -1219,15 +1318,13 @@ function rpgToggleFavorite(instanceId) {
     btn.textContent        = isFav ? '★' : '☆';
   }
 
-  // Also update any inline star on the inventory/stats list without full re-render
-  // by refreshing the character sheet if it's currently visible
+  // Refresh character sheet if visible
   const screenBody = document.getElementById('rpg-screen-body');
-  if (screenBody && screenBody.innerHTML.includes('cs-tab-inv') || 
-      screenBody && screenBody.innerHTML.includes('cs-tab-stats')) {
-    const profile = rpgGetProfile();
-    const isEquipped = Object.values(profile.rpg.equipped).some(e => e?.instanceId === instanceId);
+  if (screenBody && (screenBody.innerHTML.includes('cs-tab-inv') ||
+      screenBody.innerHTML.includes('cs-tab-stats'))) {
     showRPGCharacterSheet(
-      screenBody.innerHTML.includes('cs-tab-inv') ? 'inventory' : 'stats'
+      screenBody.innerHTML.includes('rpgstats') ? 'rpgstats' :
+      screenBody.innerHTML.includes('inventory') ? 'inventory' : 'stats'
     );
   }
 }
@@ -1240,6 +1337,7 @@ function rpgExecuteSell(instanceId, price) {
   rpgSaveInventory(inv);
   const profile = rpgGetProfile();
   profile.rpg.gold = (profile.rpg.gold || 0) + price;
+  rpgStat(profile, 'itemsSold', 1);
   rpgSaveProfile(profile);
   rpgDismissSheet();
   showRPGCharacterSheet('inventory');
@@ -1256,12 +1354,110 @@ function rpgExecuteSalvage(instanceId) {
   const profile = rpgGetProfile();
   if (!profile.rpg.materials) profile.rpg.materials = { copper:0, iron:0, mithril:0, darksteel:0, voidShards:0 };
   profile.rpg.materials[salvage.material] = (profile.rpg.materials[salvage.material] || 0) + salvage.qty;
+  rpgStat(profile, 'itemsSalvaged', 1);
   rpgSaveProfile(profile);
   rpgDismissSheet();
   showRPGCharacterSheet('inventory');
 }
 
-// ── Character sheet main screen ───────────────────────────────────────────────
+// ── RPG Stats tab builder ─────────────────────────────────────────────────────
+function buildRPGStatsTab(profile, inv) {
+  const st = profile.rpg.stats || {};
+  const castle = profile.rpg.castle || {};
+
+  // Compute total gold ever earned
+  const totalGoldEarned = (st.goldFromWorkouts||0) + (st.goldFromBattles||0) +
+    (st.goldFromQuests||0) + (st.goldFromAchievements||0) + (st.goldFromPBs||0);
+
+  // Win rate
+  const totalFights = (st.battlesWon||0) + (st.battlesLost||0);
+  const winRate = totalFights > 0 ? Math.round((st.battlesWon||0) / totalFights * 100) : 0;
+
+  // Most killed enemy
+  const killCounts = st.killCounts || {};
+  const topKills = Object.entries(killCounts)
+    .sort((a,b) => b[1]-a[1]).slice(0,3)
+    .map(([id,n]) => {
+      const def = RPG_ENEMIES.find(e => e.id === id);
+      return `${def?.name || id} ×${n}`;
+    });
+
+  // Most upgraded building
+  const topBuilding = Object.entries(castle)
+    .filter(([k]) => RPG_CASTLE_BUILDINGS.find(b => b.id === k))
+    .sort((a,b) => b[1]-a[1])[0];
+  const topBuildingLabel = topBuilding
+    ? `${RPG_CASTLE_BUILDINGS.find(b=>b.id===topBuilding[0])?.name} (Lv ${topBuilding[1]})`
+    : 'None yet';
+
+  // Items in inventory by slot
+  const slotCounts = {};
+  inv.forEach(i => { slotCounts[i.slot] = (slotCounts[i.slot]||0) + 1; });
+
+  const row = (label, value, col='var(--text)') =>
+    `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid var(--border)">
+      <span style="font-size:11px;color:var(--text-muted)">${label}</span>
+      <span style="font-size:12px;font-weight:500;color:${col}">${value}</span>
+    </div>`;
+
+  const section = (title, rows) =>
+    `<div style="margin:16px 16px 0">
+      <div style="font-size:10px;color:var(--text-muted);letter-spacing:0.05em;margin-bottom:6px">${title}</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+        ${rows}
+      </div>
+    </div>`;
+
+  return `
+    ${section('⚔️ GOLD', `
+      ${row('Total ever earned', totalGoldEarned.toLocaleString()+'g', '#FFA726')}
+      ${row('Currently held', (profile.rpg.gold||0).toLocaleString()+'g', '#FFA726')}
+      ${row('From workouts', (st.goldFromWorkouts||0).toLocaleString()+'g')}
+      ${row('From battles', (st.goldFromBattles||0).toLocaleString()+'g')}
+      ${row('From quests', (st.goldFromQuests||0).toLocaleString()+'g')}
+      ${row('From achievements', (st.goldFromAchievements||0).toLocaleString()+'g')}
+      ${row('From personal bests', (st.goldFromPBs||0).toLocaleString()+'g')}
+      ${row('Spent in shop', (st.goldSpentShop||0).toLocaleString()+'g')}
+      ${row('Spent on castle', (st.goldSpentCastle||0).toLocaleString()+'g')}
+    `)}
+
+    ${section('⚔️ COMBAT', `
+      ${row('Battles won', (st.battlesWon||0).toLocaleString(), '#4CAF50')}
+      ${row('Battles lost', (st.battlesLost||0).toLocaleString(), '#EF5350')}
+      ${row('Win rate', totalFights > 0 ? winRate+'%' : '—')}
+      ${row('Quests completed', (st.questsCompleted||0).toLocaleString(), 'var(--str)')}
+      ${row('Enemies defeated', (st.enemiesDefeated||0).toLocaleString())}
+      ${row('Bosses defeated', (st.bossesDefeated||0).toLocaleString(), 'var(--str)')}
+      ${row('Current win streak', (st.currentWinStreak||0).toLocaleString())}
+      ${row('Longest win streak', (st.longestWinStreak||0).toLocaleString(), 'var(--str)')}
+    `)}
+
+    ${section('⚔️ DAMAGE', `
+      ${row('Total damage dealt', (st.totalDamageDealt||0).toLocaleString())}
+      ${row('Total damage taken', (st.totalDamageTaken||0).toLocaleString())}
+      ${row('Biggest single hit', (st.biggestHit||0).toLocaleString(), '#4CAF50')}
+      ${row('Biggest hit taken', (st.biggestHitTaken||0).toLocaleString(), '#EF5350')}
+      ${row('Ember Tonics used', (st.tonicsUsed||0).toLocaleString())}
+    `)}
+
+    ${section('⚔️ TOP KILLS', `
+      ${topKills.length
+        ? topKills.map((k,i) => row(`#${i+1}`, k)).join('')
+        : row('No kills yet', '—')}
+    `)}
+
+    ${section('⚔️ ITEMS', `
+      ${row('Items in inventory', inv.length.toLocaleString())}
+      ${row('Favorited', inv.filter(i=>i.favorite).length.toLocaleString(), '#FFA726')}
+      ${row('Items bought', (st.itemsBought||0).toLocaleString())}
+      ${row('Items sold', (st.itemsSold||0).toLocaleString())}
+      ${row('Items salvaged', (st.itemsSalvaged||0).toLocaleString())}
+      ${row('Most upgraded building', topBuildingLabel)}
+    `)}
+  `;
+}
+
+
 
 function showRPGCharacterSheet(activeTab, filterSlot) {
   activeTab = activeTab || 'stats';
@@ -1269,7 +1465,6 @@ function showRPGCharacterSheet(activeTab, filterSlot) {
   const stats    = rpgPlayerStats(profile);
   const inv      = rpgGetInventory();
   const equipped = profile.rpg.equipped || {};
-
   // ── Stats tab ────────────────────────────────────────────────────────────
   function buildStatsTab() {
     const slots = ['weapon','shield','helmet','body_armor','boots','jewelry'];
@@ -1435,8 +1630,9 @@ function showRPGCharacterSheet(activeTab, filterSlot) {
   }
 
   // ── Full screen HTML ──────────────────────────────────────────────────────
-  const statsContent = buildStatsTab();
-  const invContent   = buildInventoryTab();
+  const statsContent   = buildStatsTab();
+  const invContent     = buildInventoryTab();
+  const rpgStatsContent = buildRPGStatsTab(profile, inv);
 
   const html = `
     <!-- Topbar -->
@@ -1446,25 +1642,24 @@ function showRPGCharacterSheet(activeTab, filterSlot) {
       <div style="width:50px"></div>
     </div>
 
-    <!-- Tab bar -->
+    <!-- Tab bar — 3 tabs -->
     <div style="display:flex;border-bottom:1px solid var(--border)">
-      <button id="cs-tab-stats" onclick="showRPGCharacterSheet('stats')" style="
-        flex:1;padding:12px;background:none;border:none;
-        font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;
-        color:${activeTab==='stats' ? 'var(--str)' : 'var(--text-muted)'};
-        border-bottom:2px solid ${activeTab==='stats' ? 'var(--str)' : 'transparent'};
-      ">Stats</button>
-      <button id="cs-tab-inv" onclick="showRPGCharacterSheet('inventory')" style="
-        flex:1;padding:12px;background:none;border:none;
-        font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;
-        color:${activeTab==='inventory' ? 'var(--str)' : 'var(--text-muted)'};
-        border-bottom:2px solid ${activeTab==='inventory' ? 'var(--str)' : 'transparent'};
-      ">Inventory (${inv.length})</button>
+      ${['stats','rpgstats','inventory'].map(tab => {
+        const labels = { stats:'Stats', rpgstats:'RPG Stats', inventory:`Inventory (${inv.length})` };
+        const active = activeTab === tab;
+        return `<button onclick="showRPGCharacterSheet('${tab}')" style="
+          flex:1;padding:10px 4px;background:none;border:none;
+          font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;
+          color:${active ? 'var(--str)' : 'var(--text-muted)'};
+          border-bottom:2px solid ${active ? 'var(--str)' : 'transparent'};
+          white-space:nowrap;
+        ">${labels[tab]}</button>`;
+      }).join('')}
     </div>
 
     <!-- Tab content -->
-    <div style="padding-bottom:40px">
-      ${activeTab === 'stats' ? statsContent : invContent}
+    <div style="padding-bottom:20px">
+      ${activeTab === 'stats' ? statsContent : activeTab === 'rpgstats' ? rpgStatsContent : invContent}
     </div>`;
 
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -1485,15 +1680,16 @@ function rpgTonicHealPct(profile) {
 }
 
 // ── Loot generation ──────────────────────────────────────────────────────────
-function rpgRollLootDrop(band, tier, isQuestBoss, forgeLevel) {
-  // Determine item tier using Forge weight table
-  // Base weights: +1:50, +2:30, +3:15, +4:5, +5:0 (shop max)
-  // Forge adds +5 to each tier above +1 per level
-  const baseWeights = [50, 30, 15, 5, 0, 0, 0, 0, 0, 0]; // tiers 1-10
-  const weights = baseWeights.map((w, i) => i === 0 ? w : w + forgeLevel * 5);
-
-  // Tier availability by content
+function rpgRollLootDrop(band, tier, isQuestBoss, forgeLevel, forceHighTier) {
+  const baseWeights = [50, 30, 15, 5, 0, 0, 0, 0, 0, 0];
+  const weights = baseWeights.map((w, i) => i === 0 ? w : w + (forgeLevel||0) * 5);
   let maxTier = tier === 'easy' ? 4 : tier === 'medium' ? 6 : isQuestBoss ? 10 : 8;
+  // Boss fallback: guarantee at least a +3 item, shift weight to higher tiers
+  if (forceHighTier) {
+    maxTier = Math.max(maxTier, 6);
+    for (let i = 3; i < maxTier; i++) weights[i] = (weights[i] || 0) + 25;
+    weights[0] = 0; weights[1] = 10; weights[2] = 20; // reduce low tiers
+  }
   const effectiveWeights = weights.map((w, i) => i < maxTier ? w : 0);
   const total = effectiveWeights.reduce((a, b) => a + b, 0);
   if (total === 0) return null;
@@ -1579,6 +1775,173 @@ function rpgGetStatBoostMultiplier(profile) {
   return { atkMult: 1, defMult: 1, agiBonus: 0 };
 }
 
+
+// ── Unique item generation ────────────────────────────────────────────────────
+function rpgGenerateUniqueItem(band, tier) {
+  const slots    = ['weapon','shield','helmet','body_armor','boots','jewelry'];
+  const stats    = ['STR','END','AGI','DEX'];
+  const slot     = slots[Math.floor(Math.random() * slots.length)];
+  const primary  = stats[Math.floor(Math.random() * stats.length)];
+  const secondary = RPG_UNIQUE_SECONDARY[slot];
+  const bandIdx  = rpgBandIndex(band);
+  const bandGroup = rpgBandGroup(band);
+  const materials = RPG_BAND_MATERIALS[band] || ['Copper'];
+  const mat      = materials[bandIdx % materials.length];
+  const kw       = RPG_UNIQUE_KEYWORDS[primary][bandIdx % 8];
+  const types    = RPG_SLOT_TYPES[slot] || ['Item'];
+  const type     = types[Math.floor(Math.random() * types.length)];
+  const name     = `${kw} ${mat} ${type}`;
+
+  // Roll primary stat
+  const scale    = RPG_GEAR_SCALE[slot] || RPG_GEAR_SCALE.weapon;
+  const baseVal  = scale.base[bandIdx] + (tier - 1) * scale.inc[bandIdx];
+  const rolled   = Math.max(1, Math.round(baseVal * (0.9 + Math.random() * 0.2)));
+
+  // Roll secondary stat (always smaller than primary)
+  const secScale = RPG_GEAR_SCALE[secondary.toLowerCase() === 'str' ? 'weapon' :
+                    secondary === 'END' ? 'shield' : secondary === 'AGI' ? 'boots' : 'helmet'];
+  const secBase  = (secScale?.base[bandIdx] || scale.base[bandIdx]) * 0.65;
+  const secInc   = (secScale?.inc[bandIdx]  || scale.inc[bandIdx])  * 0.65;
+  const secVal   = Math.max(1, Math.round((secBase + (tier-1)*secInc) * (0.9 + Math.random()*0.2)));
+
+  const rolledStats = {};
+  if (primary === 'STR') rolledStats.effectiveSTR = rolled;
+  else if (primary === 'END') rolledStats.effectiveEND = rolled;
+  else if (primary === 'AGI') rolledStats.effectiveAGI = rolled;
+  else if (primary === 'DEX') rolledStats.effectiveDEX = rolled;
+
+  if (secondary === 'STR') rolledStats.effectiveSTR = (rolledStats.effectiveSTR||0) + secVal;
+  else if (secondary === 'END') rolledStats.effectiveEND = (rolledStats.effectiveEND||0) + secVal;
+  else if (secondary === 'AGI') rolledStats.effectiveAGI = (rolledStats.effectiveAGI||0) + secVal;
+  else if (secondary === 'DEX') rolledStats.effectiveDEX = (rolledStats.effectiveDEX||0) + secVal;
+
+  if (slot === 'body_armor') {
+    const hs = RPG_GEAR_SCALE.body_armor_hp;
+    rolledStats.flatHP = Math.max(1, Math.round((hs.base[bandIdx]+(tier-1)*hs.inc[bandIdx])*(0.9+Math.random()*0.2)));
+  }
+
+  const passive = rpgUniquePassive(slot, bandGroup, tier);
+
+  return {
+    instanceId: rpgUUID(),
+    name, slot, band, tier,
+    primary, secondary,
+    rolledStats, passive,
+    isUnique: true, favorite: false,
+    acquiredAt: new Date().toISOString().slice(0, 10),
+  };
+}
+
+// ── Unique drop roll ──────────────────────────────────────────────────────────
+// Returns a unique item or null. Called alongside standard loot roll.
+function rpgRollUniqueDrop(band, tier, enemyTier, isBoss) {
+  if (!isBoss) return null;
+  const chances = { hard: 0.40, medium: 0.05, easy: 0.01 };
+  const chance  = chances[enemyTier] || 0;
+  if (Math.random() >= chance) return null;
+  // Tier: +1 to +3 on drop for easy/medium bosses, +1 to +3 for hard too
+  // Hard bosses weight toward +3
+  const tierWeights = enemyTier === 'hard' ? [20,40,40] : [60,30,10];
+  const tw = tierWeights.reduce((a,b)=>a+b,0);
+  let r = Math.random()*tw, uniqueTier = 1;
+  for (let i=0;i<tierWeights.length;i++){r-=tierWeights[i];if(r<=0){uniqueTier=i+1;break;}}
+  return rpgGenerateUniqueItem(band, uniqueTier);
+}
+
+
+// ── Active passive computation ────────────────────────────────────────────────
+// Called at combat start and stored on combat state.
+// Returns { lifesteal, haste, sharp_eye, reflect, thorns, resilience }
+// Stacking: first item full value, second 60%, third+ 15%
+function rpgComputeActivePassives(profile) {
+  const inv      = rpgGetInventory();
+  const equipped = profile.rpg.equipped || {};
+  const passivesByType = {};
+
+  Object.values(equipped).forEach(eq => {
+    if (!eq) return;
+    const inst = inv.find(i => i.instanceId === eq.instanceId);
+    if (!inst?.isUnique || !inst.passive) return;
+    const type = inst.passive.type;
+    if (!passivesByType[type]) passivesByType[type] = [];
+    passivesByType[type].push(inst.passive);
+  });
+
+  const stacking = [1.0, 0.60, 0.15];
+
+  const result = {};
+  Object.entries(passivesByType).forEach(([type, passives]) => {
+    passives.forEach((p, idx) => {
+      const mult = stacking[Math.min(idx, stacking.length-1)];
+      if (!result[type]) result[type] = { ...p };
+      if (idx === 0) return; // first already set
+
+      // Merge subsequent items with stacking penalty
+      if (type === 'lifesteal')  result[type].pct         += Math.round(p.pct * mult);
+      if (type === 'sharp_eye')  result[type].pct         += Math.round(p.pct * mult);
+      if (type === 'haste')      result[type].ticks       += Math.round(p.ticks * mult);
+      if (type === 'reflect')    { result[type].chance    += Math.round(p.chance * mult); result[type].dmgReduce += Math.round(p.dmgReduce * mult); }
+      if (type === 'thorns')     result[type].pct         += Math.round(p.pct * mult);
+      if (type === 'resilience') result[type].hp          += Math.round(p.hp * mult);
+    });
+  });
+  return result;
+}
+
+
+// ── Crafting material drops ───────────────────────────────────────────────────
+// Called after every enemy kill. Returns array of { material, qty } objects.
+function rpgRollMaterialDrop(enemyTier, isBoss) {
+  const drops = [];
+  const roll  = () => Math.random();
+
+  if (isBoss) {
+    // Bosses: guaranteed copper, plus independent rolls for higher tiers
+    drops.push({ material:'copper', qty:1 });
+    if (roll() < 0.60) drops.push({ material:'iron',      qty:1 });
+    if (roll() < 0.25) drops.push({ material:'mithril',   qty:1 });
+    if (roll() < 0.10) drops.push({ material:'darksteel', qty:1 });
+    // Void Shards — boss only
+    const voidChance = enemyTier === 'hard' ? 0.35 : enemyTier === 'medium' ? 0.15 : 0.05;
+    if (roll() < voidChance) drops.push({ material:'voidShards', qty:1 });
+  } else if (enemyTier === 'hard') {
+    if (roll() < 0.80) drops.push({ material:'copper',    qty:1 });
+    if (roll() < 0.35) drops.push({ material:'iron',      qty:1 });
+    if (roll() < 0.12) drops.push({ material:'mithril',   qty:1 });
+    if (roll() < 0.04) drops.push({ material:'darksteel', qty:1 });
+  } else if (enemyTier === 'medium') {
+    if (roll() < 0.50) drops.push({ material:'copper',    qty:1 });
+    if (roll() < 0.15) drops.push({ material:'iron',      qty:1 });
+    if (roll() < 0.04) drops.push({ material:'mithril',   qty:1 });
+    if (roll() < 0.01) drops.push({ material:'darksteel', qty:1 });
+  } else {
+    // Easy
+    if (roll() < 0.25) drops.push({ material:'copper',    qty:1 });
+    if (roll() < 0.05) drops.push({ material:'iron',      qty:1 });
+    if (roll() < 0.01) drops.push({ material:'mithril',   qty:1 });
+  }
+  return drops;
+}
+
+// Award materials to profile and return a log string
+function rpgAwardMaterials(drops, profile) {
+  if (!drops.length) return null;
+  if (!profile.rpg.materials) profile.rpg.materials = { copper:0, iron:0, mithril:0, darksteel:0, voidShards:0 };
+  drops.forEach(d => {
+    profile.rpg.materials[d.material] = (profile.rpg.materials[d.material] || 0) + d.qty;
+  });
+  const summary = drops.map(d => `${d.qty}× ${rpgMaterialLabel(d.material)}`).join(', ');
+  return summary;
+}
+
+// Quest completion material bonus (guaranteed)
+function rpgQuestCompletionMaterials(questDifficulty) {
+  if (questDifficulty === 'hard')   return [{ material:'copper', qty:1 }, { material:'iron', qty:1 }, { material:'mithril', qty:1 }];
+  if (questDifficulty === 'medium') return [{ material:'copper', qty:1 }, { material:'iron', qty:1 }, { material:'iron', qty:Math.random()<0.5?1:0 }].filter(d=>d.qty>0);
+  // easy
+  return [{ material:'copper', qty:2 + (Math.random()<0.5?1:0) }];
+}
+
 // ── THE WILDS SCREEN ─────────────────────────────────────────────────────────
 function showRPGWilds() {
   const profile = rpgGetProfile();
@@ -1658,6 +2021,7 @@ function rpgStartRandomBattle(tier) {
     goldEarned: 0,
     pendingLoot: [],
     goldMultiplier: 1 + (profile.rpg.castle?.vault || 0) * 0.05,
+    activePassives: rpgComputeActivePassives(profile),
     battleHardenedActive: false,
     hpOnStart: profile.rpg.currentHP,
     emberTonicsUsed: 0,
@@ -1834,6 +2198,7 @@ function rpgStartQuest(questId) {
     goldEarned: 0,
     pendingLoot: [],
     goldMultiplier: 1 + (profile.rpg.castle?.vault || 0) * 0.05,
+    activePassives: rpgComputeActivePassives(profile),
     battleHardenedActive: false,
     hpOnStart: profile.rpg.currentHP,
     emberTonicsUsed: 0,
@@ -1984,6 +2349,7 @@ function rpgUseTonic() {
   rpgSaveCombat(combat);
 
   profile.rpg.emberTonics--;
+  rpgStat(profile, 'tonicsUsed', 1);
   rpgSaveProfile(profile);
 
   showRPGCombat();
@@ -2004,18 +2370,38 @@ function rpgAttack() {
   let   pt        = combat.tickPosition.player;
   let   et        = combat.tickPosition.enemy;
   const log       = [...(combat.battleLog || [])];
+  const ap        = combat.activePassives || {};  // active passives shorthand
+
+  // Apply Haste passive — reduce effective interval for this attack calculation
+  const hasteReduction = (ap.haste && !combat._hasteApplied) ? ap.haste.ticks : 0;
+  if (ap.haste && !combat._hasteApplied) combat._hasteApplied = true;
+  const effectiveInterval = Math.max(4, stats.interval - hasteReduction);
+  // Apply Sharp Eye passive to crit chance
+  const effectiveCrit = Math.min(0.95, stats.critChance + (ap.sharp_eye ? ap.sharp_eye.pct / 100 : 0));
 
   // Advance ticks until player's next action
-  const advance = pt; // ticks until player acts
+  const advance = pt;
   et -= advance;
   pt = 0;
 
   // Process any enemy attacks that fall in this window
   while (et <= 0 && eHP > 0) {
-    const rawDmg  = Math.round(combat.enemy.atk * (0.9 + Math.random() * 0.2));
+    let rawDmg  = Math.round(combat.enemy.atk * (0.9 + Math.random() * 0.2));
+    // Reflect passive — chance to reduce incoming damage
+    if (ap.reflect && Math.random() * 100 < ap.reflect.chance) {
+      rawDmg = Math.max(1, rawDmg - ap.reflect.dmgReduce);
+    }
     const actDmg  = Math.max(1, Math.round(rawDmg * (1 - stats.mitigation)));
     pHP = Math.max(0, pHP - actDmg);
     log.push(`${combat.enemy.name} attacks for ${actDmg} damage.  Your HP: ${pHP}/${stats.maxHP}`);
+    combat._sessionDmgTaken = (combat._sessionDmgTaken || 0) + actDmg;
+    if (actDmg > (combat._sessionBiggestHitTaken || 0)) combat._sessionBiggestHitTaken = actDmg;
+    // Thorns passive — reflect % of damage back
+    if (ap.thorns && actDmg > 0 && eHP > 0) {
+      const thornsDmg = Math.max(1, Math.round(actDmg * ap.thorns.pct / 100));
+      eHP = Math.max(0, eHP - thornsDmg);
+      log.push(`Thorns: ${thornsDmg} reflected to ${combat.enemy.name}`);
+    }
     et += combat.enemy.interval;
     if (pHP <= 0) break;
   }
@@ -2023,14 +2409,24 @@ function rpgAttack() {
   // Player attacks
   if (pHP > 0 && eHP > 0) {
     const variance = 0.9 + Math.random() * 0.2;
-    const isCrit   = Math.random() < stats.critChance;
+    const isCrit   = Math.random() < effectiveCrit;
     let dmg        = Math.round(playerATK * variance);
     if (isCrit) dmg = Math.round(dmg * 1.75);
     eHP = Math.max(0, eHP - dmg);
     log.push(`You ${isCrit ? '⚡ critically strike' : 'attack'} for ${dmg} damage.  Enemy HP: ${eHP}/${combat.enemy.maxHP}`);
-    pt += stats.interval;
+    combat._sessionDmgDealt = (combat._sessionDmgDealt || 0) + dmg;
+    if (dmg > (combat._sessionBiggestHit || 0)) combat._sessionBiggestHit = dmg;
+    // Lifesteal passive — heal % of damage dealt
+    if (ap.lifesteal && dmg > 0) {
+      const healAmt = Math.min(stats.maxHP - pHP, Math.round(dmg * ap.lifesteal.pct / 100));
+      if (healAmt > 0) {
+        pHP = Math.min(stats.maxHP, pHP + healAmt);
+        log.push(`Lifesteal: +${healAmt} HP`);
+      }
+    }
+    pt += effectiveInterval;
   } else if (pHP > 0) {
-    pt += stats.interval;
+    pt += effectiveInterval;
   }
 
   combat.enemy.currentHP = eHP;
@@ -2043,8 +2439,13 @@ function rpgAttack() {
     log.push(`You have been defeated.`);
     combat.active = false;
     rpgSaveCombat(combat);
-    // Save current HP as 1 (barely alive — not 0)
     profile.rpg.currentHP = 1;
+    rpgStat(profile, 'battlesLost', 1);
+    rpgStat(profile, 'totalDamageTaken', combat._sessionDmgTaken || 0);
+    rpgStat(profile, 'totalDamageDealt', combat._sessionDmgDealt || 0);
+    rpgStatMax(profile, 'biggestHit', combat._sessionBiggestHit || 0);
+    rpgStatMax(profile, 'biggestHitTaken', combat._sessionBiggestHitTaken || 0);
+    profile.rpg.stats.currentWinStreak = 0;
     rpgSaveProfile(profile);
     showRPGDefeat(combat);
     return;
@@ -2059,19 +2460,55 @@ function rpgAttack() {
     const goldDrop = Math.round(combat.enemy.goldDrop * goldMult);
     combat.goldEarned = (combat.goldEarned || 0) + goldDrop;
     log.push(`+${goldDrop}g`);
+    // Track kill
+    rpgStat(profile, 'enemiesDefeated', 1);
+    if (combat.isBoss) rpgStat(profile, 'bossesDefeated', 1);
+    rpgStatKill(profile, combat.enemy.id);
 
-    // Loot roll
-    if (rpgShouldDropLoot(combat.enemy.tier)) {
-      const forgeLevel = profile.rpg.castle?.forge || 0;
-      const loot = rpgRollLootDrop(combat.band, combat.enemy.tier, combat.isBoss || false, forgeLevel);
+    // Material drops — roll per kill, accumulate on combat state
+    const matDrops = rpgRollMaterialDrop(combat.enemyTier, combat.isBoss || false);
+    if (matDrops.length > 0) {
+      if (!combat.pendingMaterials) combat.pendingMaterials = [];
+      combat.pendingMaterials.push(...matDrops);
+    }
+
+    // Loot roll — always attempt standard drop, additionally attempt unique on bosses
+    const forgeLevel = profile.rpg.castle?.forge || 0;
+    // Unique drop attempt first (bosses only)
+    if (combat.isBoss || false) {
+      const uniqueDrop = rpgRollUniqueDrop(combat.band, combat.enemy.tier, combat.enemyTier, true);
+      if (uniqueDrop) {
+        combat.pendingLoot.push(uniqueDrop);
+      } else {
+        // No unique — compensate with higher-tier standard item (boss always drops something)
+        const forceHighTier = true;
+        const loot = rpgRollLootDrop(combat.band, combat.enemy.tier, true, forgeLevel, forceHighTier);
+        if (loot) combat.pendingLoot.push(loot);
+      }
+    } else if (rpgShouldDropLoot(combat.enemy.tier)) {
+      const loot = rpgRollLootDrop(combat.band, combat.enemy.tier, false, forgeLevel, false);
       if (loot) combat.pendingLoot.push(loot);
     }
 
     // Check if this was a random battle or the last quest enemy
     if (combat.isRandomBattle) {
       combat.active = false;
+      rpgStat(profile, 'battlesWon', 1);
+      rpgStat(profile, 'goldFromBattles', combat.goldEarned || 0);
+      rpgStat(profile, 'totalDamageDealt', combat._sessionDmgDealt || 0);
+      rpgStat(profile, 'totalDamageTaken', combat._sessionDmgTaken || 0);
+      rpgStatMax(profile, 'biggestHit', combat._sessionBiggestHit || 0);
+      rpgStatMax(profile, 'biggestHitTaken', combat._sessionBiggestHitTaken || 0);
+      profile.rpg.stats.currentWinStreak = (profile.rpg.stats.currentWinStreak || 0) + 1;
+      if (profile.rpg.stats.currentWinStreak > (profile.rpg.stats.longestWinStreak || 0)) {
+        profile.rpg.stats.longestWinStreak = profile.rpg.stats.currentWinStreak;
+      }
+      // Award accumulated materials
+      if (combat.pendingMaterials?.length) {
+        const matSummary = rpgAwardMaterials(combat.pendingMaterials, profile);
+        if (matSummary) log.push(`Materials: ${matSummary}`);
+      }
       rpgSaveCombat(combat);
-      // Infirmary post-fight regen
       const infirmaryRegen = _rpgInfirmaryRegen(pHP, stats.maxHP, profile);
       profile.rpg.currentHP = infirmaryRegen.newHP;
       rpgSaveProfile(profile);
@@ -2099,8 +2536,28 @@ function rpgAttack() {
         log.push(`HP bonus: +${hpBonus}g`);
       }
 
+      rpgStat(profile, 'questsCompleted', 1);
+      rpgStat(profile, 'battlesWon', 1);
+      rpgStat(profile, 'goldFromQuests', combat.goldEarned || 0);
+      rpgStat(profile, 'totalDamageDealt', combat._sessionDmgDealt || 0);
+      rpgStat(profile, 'totalDamageTaken', combat._sessionDmgTaken || 0);
+      rpgStatMax(profile, 'biggestHit', combat._sessionBiggestHit || 0);
+      rpgStatMax(profile, 'biggestHitTaken', combat._sessionBiggestHitTaken || 0);
+      profile.rpg.stats.currentWinStreak = (profile.rpg.stats.currentWinStreak || 0) + 1;
+      if (profile.rpg.stats.currentWinStreak > (profile.rpg.stats.longestWinStreak || 0)) {
+        profile.rpg.stats.longestWinStreak = profile.rpg.stats.currentWinStreak;
+      }
+      // Award accumulated per-kill materials
+      if (combat.pendingMaterials?.length) {
+        const matSummary = rpgAwardMaterials(combat.pendingMaterials, profile);
+        if (matSummary) log.push(`Materials: ${matSummary}`);
+      }
+      // Quest completion bonus materials (guaranteed)
+      const quest = RPG_QUESTS.find(q => q.id === combat.questId);
+      const bonusMats = rpgQuestCompletionMaterials(quest?.difficulty || 'easy');
+      const bonusSummary = rpgAwardMaterials(bonusMats, profile);
+      if (bonusSummary) log.push(`Quest bonus: ${bonusSummary}`);
       rpgSaveCombat(combat);
-      // Infirmary post-fight regen applies after quests too
       const questRegen = _rpgInfirmaryRegen(pHP, stats.maxHP, profile);
       profile.rpg.currentHP = questRegen.newHP;
       rpgSaveProfile(profile);
@@ -2174,7 +2631,22 @@ function showRPGReward(combat, isQuestComplete) {
   rpgSaveProfile(profile);
   rpgSaveCombat(null);
 
-  const loot = combat.pendingLoot || [];
+  const loot      = combat.pendingLoot || [];
+  const matDrops  = combat.pendingMaterials || [];
+
+  // Build materials summary for display
+  const matTotals = {};
+  matDrops.forEach(d => { matTotals[d.material] = (matTotals[d.material]||0) + d.qty; });
+  const matSummaryHtml = Object.entries(matTotals).length > 0
+    ? `<div style="margin-top:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px">
+        <div style="font-size:10px;color:var(--text-muted);letter-spacing:0.05em;margin-bottom:6px">MATERIALS FOUND</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          ${Object.entries(matTotals).map(([mat,qty]) =>
+            `<span style="font-size:12px;color:var(--str)">${qty}× ${rpgMaterialLabel(mat)}</span>`
+          ).join('')}
+        </div>
+      </div>`
+    : '';
   // Track kept items for saving to inventory
   const keptItems = [];
 
@@ -2212,6 +2684,7 @@ function showRPGReward(combat, isQuestComplete) {
         <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#FFA726">+${combat.goldEarned || 0}g</div>
         ${combat.battleHardenedActive ? '<div style="font-size:10px;color:var(--str);margin-top:4px">✦ Battle Hardened bonus included</div>' : ''}
       </div>
+      ${matSummaryHtml}
       ${lootHtml}
       <button onclick="rpgRewardDone()" style="
         width:100%;padding:14px;margin-top:20px;
@@ -2329,10 +2802,13 @@ const RPG_CASTLE_BUILDINGS = [
 // Level 0 = no regen. Level 1-5 = 3/6/9/12/15% of max HP.
 function _rpgInfirmaryRegen(currentHP, maxHP, profile) {
   const infirmaryLvl = profile.rpg.castle?.infirmary || 0;
-  if (infirmaryLvl === 0) return { newHP: currentHP, amount: 0 };
-  const pct    = infirmaryLvl * 0.03;  // 3% per level
-  const amount = Math.round(maxHP * pct);
-  const newHP  = Math.min(maxHP, currentHP + amount);
+  const infirmaryAmt = infirmaryLvl > 0 ? Math.round(maxHP * infirmaryLvl * 0.03) : 0;
+  // Resilience passive stacks additively with Infirmary
+  const ap = rpgComputeActivePassives(profile);
+  const resilienceAmt = ap.resilience ? ap.resilience.hp : 0;
+  const totalAmt = infirmaryAmt + resilienceAmt;
+  if (totalAmt === 0) return { newHP: currentHP, amount: 0 };
+  const newHP = Math.min(maxHP, currentHP + totalAmt);
   return { newHP, amount: newHP - currentHP };
 }
 
@@ -2407,6 +2883,7 @@ function rpgUpgradeBuilding(buildingId) {
     return;
   }
   profile.rpg.gold -= cost;
+  rpgStat(profile, 'goldSpentCastle', cost);
   profile.rpg.castle[buildingId] = lvl + 1;
   rpgSaveProfile(profile);
   showRPGCastle();
@@ -2549,6 +3026,8 @@ function rpgBuyItem(idx) {
   const profile = rpgGetProfile();
   if ((profile.rpg.gold||0) < item.price) { alert('Not enough gold.'); return; }
   profile.rpg.gold -= item.price;
+  rpgStat(profile, 'goldSpentShop', item.price);
+  rpgStat(profile, 'itemsBought', 1);
   // Track purchased slot so it disappears from shop
   const today = new Date().toISOString().slice(0,10);
   if (!profile.rpg.shopPurchased) profile.rpg.shopPurchased = {};
@@ -2572,9 +3051,300 @@ function rpgBuyTonic(qty) {
   const cost = qty === 1 ? 250 : 600;
   if ((profile.rpg.gold||0) < cost) { alert('Not enough gold.'); return; }
   profile.rpg.gold -= cost;
+  rpgStat(profile, 'goldSpentShop', cost);
   profile.rpg.emberTonics = Math.min(tonicMax, current + Math.min(qty, room));
   rpgSaveProfile(profile);
   showRPGShop();
+}
+
+
+// ============================================================
+// FORGE SYSTEM
+// ============================================================
+
+// Upgrade cost for a given current tier
+function rpgForgeUpgradeCost(tier) {
+  const gold = 50 * Math.pow(2, tier - 1);
+  let mat, qty;
+  if (tier <= 3)      { mat = 'copper';    qty = 1; }
+  else if (tier <= 4) { mat = 'iron';      qty = 1; }
+  else if (tier <= 5) { mat = 'iron';      qty = 2; }
+  else if (tier <= 6) { mat = 'mithril';   qty = 1; }
+  else if (tier <= 7) { mat = 'mithril';   qty = 2; }
+  else if (tier <= 8) { mat = 'darksteel'; qty = 1; }
+  else                { mat = 'darksteel'; qty = 2; }
+  return { gold, mat, qty };
+}
+
+function rpgForgeUniqueUpgradeCost(tier) {
+  const gold = 50 * Math.pow(2, tier - 1);
+  return { gold, mat: 'voidShards', qty: tier <= 2 ? 1 : 2 };
+}
+
+function rpgCanForgeUpgrade(inst, profile) {
+  if (!inst) return { can: false, reason: 'No item' };
+  const mats = profile.rpg.materials || {};
+  const cost = inst.isUnique
+    ? rpgForgeUniqueUpgradeCost(inst.tier)
+    : rpgForgeUpgradeCost(inst.tier);
+  if (inst.tier >= 10) return { can: false, reason: 'Already +10' };
+  if ((profile.rpg.gold || 0) < cost.gold) return { can: false, reason: `Need ${cost.gold.toLocaleString()}g` };
+  if ((mats[cost.mat] || 0) < cost.qty) return { can: false, reason: `Need ${cost.qty}× ${rpgMaterialLabel(cost.mat)}` };
+  return { can: true, cost };
+}
+
+function showRPGForge() {
+  const profile = rpgGetProfile();
+  const inv     = rpgGetInventory();
+  const gold    = profile.rpg.gold || 0;
+  const mats    = profile.rpg.materials || {};
+  const forgeLvl = profile.rpg.castle?.forge || 0;
+
+  // Sort: equipped first → favorites → uniques → tier desc
+  const equipped = profile.rpg.equipped || {};
+  const equippedIds = new Set(Object.values(equipped).filter(Boolean).map(e => e.instanceId));
+
+  const sortedInv = [...inv].sort((a, b) => {
+    const aEq = equippedIds.has(a.instanceId) ? 0 : 1;
+    const bEq = equippedIds.has(b.instanceId) ? 0 : 1;
+    if (aEq !== bEq) return aEq - bEq;
+    if (b.favorite && !a.favorite) return 1;
+    if (a.favorite && !b.favorite) return -1;
+    if (b.isUnique && !a.isUnique) return 1;
+    if (a.isUnique && !b.isUnique) return -1;
+    return b.tier - a.tier;
+  });
+
+  const matRows = [
+    ['copper',    'Copper Bar',    mats.copper    || 0, '#CD7F32'],
+    ['iron',      'Iron Bar',      mats.iron      || 0, '#9E9E9E'],
+    ['mithril',   'Mithril Bar',   mats.mithril   || 0, '#64B5F6'],
+    ['darksteel', 'Darksteel Bar', mats.darksteel || 0, '#CE93D8'],
+    ['voidShards','Void Shard',    mats.voidShards|| 0, '#FFA726'],
+  ].map(([key,label,qty,col]) =>
+    `<div style="display:flex;justify-content:space-between;padding:7px 12px;border-top:1px solid var(--border)">
+      <span style="font-size:11px;color:var(--text-muted)">${label}</span>
+      <span style="font-size:12px;font-weight:500;color:${qty>0?col:'var(--text-muted)'}">${qty}</span>
+    </div>`
+  ).join('');
+
+  const itemRows = sortedInv.map(inst => {
+    const { can, cost, reason } = rpgCanForgeUpgrade(inst, profile);
+    const statLine   = rpgItemStatDisplay(inst);
+    const isEquipped = equippedIds.has(inst.instanceId);
+    const statusBadge = isEquipped
+      ? `<span style="font-size:10px;color:var(--str);background:var(--str)22;padding:1px 6px;border-radius:3px;margin-left:6px">equipped</span>`
+      : inst.favorite ? '' : '';
+    return `<div onclick="rpgShowForgeSheet('${inst.instanceId}')" style="
+      background:var(--surface);
+      border:1px solid ${isEquipped ? 'var(--str)' : inst.isUnique ? '#CE93D8' : 'var(--border)'};
+      border-radius:8px;padding:12px;margin-bottom:8px;cursor:pointer;
+      display:flex;align-items:center;justify-content:space-between;
+    ">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:500">
+          ${inst.name} +${inst.tier}${inst.isUnique?' ✦':''}${inst.favorite?' ⭐':''}
+          ${statusBadge}
+        </div>
+        <div style="font-size:10px;color:var(--str);margin-top:2px">${statLine}</div>
+        ${inst.isUnique && inst.passive ? `<div style="font-size:10px;color:#CE93D8;margin-top:2px">✦ ${inst.passive.desc}</div>` : ''}
+        <div style="font-size:10px;color:${can?'var(--text-muted)':'#EF5350'};margin-top:4px">
+          ${inst.tier >= 10 ? 'Maximum tier' : can ? `→ +${inst.tier+1}: ${cost.gold.toLocaleString()}g + ${cost.qty}× ${rpgMaterialLabel(cost.mat)}` : reason}
+        </div>
+      </div>
+      <span style="color:var(--text-muted);font-size:16px;margin-left:8px">›</span>
+    </div>`;
+  }).join('');
+
+  const html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);z-index:10">
+      <button onclick="showRPGCastle()" style="background:none;border:none;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;padding:0">← Castle</button>
+      <span style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--str)">FORGE</span>
+      <div style="font-size:12px;color:#FFA726">${gold.toLocaleString()}g</div>
+    </div>
+    <div style="padding:16px">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px">Upgrade items using gold and crafting materials.  Unique items require Void Shards only.  Forge level ${forgeLvl} — shifting loot weights toward higher tiers.</div>
+
+      <!-- Materials -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:10px;color:var(--text-muted);letter-spacing:0.05em;margin-bottom:6px">YOUR MATERIALS</div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+          ${matRows}
+        </div>
+      </div>
+
+      <!-- Items -->
+      <div style="font-size:10px;color:var(--text-muted);letter-spacing:0.05em;margin-bottom:10px">YOUR ITEMS (${inv.length})</div>
+      ${inv.length === 0
+        ? '<div style="text-align:center;padding:32px;color:var(--text-muted);font-size:13px;font-style:italic">No items in inventory yet.<br>Win battles and complete quests to find gear.</div>'
+        : itemRows}
+    </div>`;
+
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('rpg-screen-body').innerHTML = html;
+  document.getElementById('screen-rpg').classList.add('active');
+  if (typeof setActiveNav === 'function') setActiveNav('bnav-rpg');
+}
+
+function rpgShowForgeSheet(instanceId) {
+  const inv     = rpgGetInventory();
+  const inst    = inv.find(i => i.instanceId === instanceId);
+  if (!inst) return;
+  const profile = rpgGetProfile();
+  const { can, cost, reason } = rpgCanForgeUpgrade(inst, profile);
+
+  if (inst.tier >= 10) {
+    rpgShowSheet(`<div style="padding:24px 20px;text-align:center">
+      <div style="font-size:15px;font-weight:500;margin-bottom:8px">${inst.name} +${inst.tier}</div>
+      <div style="font-size:13px;color:var(--str)">Already at maximum tier.</div>
+      <button onclick="rpgDismissSheet()" style="margin-top:20px;${rpgBtnStyle('var(--border)')}text-align:center">Close</button>
+    </div>`);
+    return;
+  }
+
+  // Compute projected stats at next tier
+  const bandIdx  = rpgBandIndex(inst.band || '1-5');
+  const slot     = inst.slot;
+  const scale    = RPG_GEAR_SCALE[slot] || RPG_GEAR_SCALE.weapon;
+  const nextTier = inst.tier + 1;
+
+  const statKeys = ['effectiveSTR','effectiveEND','effectiveAGI','effectiveDEX','flatHP'];
+  const statNames = { effectiveSTR:'STR', effectiveEND:'END', effectiveAGI:'AGI', effectiveDEX:'DEX', flatHP:'HP' };
+
+  const currentStats = inst.rolledStats || {};
+  // Project next tier stats — use same formula as rpgForgeUpgrade
+  const projectedStats = { ...currentStats };
+  const baseVal = scale.base[bandIdx] + (nextTier - 1) * scale.inc[bandIdx];
+  const primaryKey = inst.primary === 'STR' ? 'effectiveSTR' : inst.primary === 'END' ? 'effectiveEND' :
+    inst.primary === 'AGI' ? 'effectiveAGI' : 'effectiveDEX';
+  projectedStats[primaryKey] = Math.max(currentStats[primaryKey] || 0, Math.round(baseVal * 0.95));
+  if (slot === 'body_armor' && currentStats.flatHP) {
+    const hs = RPG_GEAR_SCALE.body_armor_hp;
+    const hpBase = hs.base[bandIdx] + (nextTier - 1) * hs.inc[bandIdx];
+    projectedStats.flatHP = Math.max(currentStats.flatHP, Math.round(hpBase * 0.95));
+  }
+
+  // Passive change for uniques
+  let passiveHtml = '';
+  if (inst.isUnique && inst.passive) {
+    const bandGroup   = rpgBandGroup(inst.band || '1-5');
+    const nextPassive = rpgPassiveValue(inst.passive.type, bandGroup, nextTier);
+    passiveHtml = `
+      <div style="padding:8px 0;border-top:1px solid var(--border)">
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:3px">PASSIVE</div>
+        <div style="font-size:11px;color:var(--text-muted);text-decoration:line-through">${inst.passive.desc}</div>
+        <div style="font-size:11px;color:#CE93D8;margin-top:3px">→ ${nextPassive.desc}</div>
+      </div>`;
+  }
+
+  // Stat comparison rows
+  const presentKeys = [...new Set([...Object.keys(currentStats), ...Object.keys(projectedStats)])].filter(k => statKeys.includes(k));
+  const statRows = presentKeys.map(k => {
+    const cur  = currentStats[k]  || 0;
+    const next = projectedStats[k] || 0;
+    const delta = next - cur;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-top:1px solid var(--border)">
+      <span style="font-size:11px;color:var(--text-muted)">${statNames[k]}</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:12px">${cur}</span>
+        <span style="font-size:11px;color:var(--text-muted)">→</span>
+        <span style="font-size:12px;font-weight:500;color:#4CAF50">${next}</span>
+        ${delta > 0 ? `<span style="font-size:10px;color:#4CAF50">(+${delta})</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  rpgShowSheet(`
+    <div style="padding:20px 20px 8px">
+      <div style="font-size:15px;font-weight:500">${inst.name} +${inst.tier} → +${nextTier}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:3px">${rpgSlotLabel(slot)} · ${inst.band} band${inst.isUnique ? ' · Unique ✦' : ''}</div>
+    </div>
+
+    <!-- Stat comparison -->
+    <div style="padding:0 20px 12px">
+      <div style="font-size:10px;color:var(--text-muted);letter-spacing:0.05em;margin-bottom:6px">STAT CHANGES</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0 12px">
+        ${statRows}
+        ${passiveHtml}
+      </div>
+    </div>
+
+    <!-- Cost -->
+    <div style="padding:0 20px 16px">
+      <div style="font-size:10px;color:var(--text-muted);letter-spacing:0.05em;margin-bottom:6px">UPGRADE COST</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;color:var(--text-muted)">Gold</span>
+          <span style="font-size:13px;font-weight:500;color:${can?'#FFA726':'#EF5350'}">${(cost||{gold:0}).gold?.toLocaleString() || 0}g</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;border-top:1px solid var(--border);padding-top:8px">
+          <span style="font-size:12px;color:var(--text-muted)">Material</span>
+          <span style="font-size:13px;font-weight:500;color:${can?'var(--str)':'#EF5350'}">${cost ? `${cost.qty}× ${rpgMaterialLabel(cost.mat)}` : reason}</span>
+        </div>
+        ${!can ? `<div style="font-size:11px;color:#EF5350;margin-top:8px;text-align:center">${reason}</div>` : ''}
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div style="padding:0 20px 8px;display:flex;gap:10px">
+      <button onclick="rpgDismissSheet()" style="${rpgBtnStyle('var(--border)')}flex:1;text-align:center">Cancel</button>
+      <button onclick="rpgForgeUpgrade('${instanceId}')" ${can?'':'disabled'} style="${rpgBtnStyle(can?'var(--str)':'var(--border)')}flex:2;text-align:center;color:${can?'var(--str)':'var(--text-muted)'}">
+        ${can ? `Upgrade to +${nextTier}` : 'Cannot upgrade'}
+      </button>
+    </div>
+  `);
+}
+
+function rpgForgeUpgrade(instanceId) {
+  const inv   = rpgGetInventory();
+  const inst  = inv.find(i => i.instanceId === instanceId);
+  if (!inst) return;
+  const profile = rpgGetProfile();
+  const { can, cost } = rpgCanForgeUpgrade(inst, profile);
+  if (!can) return;
+
+  // Deduct costs
+  profile.rpg.gold -= cost.gold;
+  profile.rpg.materials[cost.mat] -= cost.qty;
+  rpgStat(profile, 'goldSpentCastle', cost.gold); // counts as castle spend
+
+  // Upgrade the item tier
+  inst.tier += 1;
+
+  // If unique, also upgrade the passive value
+  if (inst.isUnique && inst.passive) {
+    const bandGroup = rpgBandGroup(inst.band || '1-5');
+    inst.passive = rpgPassiveValue(inst.passive.type, bandGroup, inst.tier);
+  }
+
+  // Re-roll stat slightly upward for the new tier
+  const bandIdx = rpgBandIndex(inst.band || '1-5');
+  const slot    = inst.slot;
+  const scale   = RPG_GEAR_SCALE[slot] || RPG_GEAR_SCALE.weapon;
+  ['effectiveSTR','effectiveEND','effectiveAGI','effectiveDEX'].forEach(key => {
+    if (inst.rolledStats[key]) {
+      const newBase = scale.base[bandIdx] + (inst.tier - 1) * scale.inc[bandIdx];
+      inst.rolledStats[key] = Math.max(inst.rolledStats[key], Math.round(newBase * 0.95));
+    }
+  });
+  if (inst.rolledStats.flatHP) {
+    const hs = RPG_GEAR_SCALE.body_armor_hp;
+    const newBase = hs.base[bandIdx] + (inst.tier - 1) * hs.inc[bandIdx];
+    inst.rolledStats.flatHP = Math.max(inst.rolledStats.flatHP, Math.round(newBase * 0.95));
+  }
+
+  rpgSaveInventory(inv);
+  rpgSaveProfile(profile);
+
+  // If this item is equipped, recompute active passives on any active combat
+  const combat = rpgGetCombat();
+  if (combat?.active) {
+    combat.activePassives = rpgComputeActivePassives(profile);
+    rpgSaveCombat(combat);
+  }
+
+  rpgDismissSheet();
+  showRPGForge();
 }
 
 // ── Close RPG, return to training ────────────────────────────────────────────
