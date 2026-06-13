@@ -844,7 +844,7 @@ function rpgPlayerStats(profile) {
   const trainingBonus   = 1 + (castle.training_grounds || 0) * 0.10;
 
   // Derived stats
-  const baseHP   = 200 + (realEND * 18) + (level * 10) + gearHP;
+  const baseHP   = 200 + (effEND * 18) + (level * 10) + gearHP;
   const maxHP    = Math.round(baseHP * trainingBonus);
   const rawATK  = Math.round(effSTR * 3.2 * barracksBonus);
   const atk     = Math.max(10 + level, rawATK);
