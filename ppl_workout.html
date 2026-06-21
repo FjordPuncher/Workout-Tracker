@@ -1683,8 +1683,9 @@ const EXERCISE_LIBRARY = [
   { name:'Taekwondo (Partner Drills)',    type:'general', muscleGroup:null, isActivity:true, supportsDistance:false, supportsNotes:true, attrMap:{ primary:['dex'], minor:['agi'] }, masteryThreshold:700, xpPerMin:10, masteryTier:'duration', xpRateType:'duration', distanceCategory:null, desc:'Structured cooperative practice with a partner, typically working pre-set attack and defense sequences, step-sparring, or technique refinement. Lower intensity than sparring — focused on form, flow, and muscle memory rather than competition.' },
   { name:'Taekwondo (Fitness)',           type:'cardio', muscleGroup:null, isActivity:true, supportsDistance:false, supportsNotes:true, attrMap:{ primary:['end'], minor:['agi'] }, masteryThreshold:700, xpPerMin:10, masteryTier:'duration', xpRateType:'duration', distanceCategory:null, desc:'Conditioning-focused training using Taekwondo movements — kicking combinations, bag work, plyometrics, and drills designed to build cardiovascular endurance, flexibility, and explosive power specific to martial arts performance.' },
   { name:'Taekwondo (General)',           type:'general', muscleGroup:null, isActivity:true, supportsDistance:false, supportsNotes:true, attrMap:{ primary:['agi'], minor:['end','dex'] }, masteryThreshold:700, xpPerMin:10, masteryTier:'duration', xpRateType:'duration', distanceCategory:null, desc:'General Taekwondo practice not falling into a specific category. May include forms (poomsae), warm-up drills, technique review, belt curriculum work, or mixed training covering multiple aspects of practice in a single session.' },
-  { name:'Running',                       type:'cardio', muscleGroup:null, isActivity:true, supportsDistance:true, supportsNotes:true, attrMap:{ primary:['end'], minor:['agi'] }, masteryThreshold:600, xpPerMin:8, masteryTier:'duration', xpRateType:'duration', distanceCategory:'running', desc:'Cardiovascular endurance training on foot. Log distance and duration to track pace over time. Distance and pace totals appear on the Stats screen. Works as a standalone session or as active recovery between strength training days.' },
+  { name:'Running',                       type:'cardio', muscleGroup:null, isActivity:true, supportsDistance:true, supportsNotes:true, attrMap:{ primary:['end'], minor:['agi'] }, masteryThreshold:600, xpPerMin:8, xpPerMile:15, masteryTier:'duration', xpRateType:'duration', distanceCategory:'running', desc:'Cardiovascular endurance training on foot. Log distance and duration to track pace over time. Distance and pace totals appear on the Stats screen. Works as a standalone session or as active recovery between strength training days.' },
   { name:'Biking',                        type:'cardio', muscleGroup:null, isActivity:true, supportsDistance:true, supportsNotes:true, attrMap:{ primary:['end'], minor:['agi'] }, masteryThreshold:600, xpPerMin:7, masteryTier:'duration', xpRateType:'duration', distanceCategory:'biking', desc:'Cardiovascular endurance training on a bicycle. Log distance and duration to track pace over time. Works outdoors, on a trail, or on a stationary/spin bike. Distance and pace totals appear on the Stats screen alongside Running.' },
+  { name:'Pickleball',                    type:'general', muscleGroup:null, isActivity:true, supportsDistance:false, supportsNotes:true, attrMap:{ primary:['agi'], minor:['dex'] }, masteryThreshold:500, xpPerMin:9, masteryTier:'duration', xpRateType:'duration', distanceCategory:null, desc:'A fast-paced racket sport played on a compact court with a paddle and perforated ball. Demands quick lateral movement, sharp reflexes, and precise shot placement. Develops agility through constant repositioning and dexterity through paddle control and touch shots at the net.' },
   { name:'General Core Workout',          type:'core',    muscleGroup:null, isActivity:true, supportsDistance:false, supportsNotes:true, attrMap:{ primary:['str'], minor:['end'] }, masteryThreshold:300, xpPerMin:8, masteryTier:'duration', xpRateType:'duration', distanceCategory:null, desc:'A catch-all for any core-focused session — YouTube routines, class-based core work, or any structured core training outside the built-in Push/Pull/Legs finishers. Log duration and use the notes field to record the source, exercises, or anything worth remembering about the session.' },
 ];
 
@@ -6180,10 +6181,12 @@ function calcSessionXP(s, priorSessions, priorPBs) {
     distribute(vBonus, sessionAttrMap.primary, sessionAttrMap.minor || []);
   }
 
-  // ── Distance bonus: XP_RATES.perMile per mile ────────────────────────────
+  // ── Distance bonus: XP_RATES.perMile per mile (activity may override via xpPerMile) ──
   const dist = parseFloat(s.distance) || 0;
   if (dist > 0) {
-    const distBonus = Math.round(dist * XP_RATES.perMile);
+    const actDefDist = getActivity(s.customName || '');
+    const mileRate = actDefDist?.xpPerMile || XP_RATES.perMile;
+    const distBonus = Math.round(dist * mileRate);
     breakdown.distance = distBonus;
     distribute(distBonus, sessionAttrMap.primary, sessionAttrMap.minor || []);
   }
