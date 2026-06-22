@@ -4074,6 +4074,31 @@ function computePBs(sessionList) {
 }
 
 // Check the most recently saved session for new PBs and fire notifications
+// Returns a map of activityName -> { bestDuration, bestDurationDate, bestDistance, bestDistanceDate, bestPace, bestPaceDate }
+function computeActivityPBs(sessionList) {
+  const sl = sessionList || sessions;
+  const pbs = {};
+  sl.forEach(s => {
+    const isActivitySess = s.variationKey === CUSTOM_KEY && s.customName &&
+      PREDEFINED_ACTIVITIES.find(a => a.name === s.customName);
+    if (!isActivitySess || s.exercises.length > 0) return;
+    const name = s.customName;
+    if (!pbs[name]) pbs[name] = {
+      bestDuration: 0, bestDurationDate: null,
+      bestDistance: 0, bestDistanceDate: null,
+      bestPace: Infinity, bestPaceDate: null,
+      type: resolveWorkoutType(PREDEFINED_ACTIVITIES.find(a => a.name === name)),
+    };
+    const dur  = parseFloat(s.duration) || 0;
+    const dist = parseFloat(s.distance) || 0;
+    const pace = (dist > 0 && dur > 0) ? dur / dist : null;
+    if (dur > pbs[name].bestDuration)  { pbs[name].bestDuration = dur;  pbs[name].bestDurationDate = s.date; }
+    if (dist > pbs[name].bestDistance) { pbs[name].bestDistance = dist; pbs[name].bestDistanceDate = s.date; }
+    if (pace && pace < pbs[name].bestPace) { pbs[name].bestPace = pace; pbs[name].bestPaceDate = s.date; }
+  });
+  return pbs;
+}
+
 function checkAndAutoSyncPBs() {
   if (!sessions.length) return;
   const latest = sessions[sessions.length - 1];
@@ -6466,20 +6491,18 @@ function exercisesWithFills(mastery) {
 
 // Rolling count of instances where a Legs session was logged within 7 days of a Push session
 function neverSkipLegDayCount(sessionList) {
+  // Count each legs session that has a push session within 7 days (±).
+  // Each legs session counts at most once regardless of how many push sessions are nearby.
+  const DAY7 = 7 * 24 * 60 * 60 * 1000;
   const pushDates = sessionList
     .filter(s => getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab).type === 'push')
     .map(s => new Date(s.date).getTime());
   const legDates = sessionList
     .filter(s => getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab).type === 'legs')
     .map(s => new Date(s.date).getTime());
-  let count = 0;
-  pushDates.forEach(pd => {
-    if (legDates.some(ld => Math.abs(ld - pd) <= 7 * 24 * 60 * 60 * 1000)) count++;
-  });
-  return count;
+  return legDates.filter(ld => pushDates.some(pd => Math.abs(ld - pd) <= DAY7)).length;
 }
 
-// Consecutive sessions beating personal avg weight-per-rep
 function maxStreakOfStrength(sessionList) {
   if (sessionList.length < 2) return 0;
   const wprs = sessionList.map(s => sessionWeightPerRep(s));
@@ -6708,20 +6731,6 @@ function hasLoggedPullUp(sessionList) {
 
 function exercisesWithFills(mastery) {
   return Object.values(mastery).filter(m => !m.isActivity && m.fills >= 1).length;
-}
-
-function neverSkipLegDayCount(sessionList) {
-  const pushDates = sessionList
-    .filter(s => getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab).type === 'push')
-    .map(s => new Date(s.date).getTime());
-  const legDates = sessionList
-    .filter(s => getVariationMeta(s.variationKey, s.customName, s.category, s.customWorkoutId, s.tab).type === 'legs')
-    .map(s => new Date(s.date).getTime());
-  let count = 0;
-  pushDates.forEach(pd => {
-    if (legDates.some(ld => Math.abs(ld - pd) <= 7 * 24 * 60 * 60 * 1000)) count++;
-  });
-  return count;
 }
 
 function maxStreakOfStrength(sessionList) {
@@ -7565,15 +7574,28 @@ function buildProfileHTML() {
   });
   const favs = Object.entries(favMap).sort((a,b)=>b[1]-a[1]).slice(0,3);
 
-  // Most recent PB
+  // Most recent PB — merge strength/timed exercise PBs with activity PBs
   const pbs = computePBs();
-  const recentPB = Object.entries(pbs)
-    .filter(([,pb]) => pb.weightDate || pb.repsDate)
-    .sort(([,a],[,b]) => {
-      const da = new Date(Math.max(new Date(a.weightDate||0), new Date(a.repsDate||0)));
-      const db = new Date(Math.max(new Date(b.weightDate||0), new Date(b.repsDate||0)));
-      return db - da;
-    })[0];
+  const actPBs = computeActivityPBs();
+
+  // Normalize exercise PBs into a flat list of { name, date, label }
+  const pbEntries = [];
+  Object.entries(pbs).forEach(([name, pb]) => {
+    const latest = Math.max(
+      pb.weightDate ? new Date(pb.weightDate).getTime() : 0,
+      pb.repsDate   ? new Date(pb.repsDate).getTime()   : 0,
+      pb.durationDate ? new Date(pb.durationDate).getTime() : 0,
+    );
+    if (latest > 0) pbEntries.push({ name, date: latest, isActivity: false, pb });
+  });
+  Object.entries(actPBs).forEach(([name, pb]) => {
+    const dates = [pb.bestDurationDate, pb.bestDistanceDate, pb.bestPaceDate]
+      .filter(Boolean).map(d => new Date(d).getTime());
+    if (dates.length === 0) return;
+    const latest = Math.max(...dates);
+    pbEntries.push({ name, date: latest, isActivity: true, pb });
+  });
+  const recentPBEntry = pbEntries.sort((a, b) => b.date - a.date)[0] || null;
 
   let html = '<div style="height:12px"></div>';
 
@@ -7660,15 +7682,33 @@ function buildProfileHTML() {
   </div>`;
 
   // ── Highlights ──
-  if (favs.length || recentPB) {
+  if (favs.length || recentPBEntry) {
     html += `<div class="section-label" style="margin-top:18px">Highlights</div>`;
     html += `<div class="data-section-card" style="margin:0 18px">`;
-    if (recentPB) {
-      const [exName, pb] = recentPB;
-      const pbDate = pb.weightDate || pb.repsDate;
+    if (recentPBEntry) {
+      const { name, isActivity, pb } = recentPBEntry;
+      let pbVal = '', pbDate = '';
+      if (isActivity) {
+        // Find the most recent of the three activity PB dates
+        const dateCandidates = [
+          { val: pb.bestDurationDate, label: pb.bestDuration > 0 ? `${Math.round(pb.bestDuration)} min duration` : null },
+          { val: pb.bestDistanceDate, label: pb.bestDistance > 0 ? `${parseFloat(pb.bestDistance).toFixed(2)} mi distance` : null },
+          { val: pb.bestPaceDate,     label: pb.bestPace < Infinity ? `${(pb.bestPace).toFixed(2)} min/mi pace` : null },
+        ].filter(d => d.val && d.label);
+        const latest = dateCandidates.sort((a,b) => new Date(b.val)-new Date(a.val))[0];
+        pbVal  = latest?.label || '';
+        pbDate = latest?.val   || '';
+      } else {
+        const latestDate = [pb.weightDate, pb.repsDate, pb.durationDate].filter(Boolean)
+          .sort((a,b) => new Date(b)-new Date(a))[0];
+        pbDate = latestDate || '';
+        if (pb.weight > 0)    pbVal += pb.weight + ' lbs' + (pb.weightReps > 0 ? ' × ' + pb.weightReps + ' reps' : '');
+        if (pb.reps > 0)      pbVal += (pbVal ? ' / ' : '') + pb.reps + ' reps' + (pb.repsWeight > 0 ? ' × ' + pb.repsWeight + ' lbs' : '');
+        if (pb.duration > 0)  pbVal += (pbVal ? ' / ' : '') + pb.duration + 's hold';
+      }
       html += `<div class="data-section-row">
         <div><div class="data-row-label">Most Recent PB</div>
-          <div class="data-row-value">${exName} — ${pb.weight>0?pb.weight+' lbs'+(pb.weightReps>0?' × '+pb.weightReps+' reps':''):''}${pb.reps>0?' / '+pb.reps+' reps'+(pb.repsWeight>0?' × '+pb.repsWeight+' lbs':''):''}</div>
+          <div class="data-row-value">${name} — ${pbVal}</div>
           <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-top:2px">
             ${pbDate ? new Date(pbDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''}
           </div>
