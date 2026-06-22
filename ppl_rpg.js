@@ -762,6 +762,22 @@ function rpgGetProfile() {
       biggestHit:0, biggestHitTaken:0,
       currentWinStreak:0, longestWinStreak:0, killCounts:{},
     };
+  } else {
+    // Fill in any keys missing from older profiles
+    const defaults = {
+      goldFromWorkouts:0, goldFromBattles:0, goldFromQuests:0,
+      goldFromAchievements:0, goldFromPBs:0, goldSpentShop:0, goldSpentCastle:0,
+      battlesWon:0, battlesLost:0, questsCompleted:0,
+      enemiesDefeated:0, bossesDefeated:0, tonicsUsed:0,
+      itemsSold:0, itemsSalvaged:0, itemsBought:0,
+      totalDamageDealt:0, totalDamageTaken:0,
+      biggestHit:0, biggestHitTaken:0,
+      currentWinStreak:0, longestWinStreak:0,
+    };
+    Object.entries(defaults).forEach(([k, v]) => {
+      if (typeof p.rpg.stats[k] !== 'number') p.rpg.stats[k] = v;
+    });
+    if (!p.rpg.stats.killCounts) p.rpg.stats.killCounts = {};
   }
   return p;
 }
@@ -772,9 +788,8 @@ function rpgSaveProfile(p) {
 // ── Stat tracking helper ──────────────────────────────────────────────────────
 function rpgStat(profile, key, amount) {
   if (!profile.rpg.stats) return;
-  if (typeof profile.rpg.stats[key] === 'number') {
-    profile.rpg.stats[key] += amount;
-  }
+  if (typeof profile.rpg.stats[key] !== 'number') profile.rpg.stats[key] = 0;
+  profile.rpg.stats[key] += amount;
 }
 function rpgStatMax(profile, key, value) {
   if (!profile.rpg.stats) return;
@@ -1488,6 +1503,37 @@ function showRPGCharacterSheet(activeTab, filterSlot) {
       ['DEX', stats.realDEX, stats.gearDEX, stats.effDEX, '#CE93D8'],
     ];
 
+    // Active passives from equipped unique items
+    const ap = rpgComputeActivePassives(profile);
+
+    // HP regen per workout (infirmary + resilience passive)
+    const infirmaryLvl = profile.rpg.castle?.infirmary || 0;
+    const infirmaryAmt = infirmaryLvl > 0 ? Math.round(stats.maxHP * infirmaryLvl * 0.03) : 0;
+    const resilienceAmt = ap.resilience ? ap.resilience.hp : 0;
+    const totalRegen = infirmaryAmt + resilienceAmt;
+
+    // Build derived stat rows — always show base stats, show passives only if present
+    const derivedRows = [
+      ['ATK',            stats.atk,                                         'var(--text)'],
+      ['HP',             stats.maxHP,                                        'var(--text)'],
+      ...(stats.gearHP > 0 ? [['  ↳ Gear HP bonus', '+' + stats.gearHP, '#FFA726']] : []),
+      ['HP Regen / workout', totalRegen > 0
+        ? totalRegen + (infirmaryAmt > 0 && resilienceAmt > 0
+            ? ` (${infirmaryAmt} infirmary + ${resilienceAmt} resilience)`
+            : infirmaryAmt > 0 ? ' (infirmary)' : ' (resilience)')
+        : '—',                                                               totalRegen > 0 ? '#4CAF50' : 'var(--text-muted)'],
+      ['DEF mitigation', Math.round(stats.mitigation * 100) + '%',          'var(--text)'],
+      ['Crit chance',    ap.sharp_eye
+        ? Math.round(stats.critChance * 100) + '% (+' + ap.sharp_eye.pct + '% passive)'
+        : Math.round(stats.critChance * 100) + '%',                         'var(--text)'],
+      ['Attack interval', ap.haste
+        ? stats.interval + ' ticks (−' + ap.haste.ticks + ' from passive)'
+        : stats.interval + ' ticks',                                        'var(--text)'],
+      ...(ap.lifesteal ? [['Lifesteal',  ap.lifesteal.pct + '% of dmg dealt', '#CE93D8']] : []),
+      ...(ap.thorns    ? [['Thorns',     ap.thorns.pct + '% reflected',       '#CE93D8']] : []),
+      ...(ap.reflect   ? [['Reflect',    ap.reflect.chance + '% chance / −' + ap.reflect.dmgReduce + ' dmg', '#CE93D8']] : []),
+    ];
+
     let html = `
       <!-- Header -->
       <div style="padding:16px 16px 8px;text-align:center">
@@ -1511,16 +1557,10 @@ function showRPGCharacterSheet(activeTab, filterSlot) {
 
       <!-- Derived stats -->
       <div style="margin:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden">
-        ${[
-          ['ATK', stats.atk],
-          ['HP',  stats.maxHP],
-          ['DEF mitigation', Math.round(stats.mitigation * 100) + '%'],
-          ['Crit chance',    Math.round(stats.critChance * 100) + '%'],
-          ['Attack interval',stats.interval + ' ticks'],
-        ].map(([label, val]) => `
-          <div style="display:flex;justify-content:space-between;padding:9px 12px;border-top:1px solid var(--border)">
+        ${derivedRows.map(([label, val, col]) => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border-top:1px solid var(--border)">
             <span style="font-size:11px;color:var(--text-muted)">${label}</span>
-            <span style="font-size:12px;font-weight:500">${val}</span>
+            <span style="font-size:12px;font-weight:500;color:${col}">${val}</span>
           </div>`).join('')}
       </div>
 
@@ -1656,7 +1696,7 @@ function showRPGCharacterSheet(activeTab, filterSlot) {
     <!-- Tab bar — 3 tabs -->
     <div style="display:flex;border-bottom:1px solid var(--border)">
       ${['stats','rpgstats','inventory'].map(tab => {
-        const labels = { stats:'Stats', rpgstats:'RPG Stats', inventory:`Inventory (${inv.length})` };
+        const labels = { stats:'Character', rpgstats:'RPG Stats', inventory:`Inventory (${inv.length})` };
         const active = activeTab === tab;
         return `<button onclick="showRPGCharacterSheet('${tab}')" style="
           flex:1;padding:10px 4px;background:none;border:none;
@@ -1852,7 +1892,7 @@ function rpgGenerateUniqueItem(band, tier) {
 // Returns a unique item or null. Called alongside standard loot roll.
 function rpgRollUniqueDrop(band, tier, enemyTier, isBoss) {
   if (!isBoss) return null;
-  const chances = { hard: 0.40, medium: 0.05, easy: 0.01 };
+  const chances = { hard: 0.60, medium: 0.15, easy: 0.05 };
   const chance  = chances[enemyTier] || 0;
   if (Math.random() >= chance) return null;
   // Tier: +1 to +3 on drop for easy/medium bosses, +1 to +3 for hard too
