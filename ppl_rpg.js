@@ -3018,30 +3018,50 @@ function rpgGenerateShopItems(profile, stats) {
   const bands     = ['1-5','6-10','11-15','16-20','21-25','26-30','31-35','36-40','41-45','46-50'];
   const nextBand  = bands[Math.min(bandIdx+1, 9)];
   const slotCount = [3,4,5,5][marketLvl] || 3;
-  const hasHighTier = marketLvl >= 3;
 
   // Deterministic seed — same stock all day
   const today = new Date().toISOString().slice(0,10);
   let seedVal = [...(today + stats.level)].reduce((a,c) => a + c.charCodeAt(0), 0);
   const sr = () => { seedVal = (seedVal * 1664525 + 1013904223) & 0xffffffff; return Math.abs(seedVal) / 0xffffffff; };
 
+  // Tier weights for regular slots — market level shifts bias away from tier 1
+  // [tier1, tier2, tier3, tier4, tier5]
+  const regularWeights = [
+    [60, 28, 10,  2,  0],  // market 0 — heavy tier 1
+    [45, 32, 16,  7,  0],  // market 1
+    [30, 32, 24, 14,  0],  // market 2
+    [20, 28, 28, 20,  4],  // market 3+
+  ][Math.min(marketLvl, 3)].map((w, ti) => ti > 0 ? w + forgeLvl * 2 : w);
+
+  // Guaranteed high-tier slot weights (last slot, market 3+ only)
+  // Always tier 3–5, heavier toward 4–5 at max market
+  const guaranteedWeights = marketLvl >= 3 ? [0, 0, 35, 45, 20] : null;
+
   const slots = ['weapon','shield','helmet','body_armor','boots','jewelry'];
+
+  function rollTier(weights) {
+    const total = weights.reduce((a, b) => a + b, 0);
+    let r = sr() * total;
+    for (let t = 0; t < weights.length; t++) {
+      r -= weights[t];
+      if (r <= 0) return t + 1;
+    }
+    return weights.length;
+  }
+
   return Array.from({ length: slotCount }, (_, i) => {
+    const isGuaranteed = guaranteedWeights && i === slotCount - 1;
     const useBand = sr() < 0.8 ? band : nextBand;
     const slot    = slots[Math.floor(sr() * slots.length)];
     const mats    = RPG_BAND_MATERIALS[useBand] || ['Copper'];
     const mat     = mats[Math.floor(sr() * mats.length)];
     const types   = RPG_SLOT_TYPES[slot] || ['Item'];
     const type    = types[Math.floor(sr() * types.length)];
-    const maxT    = hasHighTier && i === slotCount-1 ? 5 : RPG_TIER_SHOP_MAX;
-    const tw      = [50,30,15,5,0].slice(0, maxT).map((w,ti) => ti===0?w:w+forgeLvl*3);
-    const tt      = tw.reduce((a,b)=>a+b,0);
-    let tr = sr()*tt, tier = 1;
-    for (let t=0;t<tw.length;t++){tr-=tw[t];if(tr<=0){tier=t+1;break;}}
-    const bidx  = rpgBandIndex(useBand);
-    const scale = RPG_GEAR_SCALE[slot] || RPG_GEAR_SCALE.weapon;
-    const baseV = scale.base[bidx]+(tier-1)*scale.inc[bidx];
-    const rolled = Math.max(1, Math.round(baseV*(0.9+sr()*0.2)));
+    const tier    = isGuaranteed ? rollTier(guaranteedWeights) : rollTier(regularWeights);
+    const bidx    = rpgBandIndex(useBand);
+    const scale   = RPG_GEAR_SCALE[slot] || RPG_GEAR_SCALE.weapon;
+    const baseV   = scale.base[bidx] + (tier - 1) * scale.inc[bidx];
+    const rolled  = Math.max(1, Math.round(baseV * (0.9 + sr() * 0.2)));
     const rs = {};
     const ps = RPG_SLOT_STAT[slot];
     if (ps==='STR') rs.effectiveSTR=rolled;
@@ -3061,7 +3081,8 @@ function rpgGenerateShopItems(profile, stats) {
       else rs.effectiveDEX=rolled;
     }
     return { instanceId:`shop_${rpgUUID()}_${today}`, name, slot, band:useBand, tier, rolledStats:rs,
-             isUnique:false, favorite:false, price:rpgItemPrice(tier,bidx), acquiredAt:today };
+             isUnique:false, favorite:false, price:rpgItemPrice(tier,bidx), acquiredAt:today,
+             isGuaranteed: isGuaranteed || false };
   });
 }
 
@@ -3090,7 +3111,7 @@ function showRPGShop() {
         return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
             <div>
-              <div style="font-size:13px;font-weight:500">${item.name} <span style="color:var(--text-muted);font-size:10px">${rpgTierGlyphs(item.tier)}</span> +${item.tier}</div>
+              <div style="font-size:13px;font-weight:500">${item.name} <span style="color:var(--text-muted);font-size:10px">${rpgTierGlyphs(item.tier)}</span> +${item.tier}${item.isGuaranteed ? ' <span style="font-size:9px;color:#FFA726;background:#FFA72622;padding:1px 5px;border-radius:3px;letter-spacing:0.05em">FEATURED</span>' : ''}</div>
               <div style="font-size:10px;color:var(--text-muted);margin-top:2px">${rpgSlotLabel(item.slot)} · ${item.band} band</div>
               <div style="font-size:11px;color:var(--str);margin-top:3px">${statLine}</div>
             </div>
