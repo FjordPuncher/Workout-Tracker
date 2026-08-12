@@ -2543,12 +2543,52 @@ function renderBackfillScreen(existingSessions) {
           <div class="ex-card-header" onclick="toggleEx('bf-ex-${i}')">
             <div class="ex-card-left">
               <div class="ex-name">${ex.name}</div>
-              <div class="ex-sets-badge">${ex.sets}</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+                ${ex.muscleGroup ? muscleGroupPill(ex.muscleGroup) : ''}
+                <div class="ex-sets-badge">${ex.sets}</div>
+              </div>
             </div>
             <div class="ex-chevron">⌄</div>
           </div>
-          <div class="ex-desc">${ex.desc}</div>
-          <div class="set-logger">
+          <div class="ex-desc">${ex.desc}</div>`;
+
+        // ── PB reference (same as active session cards) ─────────────────────
+        const { pb: bfPb, lastSession: bfLast } = getExerciseHistory(ex.name);
+        if (!bfPb && !bfLast) {
+          html += `<div class="ex-ref"><div class="ex-ref-first">★ First time — start light, focus on form</div></div>`;
+        } else {
+          let refHtml = '';
+          if (bfLast) {
+            const lastDate = new Date(bfLast.date).toLocaleDateString('en-US', {month:'short', day:'numeric'});
+            const setPreview = bfLast.sets.slice(0,3).map(st => {
+              const r = parseFloat(st.reps)||0, w = parseFloat(st.weight)||0;
+              return w > 0 ? `${r} × ${w} lbs` : `${r} reps`;
+            }).join(', ');
+            refHtml += `<div class="ex-ref-row">
+              <div class="ex-ref-label">Last (${lastDate})</div>
+              <div class="ex-ref-value">${setPreview}${bfLast.sets.length>3?'…':''}</div>
+            </div>`;
+          }
+          if (bfPb && bfPb.weight > 0) {
+            const pbDate = bfPb.weightDate ? new Date(bfPb.weightDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : '';
+            const atReps = bfPb.weightReps > 0 ? ` × ${bfPb.weightReps} reps` : '';
+            refHtml += `<div class="ex-ref-row">
+              <div class="ex-ref-label">Best weight</div>
+              <div class="ex-ref-value"><strong>${bfPb.weight} lbs${atReps}</strong>${pbDate ? ` · ${pbDate}` : ''}</div>
+            </div>`;
+          }
+          if (bfPb && bfPb.reps > 0) {
+            const pbDate = bfPb.repsDate ? new Date(bfPb.repsDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}) : '';
+            const atWeight = bfPb.repsWeight > 0 ? ` × ${bfPb.repsWeight} lbs` : '';
+            refHtml += `<div class="ex-ref-row">
+              <div class="ex-ref-label">Best reps</div>
+              <div class="ex-ref-value"><strong>${bfPb.reps} reps${atWeight}</strong>${pbDate ? ` · ${pbDate}` : ''}</div>
+            </div>`;
+          }
+          if (refHtml) html += `<div class="ex-ref">${refHtml}</div>`;
+        }
+
+        html += `<div class="set-logger">
             <div class="set-logger-head">
               <div class="set-logger-title">Sets</div>
               <button class="add-set-btn" onclick="bfAddSet(${i})">+ Set</button>
@@ -3268,6 +3308,105 @@ function renderExercises() {
   });
 
   if (isLogging) {
+    // ── Added exercises section ─────────────────────────────────────────────
+    const addedExes = activeSession.exercises.filter(e => e.added);
+    if (addedExes.length > 0) {
+      html += `<div style="display:flex;align-items:center;gap:10px;padding:16px 18px 8px">
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+        <div style="font-size:9px;color:var(--text-dim);letter-spacing:0.08em;text-transform:uppercase;white-space:nowrap">Added to session</div>
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>`;
+      addedExes.forEach(sessionEx => {
+        const addedEx = getExercise(sessionEx.name);
+        const exKey = sessionEx.key;
+        const isTimed = isTimedExercise(addedEx.name);
+        const isBW = isBodyweightExercise(addedEx.name);
+        const sets = sessionEx.sets || (isTimed ? [{duration:''}] : [{reps:'',weight:''}]);
+        const { pb, lastSession: addedLastSession } = getExerciseHistory(addedEx.name);
+        html += `<div class="ex-card" id="ex-card-${exKey}">
+          <div class="ex-card-header" onclick="toggleEx('${exKey}')">
+            <div class="ex-card-left">
+              <div class="ex-name">${addedEx.name}</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+                ${addedEx.muscleGroup ? muscleGroupPill(addedEx.muscleGroup) : ''}
+                ${addedEx.sets ? `<div class="ex-sets-badge">${addedEx.sets}</div>` : ''}
+              </div>
+            </div>
+            <div class="ex-chevron">⌄</div>
+          </div>
+          <div class="ex-desc">${addedEx.desc || ''}</div>`;
+
+        // PB reference for added exercise
+        if (pb || addedLastSession) {
+          let refHtml = '';
+          if (addedLastSession) {
+            const lastDate = new Date(addedLastSession.date).toLocaleDateString('en-US', {month:'short', day:'numeric'});
+            const setPreview = addedLastSession.sets.slice(0,3).map(st => {
+              const r = parseFloat(st.reps)||0, w = parseFloat(st.weight)||0;
+              return w > 0 ? `${r} × ${w} lbs` : `${r} reps`;
+            }).join(', ');
+            refHtml += `<div class="ex-ref-row"><div class="ex-ref-label">Last (${lastDate})</div><div class="ex-ref-value">${setPreview}</div></div>`;
+          }
+          if (pb && pb.weight > 0) {
+            refHtml += `<div class="ex-ref-row"><div class="ex-ref-label">Best weight</div><div class="ex-ref-value"><strong>${pb.weight} lbs${pb.weightReps>0?' × '+pb.weightReps+' reps':''}</strong></div></div>`;
+          }
+          if (pb && pb.reps > 0) {
+            refHtml += `<div class="ex-ref-row"><div class="ex-ref-label">Best reps</div><div class="ex-ref-value"><strong>${pb.reps} reps${pb.repsWeight>0?' × '+pb.repsWeight+' lbs':''}</strong></div></div>`;
+          }
+          if (refHtml) html += `<div class="ex-ref">${refHtml}</div>`;
+        }
+
+        html += `<div class="set-logger">
+          <div class="set-logger-head">
+            <div class="set-logger-title">${isTimed ? 'Sets (seconds held)' : 'Sets logged'}</div>
+            <button class="add-set-btn" onclick="addSet('${exKey}')">+ Set</button>
+          </div>
+          ${sets.map((s, si) => isTimed ? `
+            <div class="set-row" id="set-row-${exKey}-${si}">
+              <div class="set-num">${si+1}</div>
+              <input class="set-input" type="number" inputmode="numeric" placeholder="sec"
+                value="${s.duration||''}" onchange="updateSet('${exKey}',${si},'duration',this.value)" style="max-width:90px">
+              <div class="set-unit">sec</div>
+              <button class="del-set-btn" onclick="deleteSet('${exKey}',${si})">×</button>
+            </div>` : `
+            <div class="set-row" id="set-row-${exKey}-${si}">
+              <div class="set-num">${si+1}</div>
+              <input class="set-input" type="number" inputmode="numeric" placeholder="reps"
+                value="${s.reps||''}" onchange="updateSet('${exKey}',${si},'reps',this.value)">
+              ${isBW ? '' : `<input class="set-input" type="number" inputmode="decimal" placeholder="lbs"
+                value="${s.weight||''}" onchange="updateSet('${exKey}',${si},'weight',this.value)">`}
+              <button class="del-set-btn" onclick="deleteSet('${exKey}',${si})">×</button>
+            </div>`).join('')}
+          <button onclick="removeExerciseFromSession('${exKey}','${addedEx.name.replace(/'/g,"\\'")}')"
+            style="display:block;width:100%;margin-top:8px;padding:8px;
+              background:none;border:1px solid var(--border);border-radius:var(--radius-sm);
+              color:var(--text-dim);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;text-align:center">
+            Remove exercise from session
+          </button>
+        </div></div>`;
+      });
+    }
+
+    // ── Add Exercise button and picker ──────────────────────────────────────
+    const tc2 = isCore ? 'var(--core)' : (TYPE_COLOR[v.type] || 'var(--core)');
+    html += `<div style="padding:8px 18px 0">
+      <button onclick="toggleSessionAddPicker()"
+        style="width:100%;padding:10px;background:none;border:1px dashed var(--border);
+          border-radius:var(--radius);color:var(--text-muted);font-family:'DM Sans',sans-serif;
+          font-size:13px;cursor:pointer;text-align:center">
+        + Add Exercise to Session
+      </button>
+    </div>
+    <div id="session-add-picker" style="display:none;margin:8px 18px 0;background:var(--surface);
+      border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;max-height:320px;overflow-y:auto">
+      <div style="padding:10px 12px;border-bottom:1px solid var(--border)">
+        <input id="session-add-search" type="text" placeholder="Search exercises…"
+          style="width:100%;background:none;border:none;color:var(--text);font-size:13px;
+            font-family:'DM Sans',sans-serif;outline:none"
+          oninput="renderSessionAddPickerList(this.value)">
+      </div>
+      <div id="session-add-picker-list"></div>
+    </div>`;
     const notes = activeSession.notes || '';
     const duration = activeSession.duration || '';
     const distance = activeSession.distance || '';
@@ -3317,7 +3456,8 @@ function renderExercises() {
 }
 
 function toggleEx(key) {
-  const card = document.getElementById('ex-card-' + key);
+  const card = document.getElementById('ex-card-' + key) || document.getElementById(key);
+  if (!card) return;
   card.classList.toggle('open');
 }
 
@@ -3384,9 +3524,91 @@ function removeExerciseFromSession(exKey, exName) {
   const confirmed = confirm(`Remove "${exName}" from this session?`);
   if (!confirmed) return;
   activeSession.exercises = activeSession.exercises.filter(e => e.key !== exKey);
-  // Remove the card from DOM directly for instant feedback, then re-render
   const card = document.getElementById('ex-card-' + exKey);
   if (card) card.remove();
+}
+
+// ── Add exercise to active session ───────────────────────────────────────────
+let sessionAddPickerOpen = false;
+
+function toggleSessionAddPicker() {
+  sessionAddPickerOpen = !sessionAddPickerOpen;
+  const picker = document.getElementById('session-add-picker');
+  if (!picker) return;
+  picker.style.display = sessionAddPickerOpen ? 'block' : 'none';
+  if (sessionAddPickerOpen) {
+    renderSessionAddPickerList('');
+    const input = document.getElementById('session-add-search');
+    if (input) setTimeout(() => input.focus(), 50);
+  }
+}
+
+function renderSessionAddPickerList(q) {
+  const list = document.getElementById('session-add-picker-list');
+  if (!list) return;
+  const seen = new Set();
+  // Track existing session exercise names to show them as already added
+  const inSession = new Set((activeSession?.exercises || []).map(e => e.name));
+  const groups = { push:[], pull:[], legs:[], core:[], activity:[] };
+  const gc = { push: TYPE_COLOR.push, pull: TYPE_COLOR.pull, legs: TYPE_COLOR.legs, core: 'var(--core)', activity: 'var(--cardio)' };
+  const gl = { push:'Push', pull:'Pull', legs:'Legs', core:'Core', activity:'Activities' };
+
+  ORDER.forEach(key => {
+    const v = VARIATIONS[key];
+    [...v.exercises, ...v.core].map(n => typeof n==='string'?getExercise(n):n).forEach((ex, i) => {
+      if (seen.has(ex.name)) return; seen.add(ex.name);
+      const type = i < v.exercises.length ? v.type : 'core';
+      groups[type].push({ name: ex.name, isActivity: false, type });
+    });
+  });
+  PREDEFINED_ACTIVITIES.forEach(act => {
+    if (seen.has(act.name)) return; seen.add(act.name);
+    groups.activity.push({ name: act.name, isActivity: true, category: resolveWorkoutType(act), supportsDistance: !!act.supportsDistance, supportsNotes: !!act.supportsNotes });
+  });
+
+  // Also add library exercises not in any variation
+  EXERCISE_LIBRARY.filter(ex => !ex.isActivity && !seen.has(ex.name)).forEach(ex => {
+    seen.add(ex.name);
+    groups[ex.type] = groups[ex.type] || [];
+    groups[ex.type].push({ name: ex.name, isActivity: false, type: ex.type });
+  });
+
+  Object.keys(groups).forEach(k => groups[k].sort((a,b) => a.name.localeCompare(b.name)));
+  const lq = q.toLowerCase().trim();
+  let html = ''; let total = 0;
+  ['push','pull','legs','core','activity'].forEach(type => {
+    if (!groups[type]) return;
+    const items = lq ? groups[type].filter(n => n.name.toLowerCase().includes(lq)) : groups[type];
+    if (!items.length) return;
+    html += `<div class="ex-picker-group" style="color:${gc[type]}">${gl[type]}</div>`;
+    items.forEach(item => {
+      const safeName = item.name.replace(/'/g, "\\'");
+      const already = inSession.has(item.name);
+      html += `<button onclick="addExerciseToSession('${safeName}',${!!item.isActivity},'${item.category||item.type||'general'}',${!!item.supportsDistance})"
+        style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;
+          border:none;border-bottom:1px solid var(--border);cursor:pointer;
+          color:${already ? 'var(--text-muted)' : 'var(--text)'};font-size:13px;font-family:'DM Sans',sans-serif">
+        ${item.name}${already ? ' <span style="font-size:10px;color:var(--text-dim)">(added)</span>' : ''}
+      </button>`;
+      total++;
+    });
+  });
+  list.innerHTML = html || '<div style="padding:14px;color:var(--text-muted);font-size:13px">No matches</div>';
+}
+
+function addExerciseToSession(name, isActivity, category, supportsDistance) {
+  if (!activeSession) return;
+  const isTimed = isTimedExercise(name);
+  const key = 'added_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+  const newEx = { key, name, added: true, sets: [isTimed ? {duration:''} : {reps:'', weight:''}] };
+  activeSession.exercises.push(newEx);
+  sessionAddPickerOpen = false;
+  renderExercises();
+  // Scroll to the newly added card
+  setTimeout(() => {
+    const card = document.getElementById('ex-card-' + key);
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 100);
 }
 
 function addSet(exKey) {
@@ -7304,6 +7526,10 @@ function showXPOverlay(summary) {
   const sessDist = parseFloat(summary.session.distance) || 0;
 
   if (sessVol > 0) {
+    html += `<div class="xp-breakdown-row" style="border-color:var(--str)44">
+      <div class="xp-breakdown-label">🏋️ Total weight moved</div>
+      <div class="xp-breakdown-val" style="color:var(--str)">${sessVol.toLocaleString()} lbs</div>
+    </div>`;
     const c1 = volumeComparisons(sessVol, sid);
     const c2 = volumeComparisonScaled(sessVol, sid);
     html += `<div class="xp-breakdown-row" style="border-color:#2A2820;flex-direction:column;align-items:flex-start;gap:2px">
@@ -8664,37 +8890,54 @@ function pickComp(pool, sessionId) {
 
 // Volume pools — each threshold maps to a pool of equivalent comparisons
 const VOLUME_POOLS = [
-  { lbs:1,    items:['a loaf of bread','a can of soup','a small dumbbell','a large apple','a can of beans','a block of butter','a pair of socks','a paperback novel','a baseball','a deck of cards'] },
-  { lbs:2,    items:['a bag of sugar','a large hardcover book','a small laptop','a pair of shoes','a large orange','a water bottle (full)','a bag of coffee beans','a jar of peanut butter','a basketball','a bag of rice (small)'] },
-  { lbs:3,    items:['a large bottle of water','a bag of flour','a small cat','a large candle','a bunch of bananas','a liter of milk','a pair of jeans','a hardback encyclopedia','a small flower pot','a house brick'] },
-  { lbs:5,    items:['a bag of potatoes','a car battery','a large textbook','a bag of sugar (5lb)','a newborn baby','a large cantaloupe','a bag of flour (5lb)','a standard brick','a small roasting chicken','a bag of cat food'] },
-  { lbs:8,    items:['a small microwave','a large house cat','a full gallon jug','a small bag of potatoes','a large watermelon','a full house paint can','a pair of dumbbells (4lb each)','a large cooking pot','a small dog breed (Chihuahua)','a case of water bottles'] },
-  { lbs:10,   items:['a bowling ball','a small fire extinguisher','a large watermelon','a bag of dog food (small)','a large laptop with bag','a small car battery','a bag of ice','a gallon of paint','a full propane camping canister','a small pumpkin'] },
-  { lbs:15,   items:['a small dog','a car tire','a large bag of rice','a car tire (compact)','a small keg (mini)','a full 2-gallon water jug','a large iron skillet','a bag of birdseed','a large jug of laundry detergent','a bag of mulch'] },
-  { lbs:20,   items:['a medium dog','a bag of concrete mix','a large suitcase packed','a 20lb medicine ball','a small bag of sand','a large cooler (empty)','a car wheel with tire','a large dumbbell','a large bag of kitty litter','a full 5-gallon water jug'] },
-  { lbs:25,   items:['a large dog','a large monitor','a small generator','a 25lb plate','a large bag of dog food','a case of beer (24 cans)','a small anvil','a large mixing bowl set','a full propane grill tank','a large bag of salt'] },
-  { lbs:30,   items:['a Labrador retriever','a microwave oven','a large toolbox','a small keg','a large bag of concrete','a child bicycle','a small suitcase (fully packed)','a large bag of soil','a 30lb dumbbell','a full gas can (5 gal)'] },
-  { lbs:40,   items:['a small child','a large suitcase full','a big bag of dog food','a 40lb weight plate','a large bag of sand','a car battery with case','a large cooler with drinks','a full propane tank','a small riding toy','a large toolbox with tools'] },
-  { lbs:45,   items:['an Olympic barbell','a large dog (Saint Bernard)','a full half-keg','a 45lb plate','a large sack of concrete','a medium-sized dog crate','a large bag of topsoil','a large portable generator','a car jack','a full 10-gallon water drum'] },
-  { lbs:50,   items:['a large bag of dog food','a small generator','a full half-keg','a large bag of salt','a small bale of hay','a 50lb weight plate','a large outdoor planter (full)','a small propane grill','a large bag of sand','a full 12-gallon water drum'] },
-  { lbs:60,   items:['a German shepherd','a large bag of cement','a small refrigerator door','a large bag of gravel','a full 5-gallon paint bucket stack','a 60lb weight plate','a large outdoor pot (filled)','a medium-size chest freezer door','a large gym bag loaded','a full water cooler jug crate'] },
-  { lbs:75,   items:['a full keg of beer','a small refrigerator','a large toolbox','a large bag of concrete','a medium dog (Husky)','a large sack of potting soil','a commercial mixer','a large cooler full of ice','a 75lb sandbag','a heavy-duty car battery jump pack'] },
-  { lbs:100,  items:['a large television','a cinder block stack','a giant pumpkin','a large dog (Mastiff)','a full office chair with base','a large bag of sand (2 bags)','a small safe','a car tire with steel rim','a large generator (portable)','a full 25-gallon water drum'] },
-  { lbs:120,  items:['a full keg of beer','a large piece of gym equipment','a baby dolphin','a large safe (small)','a large dog crate with dog','a commercial vacuum cleaner','a large motorcycle battery stack','a full pallet of bricks (quarter)','a large outdoor grill','a heavy-duty tool chest'] },
-  { lbs:150,  items:['a giant panda','a large motorcycle engine','a large filing cabinet (full)','a professional oven','a large safe','a small riding lawnmower','a large appliance box','a commercial chest freezer','a large industrial fan','a full barrel of water'] },
-  { lbs:175,  items:['a large motorcycle','a big screen TV with stand','a large toolbox full','a large commercial dishwasher','a small ATV','a full 55-gallon drum','a large lathe machine part','a commercial ice machine (small)','a large outdoor generator','a heavy sofa'] },
-  { lbs:200,  items:['a large vending machine','a big male kangaroo','a grand piano bench','a large washer-dryer set','a large safe (medium)','a full 55-gallon steel drum','a commercial refrigerator door','a small engine block','a large industrial toolbox','a commercial deep fryer'] },
-  { lbs:250,  items:['a male lion','a large snowmobile','a full-size bathtub','a large engine block','a full 55-gallon drum (water)','a commercial pizza oven','a large safe (heavy)','a piano bench (loaded)','a commercial washing machine','a large industrial compressor'] },
-  { lbs:300,  items:['a large upright piano','a refrigerator','a full-grown male lion','a commercial chest freezer','a large safe','a small engine (4-cylinder)','a large industrial generator','a large outdoor hot tub (empty)','a full barrel of oil','a commercial dryer'] },
-  { lbs:400,  items:['a concert grand piano','a large black bear','a male tiger','a large industrial safe','a commercial oven range','a large outdoor fountain (empty)','a mid-size engine block','a large riding lawnmower','a commercial ice maker','a full steel barrel stack'] },
-  { lbs:500,  items:['a baby grand piano','a large motorcycle','a full-size refrigerator','a large commercial safe','a small car engine','a large outdoor hot tub (filled, small)','a large industrial compressor','a full 275-gallon water tank (quarter)','a commercial espresso machine (large)','a large boat anchor'] },
-  { lbs:700,  items:['a large grizzly bear','a typical oak tree trunk','a horse (small)','a large V8 engine block','a commercial refrigerator unit','a large outdoor sculpture','a full 275-gallon water tank (half)','a large industrial drill press','a commercial washing machine stack','a large boat motor'] },
-  { lbs:900,  items:['a male polar bear','a dairy cow','a large cargo motorcycle','a large engine assembly','a commercial chest freezer stack','a large outdoor planter (stone)','a full 275-gallon water tank','a large industrial lathe','a commercial ice rink section','a large boat trailer'] },
-  { lbs:1000, items:['a dairy cow','a small racehorse','a large upright safe','a full 275-gallon water tote','a large industrial generator','a large commercial oven stack','a small compact car (no engine)','a large concrete planter','a commercial refrigerator unit (large)','a large industrial air compressor'] },
-  { lbs:1200, items:['a small racehorse','a large concert grand piano','a riding lawnmower','a large industrial lathe','a full 330-gallon water tote','a large commercial freezer unit','a compact car door assembly','a large stone garden feature','a commercial dishwasher unit (large)','a large industrial press'] },
-  { lbs:1500, items:['a small horse','a large safe','a grand piano','a large commercial generator','a full 400-gallon water tank','a large industrial compressor','a mid-size car engine with transmission','a large outdoor stone fountain','a commercial ice maker (large)','a large boat engine'] },
-  { lbs:1800, items:['a large horse','a baby grand piano','a large ATV','a large commercial refrigerator','a full 500-gallon water tank','a large industrial lathe','a car engine with all accessories','a large commercial oven range','a large stone sculpture','a large boat motor assembly'] },
+  { lbs:1,    items:['a loaf of bread','a can of soup','a small dumbbell','a large apple','a can of beans','a block of butter','a pair of socks','a paperback novel','a baseball','a deck of cards','a can of soda','a medium orange','a jar of baby food','a tube of toothpaste','a small candle','a tennis ball','a bar of soap','a smartphone','a granola bar','a hardboiled egg'] },
+  { lbs:2,    items:['a bag of sugar','a large hardcover book','a small laptop','a pair of shoes','a large orange','a water bottle (full)','a bag of coffee beans','a jar of peanut butter','a basketball','a bag of rice (small)','a large grapefruit','a bunch of grapes','two sticks of butter','a small pot','a pair of flip flops','a large mug filled with coffee','a carton of eggs','a small picture frame','a bag of flour (partial)','a large apple and a banana together'] },
+  { lbs:3,    items:['a large bottle of water','a bag of flour','a small cat','a large candle','a bunch of bananas','a liter of milk','a pair of jeans','a hardback encyclopedia','a small flower pot','a house brick','a large sweet potato','a small cast iron pan','a bag of apples','a large coconut','a medium-sized dictionary','a quart of ice cream','a bag of grapes plus a bag of apples','a small bouquet of flowers in a vase','a pair of work boots (one)','a large navel orange bundle'] },
+  { lbs:4,    items:['a large bag of sugar','two liters of water','a large hardcover textbook','a small bag of potatoes','a large avocado bundle','a quart of milk plus extras','a small power tool','a large pineapple','a bag of cat food (small)','a pair of inline skates (one)','a small slow cooker (empty)','a large bunch of bananas','a bag of rice (medium partial)','a medium flower pot filled','a small cast iron skillet','a stack of five hardback books','a large cantaloupe','a case of small juice boxes','a pair of sandals','a full water bottle plus a book'] },
+  { lbs:5,    items:['a bag of potatoes','a car battery','a large textbook','a bag of sugar (5lb)','a newborn baby','a large cantaloupe','a bag of flour (5lb)','a standard brick','a small roasting chicken','a bag of cat food','a human head (roughly)','a bowling pin','a pair of ice skates','a large bag of apples','a two-liter bottle of soda times two','a full one-gallon water jug','a large cast iron pan (small)','a small bag of dog food','a stack of ten hardback books','a large bag of oranges'] },
+  { lbs:6,    items:['a large bag of carrots and potatoes','a six-pack of canned beer','a full two-liter soda times two plus extra','a small bag of soil','a medium-sized roasting chicken','a large bag of onions','a full steel water bottle plus extras','a pair of hiking boots','a small electric fan','a large bunch of bananas plus a pineapple','a bag of birdseed (small)','a household brick times two','a small bag of flour plus sugar','a large ceramic mug set','a large bag of cat food','a small dumbbell pair (3lb each)','a medium flower pot filled with dirt','a gallon of milk (almost)','a large bag of lemons','a small first aid kit fully stocked'] },
+  { lbs:7,    items:['a large bag of oranges and apples','a full gallon of water (plus some)','a medium-sized house cat','a small bag of concrete (partial)','a large bag of dog food (small)','a small toolbox with a few tools','a large bag of rice (partial)','a standard fire extinguisher (small)','a small microwave door','a full backpack with school supplies','a large pumpkin (medium)','a bag of potatoes plus a bag of onions','a medium cast iron skillet','a bag of topsoil (small)','a small car battery (compact)','a large bag of pet treats','a medium-sized bag of soil','a bunch of bananas plus a melon','a full hydration pack','a large stack of magazines'] },
+  { lbs:8,    items:['a small microwave','a large house cat','a full gallon jug','a small bag of potatoes','a large watermelon','a full house paint can','a pair of dumbbells (4lb each)','a large cooking pot','a small dog breed (Chihuahua)','a case of water bottles','a full one-gallon paint can','a medium cast iron dutch oven','a large bag of oranges','a small bag of sand','a pair of work boots','a large bag of apples plus a bag of potatoes','a small backpack fully loaded','a large bag of cat food','a medium toolbox (empty)','a full hydration pack with extras'] },
+  { lbs:9,    items:['a large bag of flour plus sugar','a full gallon of milk plus extras','a medium-sized dog (Chihuahua full grown)','a large cantaloupe plus a bag of apples','a small bag of concrete mix (dry partial)','a large pot of soup','a full backpack for a day hike','a medium-sized pumpkin','a large bag of dog food (partial)','a set of three hardback books plus a binder','a full two-gallon water container','a large bag of soil (partial)','a pair of ankle weights (4.5 each)','a medium cast iron skillet filled with food','a large bag of cat litter (partial)','a small gym bag loaded with gear','a full case of soda cans','a large bag of birdseed','a standard bag of mulch (partial)','a medium-sized watermelon'] },
+  { lbs:10,   items:['a bowling ball','a small fire extinguisher','a large watermelon','a bag of dog food (small)','a large laptop with bag','a small car battery','a bag of ice','a gallon of paint','a full propane camping canister','a small pumpkin','a full 10-lb dumbbell','a large cast iron dutch oven','two standard bricks','a bag of kitty litter (partial)','a bag of mulch (partial)','a large bag of fertilizer (partial)','a medium-sized backpack fully loaded for school','a full 1.25-gallon water jug','a large bag of potatoes plus a bag of onions','a small bag of concrete mix'] },
+  { lbs:12,   items:['a large bag of cat litter','a medium-sized pumpkin','a small dog (Maltese)','a full 3-gallon water jug','a large bag of soil','a standard bag of mulch','a large bag of birdseed','a full case of 12 cans of soda','a medium cast iron skillet plus lid','a small bag of sand','a pair of 6lb dumbbells','a full laptop bag with accessories','a large bag of dog food (partial)','a medium-sized watermelon','a large bag of rock salt','a full gas can (3 gallons)','a medium toolbox with tools','a large bag of fertilizer','a set of encyclopedias (3 volumes)','a full 3-gallon paint can'] },
+  { lbs:15,   items:['a small dog','a car tire','a large bag of rice','a car tire (compact)','a small keg (mini)','a full 2-gallon water jug','a large iron skillet','a bag of birdseed','a large jug of laundry detergent','a bag of mulch','a full 15-lb dumbbell plate','a large bag of cat litter','a medium bag of concrete mix','a full 2-gallon paint can','a large bag of potting soil','a standard bag of rock salt','a full gas can (4 gallons)','a large bag of fertilizer','a small bag of sand','a medium-sized tool bag with tools'] },
+  { lbs:18,   items:['a large bag of dog food','a full 5-gallon water container (partial)','a medium-sized pumpkin (large)','a large bag of concrete mix (partial)','a large bag of soil (2 bags)','a standard bag of play sand','a full gallon of paint times 2','a medium-sized toolbox with tools','a large bag of bird seed (50lb partial)','a small bag of gravel','a medium fire extinguisher','a large bag of cat litter (heavy bag)','a full 4.5-gallon water jug','a large bag of rock salt (partial)','a medium cast iron dutch oven full of food','a large cooler (empty)','a full gas can (5 gallons)','a large bag of mulch (2 bags)','a car wheel (small car)','a standard bag of topsoil times 2'] },
+  { lbs:20,   items:['a medium dog','a bag of concrete mix','a large suitcase packed','a 20lb medicine ball','a small bag of sand','a large cooler (empty)','a car wheel with tire','a large dumbbell','a large bag of kitty litter','a full 5-gallon water jug','a full 20-lb propane tank','a large bag of dog food (20lb)','two standard bags of rock salt','a large bag of potting soil','a medium-sized generator (small)','a full 5-gallon paint bucket','a large bag of fertilizer (20lb)','a medium fire extinguisher','a car battery (standard)','a medium toolbox fully loaded'] },
+  { lbs:25,   items:['a large dog','a large monitor','a small generator','a 25lb plate','a large bag of dog food','a case of beer (24 cans)','a small anvil','a large mixing bowl set','a full propane grill tank','a large bag of salt','a full 25-lb dumbbell','a large bag of bird seed','a bag of concrete mix plus tools','a medium-sized safe','a large bag of soil (large bag)','a full 6-gallon water container','two full 5-gallon paint cans','a large bag of play sand','a medium generator (small portable)','a car wheel (standard sedan)'] },
+  { lbs:30,   items:['a Labrador retriever','a microwave oven','a large toolbox','a small keg','a large bag of concrete','a child bicycle','a small suitcase (fully packed)','a large bag of soil','a 30lb dumbbell','a full gas can (5 gal)','a full 30-lb dumbbell plate','a large bag of fertilizer','a medium-sized suitcase packed full','a large cooler with a few drinks','two full 5-gallon water containers','a car tire (standard)','a large dog crate (empty)','a medium generator','a large bag of sand','a full 8-gallon water drum'] },
+  { lbs:35,   items:['a large bag of concrete mix (35lb)','a mid-size dog (Border Collie)','a large bag of sand plus tools','a full 9-gallon water container','a medium-sized suitcase fully packed','a large bag of dog food (35lb)','a large toolbox with basic tools','a car tire (small truck)','a large bag of rock salt (35lb)','a medium generator (portable)','a large bag of potting soil (35lb)','two full 5-gallon paint cans plus extras','a large bag of play sand','a medium-sized cooler with drinks','a full propane tank (medium grill)','a large bag of birdseed (35lb)','a medium bag of gravel','a large bag of fertilizer (35lb)','a full 9-gallon fuel container','a large dog (medium breed full grown)'] },
+  { lbs:40,   items:['a small child','a large suitcase full','a big bag of dog food','a 40lb weight plate','a large bag of sand','a car battery with case','a large cooler with drinks','a full propane tank','a small riding toy','a large toolbox with tools','a full 40-lb dumbbell','a large bag of concrete (40lb)','a medium-sized generator','a large bag of soil (40lb)','a full 10-gallon water container','a car wheel with tire (truck small)','a large bag of birdseed (40lb)','a large bag of fertilizer','a medium-sized safe (small)','a full case of bottled water (large)'] },
+  { lbs:45,   items:['an Olympic barbell','a large dog (Saint Bernard)','a full half-keg','a 45lb plate','a large sack of concrete','a medium-sized dog crate','a large bag of topsoil','a large portable generator','a car jack','a full 10-gallon water drum','a full 45-lb Olympic barbell (just the bar)','two full propane grill tanks','a large bag of sand (45lb)','a medium generator with fuel','a large bag of dog food (45lb)','a large cooler with ice and drinks','a car tire with steel rim (compact)','a large bag of fertilizer (45lb)','a full 12-gallon water drum','a large bag of concrete mix (45lb)'] },
+  { lbs:50,   items:['a large bag of dog food','a small generator','a full half-keg','a large bag of salt','a small bale of hay','a 50lb weight plate','a large outdoor planter (full)','a small propane grill','a large bag of sand','a full 12-gallon water drum','a full 50-lb bag of concrete','a large bag of fertilizer (50lb)','a medium-sized generator fully fueled','a large cooler fully loaded with ice','a large bag of birdseed (50lb)','two full 25-lb dumbbells','a large bag of potting soil (50lb)','a car tire with rim (standard sedan)','a large bag of play sand (50lb)','a full 13-gallon water container'] },
+  { lbs:60,   items:['a German shepherd','a large bag of cement','a small refrigerator door','a large bag of gravel','a full 5-gallon paint bucket stack','a 60lb weight plate','a large outdoor pot (filled)','a medium-size chest freezer door','a large gym bag loaded','a full water cooler jug crate','a full 60-lb dumbbell','two full 30-lb bags of concrete','a medium generator (standard)','a large bag of sand (60lb)','a full 15-gallon water drum','a car wheel with tire (SUV)','a large toolbox fully equipped','a large bag of dog food (60lb)','a large outdoor planter filled with soil','a full propane tank (large grill)'] },
+  { lbs:70,   items:['a large bag of concrete mix (70lb)','a full 70-lb dumbbell pair (35 each)','a large dog (Great Dane)','a standard bag of gravel (70lb)','a full 18-gallon water container','a medium-sized safe (standard)','a large bag of sand (70lb)','a car tire with rim (truck)','a full keg of beer (half)','a large outdoor fountain (empty)','a large bag of fertilizer (70lb)','two full 35-lb bags of sand','a full 20-gallon water drum','a large generator (portable)','a large bag of potting soil (70lb)','a large outdoor grill (empty)','a full 70-lb concrete bag','a large bag of play sand (70lb)','a large dog crate with a large dog','a full case of water bottles (large) times 3'] },
+  { lbs:75,   items:['a full keg of beer','a small refrigerator','a large toolbox','a large bag of concrete','a medium dog (Husky)','a large sack of potting soil','a commercial mixer','a large cooler full of ice','a 75lb sandbag','a heavy-duty car battery jump pack','a full 75-lb Olympic barbell loaded light','a large bag of sand (75lb)','a full 20-gallon water drum','a large generator with fuel','a large bag of fertilizer (75lb)','a car tire with rim (full-size truck)','a large outdoor planter (stone empty)','two full 37.5-lb weight plates','a large bag of birdseed (75lb)','a full 75-lb concrete form bag'] },
+  { lbs:85,   items:['a large bag of concrete mix (85lb)','a full 85-lb sandbag','two 42.5-lb weight plates','a large safe (small)','a full 22-gallon water drum','a large generator (standard portable)','a large bag of sand (85lb)','a car engine block (small partial)','a large outdoor grill with propane','a full keg of beer (almost)','a large bag of fertilizer (85lb)','a large dog (Irish Wolfhound)','a large outdoor fountain (small filled)','two full 40-lb bags of concrete','a full propane tank plus equipment','a large bag of potting soil (85lb)','a large commercial fan','a standard car battery times three','a large bag of play sand (85lb)','a medium-sized riding toy (fully assembled)'] },
+  { lbs:100,  items:['a large television','a cinder block stack','a giant pumpkin','a large dog (Mastiff)','a full office chair with base','a large bag of sand (2 bags)','a small safe','a car tire with steel rim','a large generator (portable)','a full 25-gallon water drum','a full 100-lb Olympic barbell setup (light)','a large bag of concrete mix (100lb 2 bags)','a large outdoor stone planter','two full 50-lb bags of sand','a full 100-lb sandbag','a large bag of fertilizer (100lb 2 bags)','a large commercial toolbox','a full 26-gallon water drum','a small engine block (compact car)','a large dog crate with a Great Dane'] },
+  { lbs:120,  items:['a full keg of beer','a large piece of gym equipment','a baby dolphin','a large safe (small)','a large dog crate with dog','a commercial vacuum cleaner','a large motorcycle battery stack','a full pallet of bricks (quarter)','a large outdoor grill','a heavy-duty tool chest','a full 120-lb sandbag','a large engine block (small 4-cylinder partial)','three full 40-lb bags of concrete','a large outdoor fountain (medium empty)','a full 30-gallon water drum','a large safe (standard small)','a large commercial generator (small)','a large riding lawnmower (empty of fuel)','a large tree stump (medium)','a full 120-lb Olympic barbell setup'] },
+  { lbs:135,  items:['a 135-lb Olympic barbell (standard deadlift starter weight)','a large bag of concrete mix times 3 (45lb each)','a large outdoor water fountain (medium filled)','a large safe (small standard)','a full 35-gallon water drum','three full 45-lb bags of sand','a large generator (standard)','a large riding lawnmower','a small ATV (partial)','a large engine block (compact 4-cylinder)','a full 135-lb sandbag','a large commercial fan (industrial)','a large tool chest fully loaded','a large outdoor planter (stone filled small)','a full keg of beer plus a full propane tank','three full 45-lb weight plates','a large safe (fireproof small)','a commercial chest freezer (small)','a large dog and a large bag of sand','a full 35-gallon water storage drum'] },
+  { lbs:150,  items:['a giant panda','a large motorcycle engine','a large filing cabinet (full)','a professional oven','a large safe','a small riding lawnmower','a large appliance box','a commercial chest freezer','a large industrial fan','a full barrel of water','a full 150-lb sandbag','three full 50-lb bags of concrete','a large outdoor stone planter (filled)','a full 40-gallon water drum','a large generator (heavy duty)','a small ATV (compact)','a large commercial refrigerator door','a large engine block (4-cylinder)','a riding lawnmower with fuel','a large safe (fireproof standard)'] },
+  { lbs:175,  items:['a large motorcycle','a big screen TV with stand','a large toolbox full','a large commercial dishwasher','a small ATV','a full 55-gallon drum','a large lathe machine part','a commercial ice machine (small)','a large outdoor generator','a heavy sofa','a full 175-lb sandbag','a large engine block (small V6)','a full 45-gallon water drum','a large commercial safe (small)','a riding lawnmower (standard)','a large outdoor stone fountain (medium)','a large filing cabinet (full 4-drawer)','a large commercial chest freezer','a large industrial toolbox fully loaded','three full 55-lb bags of concrete mix'] },
+  { lbs:200,  items:['a large vending machine','a big male kangaroo','a grand piano bench','a large washer-dryer set','a large safe (medium)','a full 55-gallon steel drum','a commercial refrigerator door','a small engine block','a large industrial toolbox','a commercial deep fryer','a full 200-lb Olympic barbell setup','a large outdoor fountain (large empty)','a full 50-gallon water drum','a large generator (heavy duty standard)','a large riding lawnmower (full size)','a large safe (fireproof standard)','a large ATV (small)','a commercial ice maker (small)','a large industrial fan','four full 50-lb bags of concrete'] },
+  { lbs:250,  items:['a male lion','a large snowmobile','a full-size bathtub','a large engine block','a full 55-gallon drum (water)','a commercial pizza oven','a large safe (heavy)','a piano bench (loaded)','a commercial washing machine','a large industrial compressor','a full 250-lb barbell setup (loaded)','a large outdoor stone fountain (filled)','a full 65-gallon water drum','a large ATV (standard)','a large riding lawnmower with attachments','a large safe (fireproof large)','a commercial chest freezer (standard)','a large industrial fan (heavy duty)','five full 50-lb bags of concrete','a large engine assembly (4-cylinder full)'] },
+  { lbs:300,  items:['a large upright piano','a refrigerator','a full-grown male lion','a commercial chest freezer','a large safe','a small engine (4-cylinder)','a large industrial generator','a large outdoor hot tub (empty)','a full barrel of oil','a commercial dryer','a full 300-lb barbell setup','a large outdoor stone planter (filled)','a full 75-gallon water drum','a large ATV (heavy duty)','a large commercial safe (standard)','a large riding lawnmower (full size with attachments)','a large commercial refrigerator','a large engine assembly (V6 partial)','six full 50-lb bags of concrete','a large industrial compressor (portable)'] },
+  { lbs:350,  items:['a full-grown male gorilla','a large outdoor hot tub (empty large)','a full 90-gallon water drum','a large commercial safe (heavy)','a large ATV (full size)','a piano (upright small)','a large commercial chest freezer (large)','a large industrial fan (heavy duty)','a large engine assembly (V6 full)','a full 350-lb barbell setup (heavy)','a large commercial generator (portable)','a large riding lawnmower (full size commercial)','a large outdoor fountain (large filled)','a large industrial compressor (standard)','a large safe (fireproof heavy)','seven full 50-lb bags of concrete','a large commercial washing machine','a full 90-gallon fuel drum','a large outdoor stone sculpture (medium)','a large commercial pizza oven'] },
+  { lbs:400,  items:['a concert grand piano','a large black bear','a male tiger','a large industrial safe','a commercial oven range','a large outdoor fountain (empty)','a mid-size engine block','a large riding lawnmower','a commercial ice maker','a full steel barrel stack','a full 400-lb barbell setup (competition)','a large outdoor stone planter (large filled)','a full 100-gallon water drum','a large industrial generator (standard)','a large commercial safe (large)','a large ATV (heavy duty full size)','eight full 50-lb bags of concrete','a large commercial refrigerator (full size)','a large engine assembly (V8 partial)','a large commercial chest freezer (commercial)'] },
+  { lbs:500,  items:['a baby grand piano','a large motorcycle','a full-size refrigerator','a large commercial safe','a small car engine','a large outdoor hot tub (filled small)','a large industrial compressor','a full 275-gallon water tank (quarter)','a commercial espresso machine (large)','a large boat anchor','a full 500-lb barbell setup','a large outdoor fountain (large filled)','a large industrial generator (heavy duty)','a full 125-gallon water drum','a large safe (fireproof extra large)','ten full 50-lb bags of concrete','a large commercial washing machine (industrial)','a full V8 engine assembly','a large outdoor stone sculpture (large)','a large commercial pizza oven (standard)'] },
+  { lbs:600,  items:['a large grand piano (baby)','a large ATV with trailer','a full 150-gallon water drum','a large commercial safe (extra large)','a large industrial fan system','a large outdoor hot tub (medium filled)','a large engine assembly (V8 full)','a large commercial refrigerator (industrial)','a large industrial compressor (heavy duty)','a full 600-lb sandbag set','a large riding lawnmower (commercial full)','a large outdoor stone sculpture (extra large)','a full 160-gallon fuel drum','twelve full 50-lb bags of concrete','a large commercial chest freezer (industrial)','a large boat engine (outboard large)','a large commercial generator (standard)','a large industrial toolbox (professional)','a large outdoor fountain (extra large filled)','a large safe (fireproof commercial)'] },
+  { lbs:700,  items:['a large grizzly bear','a typical oak tree trunk','a horse (small)','a large V8 engine block','a commercial refrigerator unit','a large outdoor sculpture','a full 275-gallon water tank (half)','a large industrial drill press','a commercial washing machine stack','a large boat motor','a full 700-lb barbell setup (elite powerlifter)','a large grand piano (standard)','a large outdoor hot tub (large filled)','a full 175-gallon water drum','a large industrial generator (heavy)','a large commercial safe (vault style)','fourteen full 50-lb bags of concrete','a large boat engine assembly','a large industrial compressor system','a large commercial ice maker (industrial)'] },
+  { lbs:800,  items:['a full-grown male polar bear (large)','a large horse (thoroughbred)','a grand piano (standard)','a large industrial lathe','a full 200-gallon water drum','a large commercial refrigerator unit (double)','a large industrial generator (heavy duty)','a large outdoor stone fountain (monumental)','a large boat engine (inboard small)','a large commercial safe (large vault)','a full 800-lb sandbag collection','sixteen full 50-lb bags of concrete','a large industrial fan system (commercial)','a large outdoor sculpture (monument)','a large commercial chest freezer (double)','a large riding lawnmower system','a large commercial washing machine (industrial)','a large outdoor hot tub (extra large filled)','a large industrial drill press (heavy)','a full 800-lb barbell and rack setup'] },
+  { lbs:900,  items:['a male polar bear','a dairy cow','a large cargo motorcycle','a large engine assembly','a commercial chest freezer stack','a large outdoor planter (stone)','a full 275-gallon water tank','a large industrial lathe','a commercial ice rink section','a large boat trailer','a full 900-lb barbell and rack setup','a large grand piano (concert)','a full 225-gallon water drum','a large industrial generator (commercial)','a large commercial safe (vault large)','eighteen full 50-lb bags of concrete','a large boat engine (inboard standard)','a large commercial refrigerator system','a large industrial compressor (commercial)','a large outdoor sculpture (large monument)'] },
+  { lbs:1000, items:['a dairy cow','a small racehorse','a large upright safe','a full 275-gallon water tote','a large industrial generator','a large commercial oven stack','a small compact car (no engine)','a large concrete planter','a commercial refrigerator unit (large)','a large industrial air compressor','a full 1000-lb barbell and rack competition setup','a large concert grand piano','a full 250-gallon water drum','a large commercial vault safe','twenty full 50-lb bags of concrete','a large inboard boat engine assembly','a large commercial refrigerator system (double)','a large industrial lathe (commercial)','a large outdoor fountain (monumental filled)','a large industrial compressor system (full)'] },
+  { lbs:1200, items:['a small racehorse','a large concert grand piano','a riding lawnmower','a large industrial lathe','a full 330-gallon water tote','a large commercial freezer unit','a compact car door assembly','a large stone garden feature','a commercial dishwasher unit (large)','a large industrial press','a large horse (draft breed small)','a full 300-gallon water drum','a large commercial safe (vault extra large)','a large boat (small aluminum without motor)','twenty-four full 50-lb bags of concrete','a large commercial generator (heavy)','a large industrial fan system (heavy duty)','a large commercial refrigerator system (triple)','a large outdoor stone sculpture (monumental)','a large industrial drill press (commercial)'] },
+  { lbs:1500, items:['a small horse','a large safe','a grand piano','a large commercial generator','a full 400-gallon water tank','a large industrial compressor','a mid-size car engine with transmission','a large outdoor stone fountain','a commercial ice maker (large)','a large boat engine','a large draft horse (medium)','a full 375-gallon water drum','a large commercial vault (bank)','a large boat (jon boat complete)','thirty full 50-lb bags of concrete','a large commercial chest freezer system','a large industrial lathe (heavy duty commercial)','a large commercial refrigerator system (commercial walk-in door)','a large outdoor stone monument','a large industrial generator system'] },
+  { lbs:1800, items:['a large horse','a baby grand piano','a large ATV','a large commercial refrigerator','a full 500-gallon water tank','a large industrial lathe','a car engine with all accessories','a large commercial oven range','a large stone sculpture','a large boat motor assembly','a large draft horse (full grown)','a full 450-gallon water drum','a large commercial vault door','a large boat (aluminum fishing complete)','thirty-six full 50-lb bags of concrete','a large industrial compressor system (commercial)','a large commercial generator (industrial)','a large outdoor stone sculpture (extra large monument)','a large industrial press (commercial)','a large commercial walk-in freezer section'] },
+  { lbs:2000, items:['a full-grown male bison','a small car (Smart car roughly)','a large draft horse (Clydesdale)','a full 500-gallon water drum','a large industrial generator (commercial)','a large commercial vault (full bank)','a large boat (aluminum complete with motor)','forty full 50-lb bags of concrete','a large outdoor stone monument (large)','a large commercial walk-in freezer','a large industrial lathe system','a large commercial refrigerator system (walk-in)','a large concert grand piano on a truck','a large industrial compressor (commercial large)','a large commercial oven system','a large outdoor stone fountain (grand)','a large industrial fan array','a large commercial chest freezer system (full)','a large boat with trailer (small)','a small car engine fully assembled times 2'] },
+  { lbs:2500, items:['a large SUV (without engine roughly)','a male walrus','a full 625-gallon water drum','a large industrial generator system','a large commercial vault (double)','a large boat (fiberglass small no motor)','fifty full 50-lb bags of concrete','a large outdoor stone monument (grand)','a large commercial walk-in freezer (full)','a large industrial press (full commercial)','a large draft horse times 2 (roughly)','a large commercial refrigerator system (double walk-in)','a large industrial lathe system (commercial)','a large commercial oven system (full kitchen)','a large outdoor stone sculpture (monumental large)','a large industrial compressor array','a large commercial ice-making system','a large boat with trailer (standard)','a large concert grand piano system','a large industrial generator array'] },
+  { lbs:3000, items:['a compact car (Fiat 500 roughly)','a full-grown male hippo (average)','a full 750-gallon water tank','a large industrial generator array','a large commercial vault system','a large boat (fiberglass standard)','sixty full 50-lb bags of concrete','a large outdoor stone monument (extra large)','a large commercial walk-in freezer system','a large industrial press system','three full-grown draft horses (roughly)','a large commercial refrigerator system (walk-in full)','a large industrial lathe array','a large commercial kitchen system','a large outdoor stone fountain system (grand)','a large industrial compressor system (full commercial)','a large commercial ice-making system (full)','a large boat with trailer (full size)','a large concert grand piano on a stage','a large industrial equipment collection'] },
 ];
+
 
 // Line 1: find the pool entry closest to lbs for a clean "1× X" comparison
 function getSingleUnitVolumeComp(lbs, sessionId) {
@@ -8764,23 +9007,34 @@ function volumeComparisonScaled(lbs, sessionId) {
 
 // Distance pools — local (Minneapolis) + national landmarks
 const DISTANCE_POOLS = [
-  { mi:0.1,   local:['a city block','the length of a football field + endzone','around a typical parking lot'], national:['the length of the Empire State Building twice','a city block in Manhattan','three laps around a basketball court'] },
-  { mi:0.25,  local:['around Lake of the Isles (quarter)','Minnehaha Creek trail segment','Loring Park outer path'], national:['one lap of a standard running track','across the Golden Gate Bridge (one way)','the length of the National Mall (DC)'] },
-  { mi:0.5,   local:['half a loop of Bde Maka Ska','Minnehaha Parkway stretch','Loring Park full loop'], national:['two laps of a standard track','across the Brooklyn Bridge','the length of Central Park (north-south)'] },
-  { mi:1,     local:['around Bde Maka Ska (short route)','Minnehaha Parkway to the Falls','Theodore Wirth trail segment'], national:['four laps of a standard track','the length of Central Park (NYC)','across the Golden Gate Bridge and back'] },
-  { mi:2,     local:['half of Lake Harriet loop','Minnehaha Falls to Longfellow Gardens','the Chain of Lakes connector trail'], national:['the length of the Las Vegas Strip','around Roosevelt Island (NYC)','the width of Manhattan at its widest'] },
-  { mi:3,     local:['full Lake Harriet loop','Bde Maka Ska to Lake Harriet','Chain of Lakes partial loop'], national:['the length of Waikiki Beach × 10','across the Mackinac Bridge','from the White House to the Lincoln Memorial and back'] },
-  { mi:5,     local:['Bde Maka Ska full loop + Lake Harriet segment','Mississippi River Gorge trail','Fort Snelling trail out-and-back'], national:['across the Golden Gate Bridge 10 times','the length of the Chesapeake Bay Bridge','from Times Square to Central Park and back twice'] },
-  { mi:6.2,   local:['Chain of Lakes full loop','Grand Rounds Scenic Byway segment','Minneapolis riverfront to St. Paul'], national:['across the Mackinac Bridge twice','the length of the Las Vegas Strip twice','from downtown Chicago to O\'Hare (roughly)'] },
-  { mi:10,    local:['Grand Rounds full segment','Minneapolis to Stillwater rail trail start','St. Croix trail segment'], national:['across Manhattan island × 3','the length of the Chesapeake Bay Bridge twice','from the Capitol to the Pentagon (DC)'] },
-  { mi:13.1,  local:['Twin Cities 10-Mile + 3 extra miles','Minneapolis to White Bear Lake (roughly)','Grand Rounds Scenic Byway + extra'], national:['the length of the Las Vegas Strip 5 times','from downtown Boston to Logan Airport × 4','across the George Washington Bridge 25 times'] },
-  { mi:20,    local:['Minneapolis to Hastings (roughly)','Boundary Waters entry road','North Shore drive start'], national:['Manhattan to JFK Airport','from Chicago to the Indiana border and back','the length of Lake Tahoe shoreline'] },
-  { mi:26.2,  local:['Twin Cities Marathon route','Minneapolis to Northfield (roughly)','Grand Rounds Scenic Byway × 4+'], national:['Boston Marathon course','the width of Rhode Island','from downtown LA to Disneyland'] },
-  { mi:50,    local:['Minneapolis to Red Wing','Minneapolis to St. Cloud','Minneapolis to New Ulm'], national:['NYC to Philadelphia','Chicago to Milwaukee','Boston to Providence and back'] },
-  { mi:100,   local:['Minneapolis to Duluth','Twin Cities to Iowa border','Minneapolis to La Crosse WI'], national:['NYC to Albany','LA to San Diego','DC to Philadelphia and back'] },
-  { mi:200,   local:['Twin Cities to Fargo','Minneapolis to Green Bay WI','Minneapolis to Des Moines'], national:['NYC to Boston and back','LA to Las Vegas','Chicago to St. Louis'] },
-  { mi:500,   local:['Twin Cities to Chicago','Minneapolis to Kansas City','Minnesota to Colorado border'], national:['NYC to Detroit','Boston to Cleveland','Dallas to Houston × 3'] },
-  { mi:1000,  local:['Twin Cities to Dallas','Minneapolis to Washington DC','Minnesota to the Gulf Coast'], national:['NYC to Miami','Chicago to Denver','Seattle to San Francisco'] },
+  { mi:0.1,   local:['a city block','the length of a football field plus both endzones','around a typical parking lot','the length of a standard city block in Uptown','down the block and back (roughly)','the length of a hockey rink','across a typical neighborhood intersection twice','from one end of a strip mall to the other','the length of a standard running track straight','four lengths of an Olympic swimming pool'], national:['the length of the Empire State Building twice','a city block in Manhattan','three laps around a basketball court','the length of the White House grounds','the wingspan of a 747 twice','the length of the Hollywood sign','four times around a standard baseball diamond','the length of the USS Nimitz aircraft carrier','the width of the Lincoln Memorial','the length of the National September 11 Memorial'] },
+  { mi:0.25,  local:['around Lake of the Isles (quarter loop)','a Minnehaha Creek trail segment','Loring Park outer path','along Nicollet Mall from the library to the convention center','the Cedar Lake trail connector','from Uptown to the corner of Lake and Hennepin','a Bryant Square Park loop','from Bde Maka Ska beach to the main parking lot','the length of the Midtown Greenway one block stretch','Powderhorn Park inner loop'], national:['one lap of a standard running track','across the Golden Gate Bridge (one way)','the length of the National Mall (DC)','the length of Waikiki Beach','the width of Central Park','the length of the Hollywood Walk of Fame','the perimeter of a standard city block in Chicago','across the Brooklyn Bridge (one way)','the length of the Las Vegas Convention Center','one loop of the White House grounds'] },
+  { mi:0.5,   local:['half a loop of Bde Maka Ska','Minnehaha Parkway stretch','Loring Park full loop','from Uptown to Lake Street and back','along the Stone Arch Bridge and back','from Lake Calhoun beach to the boat ramp','the full Powderhorn Park loop','from Dinkytown to the U of M bookstore and back','along the West River Parkway one segment','a Cedar Lake trail out-and-back segment'], national:['two laps of a standard track','across the Brooklyn Bridge','the length of the Las Vegas Strip (short stretch)','the width of Alcatraz Island and back','the runway length of a major airport','the length of the National Mall one way','across the Chesapeake Bay Bridge (short span)','from Fisherman\'s Wharf to Ghirardelli Square and back','the full perimeter of the National September 11 Memorial','the length of Chicago\'s Navy Pier'] },
+  { mi:0.75,  local:['from Lake Calhoun beach to the boat launch and back','a Loring Park loop plus extra','down Hennepin from Lake to Franklin and back','along the west bank of the Mississippi near the U','a Cedar Lake trail segment','from Bde Maka Ska north beach around the bays','the full Loring Park perimeter','from the Guthrie Theater to the Stone Arch Bridge','along West River Road past the locks','from Lake Street to Franklin along Lyndale and back'], national:['three laps of a standard track','the length of the High Line in NYC','across the Chesapeake Bay Bridge (one span)','the length of Fisherman\'s Wharf in SF','the Mall of America perimeter','the length of the San Antonio Riverwalk (short loop)','from Fenway Park to Copley Square and back','the length of the Hollywood Bowl approach road','across the Manhattan Bridge and back','the full perimeter of Bryant Park in NYC'] },
+  { mi:1,     local:['around Bde Maka Ska (short route)','Minnehaha Parkway to the Falls','Theodore Wirth trail segment','one loop of Powderhorn Park','from Dinkytown to the Stone Arch Bridge','from Lake Harriet bandshell around the north bay','the full Cedar Lake outer loop','from Nokomis beach to the east picnic area and back','along the Grand Rounds near Lake Nokomis','from Uptown to Lyn-Lake and back'], national:['four laps of a standard track','the length of Central Park (north-south)','across the Golden Gate Bridge and back','the length of the National Mall twice','the Riverwalk in San Antonio','the perimeter of the National Mall','from the Lincoln Memorial to the Washington Monument and back','the full length of the High Line in NYC','across the Ben Franklin Bridge in Philadelphia and back','the perimeter of Millennium Park in Chicago'] },
+  { mi:1.5,   local:['Bde Maka Ska south loop','from Uptown to Lyn-Lake and back','a Lake Harriet segment plus extra','along West River Pkwy from Franklin to Lake','the Midtown Greenway from Chicago Ave to Hennepin','from Cedar Lake to the Greenway connector and back','a full Theodore Wirth trail segment','from Lake Nokomis to the creek outlet and back','along Minnehaha Parkway from Hiawatha to the creek','the Webber Park to North Mississippi loop'], national:['six laps of a standard track','across the Mackinac Bridge (one way)','the length of the Santa Monica Pier twice','from the Capitol to the Lincoln Memorial','Battery Park to the Brooklyn Bridge (roughly)','the full length of Waikiki Beach and back','from Pike Place Market to Pioneer Square in Seattle','the perimeter of Jackson Square in New Orleans','from Fenway Park to the Charles River Esplanade','the length of the Miami Beach boardwalk (short segment)'] },
+  { mi:2,     local:['half of Lake Harriet loop','Minnehaha Falls to Longfellow Gardens','the Chain of Lakes connector trail','from Lake Calhoun to Lake Harriet and back','along the Greenway from Bryant to Lyndale and back','from Bde Maka Ska to Lake Harriet south end','the Como Lake full perimeter','around Lake of the Isles full loop','from Nokomis to Minnehaha Falls (half route)','the Webber Park trail full loop'], national:['the length of the Las Vegas Strip','around Roosevelt Island (NYC)','the width of Manhattan at its widest','the length of Fisherman\'s Wharf to Pier 39 and back','across the Bay Bridge bike path','the full High Line and back','from Wrigley Field to Navy Pier (roughly)','the full perimeter of Golden Gate Park (short loop)','from the French Quarter to the Garden District in NOLA','the length of the National Mall three times'] },
+  { mi:2.5,   local:['from Lake Harriet bandshell to Rose Garden and back','Bde Maka Ska to the bird sanctuary and back','along Minnehaha Creek from Hiawatha to the Falls','a Loring Park to Bde Maka Ska segment','the Como Lake full loop plus extra','from Lake Nokomis around the creek loop','the full Theodore Wirth beginner trail','Lake of the Isles full loop','from the Midtown Greenway to Bde Maka Ska beach','a North Mississippi Regional Park trail segment'], national:['ten laps of a standard track','the length of the National Mall four times','across the George Washington Bridge and back','the length of the Embarcadero in SF','from Times Square to Central Park and back','the full length of Navy Pier in Chicago twice','across the Chesapeake Bay Bridge (short route)','the length of Balboa Park in San Diego','from Coit Tower to Fisherman\'s Wharf in SF','the full perimeter of Boston Common and back'] },
+  { mi:3,     local:['full Lake Harriet loop','Bde Maka Ska to Lake Harriet','Chain of Lakes partial loop','from Minnehaha Falls to the river and back','the North Mississippi Regional Park loop','Lake of the Isles full loop plus extra','from Nokomis to Longfellow Gardens and back','the Como Regional Park outer loop','along the River Gorge trail partial route','from Cedar Lake to Lake of the Isles and back'], national:['the length of Waikiki Beach x10','across the Mackinac Bridge','from the White House to the Lincoln Memorial and back','the full High Line and back twice','the length of Chicago\'s Lakefront Trail (short stretch)','the perimeter of Central Park','from Fisherman\'s Wharf to the Golden Gate Overlook','the length of the San Antonio Riverwalk (full loop)','from the National Mall to Georgetown (roughly)','the Boston Harborwalk full length'] },
+  { mi:3.5,   local:['Lake Harriet full loop plus Bde Maka Ska south end','from Uptown around Bde Maka Ska and back','the Grand Rounds near Lake Nokomis','Minnehaha Parkway full stretch (one way)','the Como Lake and park combined loop','from Lake Harriet to Minnehaha Creek trail start','Bde Maka Ska full loop plus Lake of the Isles north','the Theodore Wirth beginner and intermediate loop','from Nokomis to the river gorge trail','along the Midtown Greenway full length'], national:['across the Chesapeake Bay Bridge','the length of the San Francisco waterfront','from Central Park south to the Brooklyn Bridge','the Chicago Lakefront Trail partial run','the length of Myrtle Beach boardwalk and back','the perimeter of Forest Park in St. Louis','from the French Quarter to Audubon Park in NOLA','across the Mackinac Bridge and partway back','the full length of the Seattle waterfront','the perimeter of Hermann Park in Houston'] },
+  { mi:4,     local:['Bde Maka Ska full loop and Lake Harriet north end','from Lake Harriet to Nokomis trail segment','the Mississippi River Gorge trail out-and-back','Minnehaha Falls to Fort Snelling start','a Grand Rounds Scenic Byway section','from Cedar Lake around Bde Maka Ska and back','Lake Harriet to Lake of the Isles full loop','the full Como Regional Park and lake loop','from Uptown to Minnehaha Falls (roughly)','along the North Mississippi trail full segment'], national:['sixteen laps of a standard track','from the Capitol to the Pentagon and halfway back','the length of the Chicago Lakefront Trail (short run)','across the Verrazano-Narrows Bridge twice','the San Antonio Riverwalk full loop','the full perimeter of Balboa Park in San Diego','from Golden Gate Park to the Painted Ladies and back','the length of the Miami Beach boardwalk','the Cuyahoga Valley trail segment in Ohio','from downtown Portland across all bridges and back'] },
+  { mi:4.5,   local:['from Lake Calhoun to Nokomis connector trail','Bde Maka Ska and Lake Harriet combined loop (short)','the Grand Rounds near the river gorge','from Uptown to Powderhorn Park and back','the Como Park and Lake combined loop','Lake of the Isles plus Bde Maka Ska full loops','from Minnehaha Falls to Fort Snelling park entrance','the full Greenway from Kenilworth to Midtown','along the North Mississippi and West River Pkwy segment','the Chain of Lakes southern half loop'], national:['the full length of the National Mall four times','from downtown Seattle to Gas Works Park and back','the length of Miami Beach boardwalk','from Golden Gate Park to the Painted Ladies and back','the Las Vegas Strip full length and back','the perimeter of New York\'s Central Park (short loop)','from the National Mall to the Tidal Basin and back','the full length of the Virginia Beach boardwalk','the perimeter of Piedmont Park in Atlanta','the Portland waterfront trail full loop'] },
+  { mi:5,     local:['Bde Maka Ska full loop and Lake Harriet segment','Mississippi River Gorge trail','Fort Snelling trail out-and-back','Chain of Lakes full lower loop','the Grand Rounds near the lakes','from Lake Harriet to Nokomis full trail','the full Theodore Wirth trail system','Bde Maka Ska to the river gorge start and back','the complete Lake of the Isles and Cedar Lake loop','from Uptown to the Ford Bridge and back'], national:['across the Golden Gate Bridge 10 times','the length of the Chesapeake Bay Bridge','from Times Square to Central Park and back twice','the Chicago Lakefront Trail (Navy Pier to Museum Campus)','the length of the Las Vegas Strip twice','the full perimeter of Prospect Park in Brooklyn','from Fenway Park to Harvard Square and back','the full Virginia Beach boardwalk and back','the length of the Outer Banks barrier island (short)','the full Schuylkill River Trail in Philadelphia (segment)'] },
+  { mi:5.5,   local:['Bde Maka Ska to Lake Harriet and back (extended)','from Lake Nokomis to Minnehaha Falls and back','the River Gorge trail to Fort Snelling and back','Chain of Lakes plus a Greenway stretch','the Grand Rounds near Nokomis and Minnehaha','from Cedar Lake to Minnehaha Falls trail','the full Loring Park to Lake of the Isles route','along the North Mississippi to Webber Park and back','Lake Harriet to the river gorge and back','the complete Chain of Lakes lower circuit'], national:['from downtown Portland across the bridges and back','the full length of the SF Embarcadero twice','from Wrigley Field to Navy Pier and back','the length of the Outer Banks barrier (short section)','from the 9/11 Memorial to Central Park and back','the full Boulder Creek Path in Colorado','from Balboa Park to the San Diego waterfront','the full length of the Monon Trail in Indianapolis (segment)','the perimeter of Audubon Park in New Orleans','from the Space Needle to Pike Place Market and back'] },
+  { mi:6,     local:['Chain of Lakes partial loop (extended)','Grand Rounds Scenic Byway segment','Minnehaha Pkwy full stretch out and back','from Bde Maka Ska to Nokomis and back','the full Lake Harriet and Bde Maka Ska loop','from Lake of the Isles to Minnehaha Falls trail','the full West River Pkwy trail segment','from Cedar Lake to Nokomis connector trail','the complete Greenway and Chain of Lakes loop','Theodore Wirth to Bde Maka Ska connector and back'], national:['across the Mackinac Bridge twice','the full Chicago Lakefront Trail (Navy Pier to 31st St)','from the National Mall to Georgetown and back','the Las Vegas Strip full loop','the Cuyahoga Valley trail segment','the full length of the Boardwalk in Atlantic City and back','from Golden Gate Park to Baker Beach and back','the perimeter of Lincoln Park in Chicago','the full Riverwalk in San Antonio twice','from Capitol Hill to Georgetown in DC and back'] },
+  { mi:6.2,   local:['Chain of Lakes full loop','Grand Rounds Scenic Byway segment','Minneapolis riverfront to St. Paul start','the full Lake Harriet and Bde Maka Ska combined loop','from Uptown to Fort Snelling trail start','the complete lower Chain of Lakes route','from Lake Nokomis to the Mississippi River','the full North Mississippi Regional Park trail','along the River Gorge to Hidden Falls and back','the Midtown Greenway full length and back'], national:['across the Mackinac Bridge twice','the length of the Las Vegas Strip twice','from downtown Chicago to O\'Hare (roughly)','the full length of the Chicago Lakefront Trail (north half)','from Central Park to the Brooklyn Bridge','the complete Virginia Beach boardwalk and back','the length of the Mall of America perimeter times six','from Fenway to MIT and back','the full Wissahickon Trail segment in Philly','from the National Mall to Reagan Airport and back'] },
+  { mi:7,     local:['Grand Rounds full lakes section','from Lake Harriet to Minnehaha Falls full route','Bde Maka Ska to Nokomis and back (extended)','the Mississippi River loop near Hidden Falls','the full chain of lakes tour (extended)','from Cedar Lake to Fort Snelling trail start','the complete Grand Rounds lakes and river segment','Lake Harriet to the river gorge full trail','from Uptown to Lake Nokomis and back','the full Minnehaha Creek corridor trail (lower half)'], national:['from Central Park to the Statue of Liberty ferry (roughly)','the length of Chicago\'s Lakefront Trail','across the Chesapeake Bay Bridge and back','from Pike Place Market to the Seattle waterfront and back x5','the length of Myrtle Beach boardwalk twice','the full perimeter of Golden Gate Park','from the French Quarter to City Park in New Orleans','the full Monon Trail in Indianapolis (segment)','the complete waterfront trail in Portland Oregon','from Wrigley Field to the Museum of Science and Industry'] },
+  { mi:8,     local:['Grand Rounds near Nokomis and the river','Minneapolis to St. Paul via the river trail (short route)','the full Minnehaha Creek corridor trail','from Uptown to Fort Snelling trail start','Lake Nokomis full loop plus connector trail','the complete Grand Rounds southern route','from Bde Maka Ska to the river gorge and back','the full Chain of Lakes and Greenway loop','from Lake Harriet to the Ford Bridge and back (extended)','the North Mississippi trail full length'], national:['the length of Manhattan island (south to north)','from downtown Boston to Cambridge and back','across the Golden Gate Bridge 16 times','the full Chicago Lakefront Trail','from the Capitol to Arlington Cemetery and back','the complete Wissahickon Trail in Fairmount Park','from Navy Pier to Lincoln Park and back in Chicago','the full Schuylkill River Trail segment in Philly','the perimeter of Audubon Park and Tulane Campus','from Alki Point to downtown Seattle waterfront'] },
+  { mi:9,     local:['from Lake Harriet to the river and back','Grand Rounds southern route','Minneapolis riverfront full loop','from Bde Maka Ska to Minnehaha and back (extended)','the Chain of Lakes full tour','the complete Minnehaha Creek trail from Hiawatha to the river','from Lake Nokomis to the river gorge full route','the Grand Rounds near the lakes and river gorge','from Uptown to the Ford Dam and back','the full North Mississippi and West River Pkwy combined'], national:['from JFK Airport to downtown Brooklyn','the length of the Las Vegas Strip three times','across the Chesapeake Bay Bridge and back (one way extra)','from Navy Pier to Wrigley Field and back','the full Cuyahoga Valley Towpath Trail segment','the complete Lakefront Trail in Chicago both directions','from Balboa Park to Mission Beach in San Diego','the full Boulder Creek path and back','the length of the Outer Banks from Nags Head (one segment)','from the Space Needle to the University District in Seattle'] },
+  { mi:10,    local:['Grand Rounds full segment','Minneapolis to Stillwater rail trail start','St. Croix trail segment','from Uptown to downtown St. Paul (roughly)','the full river gorge and chain of lakes loop','the complete Minnehaha Creek trail from Hiawatha to Fort Snelling','from Lake Harriet to the Ford Bridge and back (full route)','the Grand Rounds full lakes and river section','from Bde Maka Ska to Nokomis and back full route','the complete North Mississippi trail system'], national:['across Manhattan island x3','the length of the Chesapeake Bay Bridge twice','from the Capitol to the Pentagon (DC)','the length of the Chicago Lakefront Trail and back','from downtown Seattle to Bellevue via the trail (roughly)','the full perimeter of Central Park twice','from Fenway Park to Quincy Market and back twice','the complete Virginia Beach boardwalk twice','the full length of the Katy Trail in Missouri (segment)','the San Francisco Bay Trail full segment'] },
+  { mi:13.1,  local:['Twin Cities 10-Mile plus 3 extra miles','Minneapolis to White Bear Lake (roughly)','Grand Rounds Scenic Byway plus extra','from Uptown to Stillwater trail start','the complete Minnehaha Pkwy and Chain of Lakes tour','the full Grand Rounds southern and river route','from Lake Harriet to Fort Snelling and back','the complete North Mississippi trail and river gorge','Minneapolis to Afton State Park (roughly)','the full river bluffs trail system'], national:['the length of the Las Vegas Strip 5 times','from downtown Boston to Logan Airport x4','across the George Washington Bridge 25 times','the full Chicago Lakefront Trail one way','from Central Park to Coney Island (roughly)','the complete Wissahickon Trail and back in Philly','from the Golden Gate Bridge to Half Moon Bay (roughly)','the full Katy Trail in Missouri (short segment)','from the National Mall to Dulles Airport (halfway)','the complete C&O Canal Towpath to Harpers Ferry (partial)'] },
+  { mi:20,    local:['Minneapolis to Hastings (roughly)','Boundary Waters entry road','North Shore drive start','from the city to Lake Elmo and back','Minneapolis to Anoka along the river trail (roughly)','from Uptown to Stillwater by trail','the Grand Rounds complete loop','from Minneapolis to Red Wing (halfway)','along the Minnesota River from Burnsville to Shakopee','from Lake Harriet to the Wisconsin border (roughly)'], national:['Manhattan to JFK Airport','from Chicago to the Indiana border and back','the length of Lake Tahoe shoreline','from Boston to Gloucester MA','the full Cape Cod Rail Trail twice','from San Francisco to Half Moon Bay and back','the complete Virginia Creeper Trail (half)','from Nashville to Franklin TN and back','the Blue Ridge Parkway short segment','from Portland OR to the Columbia Gorge (roughly)'] },
+  { mi:26.2,  local:['Twin Cities Marathon route','Minneapolis to Northfield (roughly)','Grand Rounds Scenic Byway x4 plus','from Minneapolis to Hastings by trail','the full Minnehaha Creek and river trail system','from the city to Stillwater and back (roughly)','along the Minnesota River corridor full length','from Lake Harriet to Jordan MN (roughly)','the complete Grand Rounds multiple loops','Minneapolis to Lake City MN (roughly)'], national:['Boston Marathon course','the width of Rhode Island','from downtown LA to Disneyland','from NYC to Trenton NJ','the full Cape Cod Rail Trail','from Chicago lakefront to Milwaukee (halfway)','the full Virginia Creeper Trail','from Atlanta to Athens GA (roughly)','the C&O Canal Towpath to Harpers Ferry (short route)','from San Diego to the Mexican border x12'] },
+  { mi:50,    local:['Minneapolis to Red Wing','Minneapolis to St. Cloud','Minneapolis to New Ulm','from the city to Duluth (halfway)','Minneapolis to Eau Claire WI (roughly)','from the Twin Cities to Rochester MN','along the Great River Road to La Crosse (half)','Minneapolis to Mankato and back','from the city to Brainerd (roughly)','the full Cannon Valley Trail and back twice'], national:['NYC to Philadelphia','Chicago to Milwaukee','Boston to Providence and back','LA to San Diego','from DC to Baltimore and back','Seattle to Olympia WA','Austin to San Antonio TX','Denver to Colorado Springs and back','Portland OR to Salem OR','Charlotte to Raleigh NC (roughly)'] },
+  { mi:100,   local:['Minneapolis to Duluth','Twin Cities to Iowa border','Minneapolis to La Crosse WI','from the city to Fargo (halfway)','the full North Shore Drive to Two Harbors','Minneapolis to Wausau WI','from the Twin Cities to St. Cloud and back','along the Mississippi from St. Paul to Prairie du Chien','Minneapolis to Winona MN','the full Arrowhead State Trail (roughly)'], national:['NYC to Albany','LA to San Diego','DC to Philadelphia and back','Chicago to South Bend IN','Boston to Hartford CT','Miami to West Palm Beach and back','Denver to Aspen (roughly)','Austin to Houston','Seattle to Portland OR (halfway)','Nashville to Louisville KY'] },
+  { mi:200,   local:['Twin Cities to Fargo','Minneapolis to Green Bay WI','Minneapolis to Des Moines','from the city to Kansas City (halfway)','the Twin Cities to Chicago (halfway)','Minneapolis to Omaha NE (roughly)','along the Mississippi to St. Louis (partial)','from the city to Sioux Falls SD','Minneapolis to Madison WI','the full North Shore to Canada border and back'], national:['NYC to Boston and back','LA to Las Vegas','Chicago to St. Louis','DC to Charlotte NC','Miami to Jacksonville FL','Denver to Albuquerque NM','Seattle to San Francisco (partial)','Austin to New Orleans (roughly)','Portland ME to NYC','Nashville to Atlanta'] },
+  { mi:500,   local:['Twin Cities to Chicago','Minneapolis to Kansas City','Minnesota to Colorado border','from the city to Denver (roughly)','Minneapolis to Memphis TN','Twin Cities to Detroit MI','from Minnesota to Oklahoma City','Minneapolis to St. Louis and halfway back','along the Lewis and Clark trail segment','Minnesota to Nashville TN (roughly)'], national:['NYC to Detroit','Boston to Cleveland','Dallas to Houston x3','LA to Phoenix','Chicago to Nashville','Seattle to Boise ID and back','Denver to Dallas','Miami to Atlanta','DC to Indianapolis','Portland OR to Sacramento CA'] },
+  { mi:1000,  local:['Twin Cities to Dallas','Minneapolis to Washington DC','Minnesota to the Gulf Coast','from the city to Los Angeles (roughly)','Minneapolis to Miami (halfway)','Twin Cities to New York City (roughly)','from Minnesota to New Orleans','along the Mississippi River full length (roughly)','Minneapolis to Seattle (roughly)','from the city to Atlanta GA'], national:['NYC to Miami','Chicago to Denver','Seattle to San Francisco','Boston to Chicago','LA to Salt Lake City','DC to Kansas City','Miami to New York','Denver to Seattle','Houston to Chicago','Atlanta to Boston'] },
 ];
 
 function distanceComparisonPair(mi, sessionId) {

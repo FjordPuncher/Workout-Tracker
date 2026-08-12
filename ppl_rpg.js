@@ -844,9 +844,9 @@ function rpgPlayerStats(profile) {
   const trainingBonus   = 1 + (castle.training_grounds || 0) * 0.10;
 
   // Derived stats
-  const baseHP   = 200 + (realEND * 10) + (level * 10) + gearHP;
+  const baseHP   = 200 + (effEND * 18) + (level * 10) + gearHP;
   const maxHP    = Math.round(baseHP * trainingBonus);
-  const rawATK  = Math.round(effSTR * 2.0 * barracksBonus);
+  const rawATK  = Math.round(effSTR * 3.2 * barracksBonus);
   const atk     = Math.max(10 + level, rawATK);
   const endMit  = effEND / (effEND + 300);
   const agiMit  = (effAGI * 0.5) / (effAGI + 100);
@@ -3391,7 +3391,7 @@ function rpgInitRetroactiveGold(profile) {
 
 window.rpgLoaded = true;
 
-// Drain any pending heal that was queued while the RPG wasn't loaded yet
+// Drain any pending heal queued while the RPG wasn't loaded
 (function() {
   try {
     const p = rpgGetProfile();
