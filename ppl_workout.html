@@ -6526,10 +6526,13 @@ function computeMastery(sessionList) {
 function computeAllXP(sessionList) {
   const totalAttrXP = { str: 0, end: 0, agi: 0, dex: 0 };
   let runningPBs = {};
+  const mastery = computeMastery(sessionList);
+
   sessionList.forEach((s, idx) => {
     const priorSessions = sessionList.slice(0, idx);
     const { attrGains } = calcSessionXP(s, priorSessions, runningPBs);
     Object.keys(attrGains).forEach(a => { totalAttrXP[a] = (totalAttrXP[a]||0) + attrGains[a]; });
+
     // Update running PBs
     s.exercises.forEach(ex => {
       if (!runningPBs[ex.name]) runningPBs[ex.name] = { weight:0, reps:0 };
@@ -6540,9 +6543,77 @@ function computeAllXP(sessionList) {
       });
     });
   });
-  // Mastery XP bonus: +50 per fill per exercise
-  const mastery = computeMastery(sessionList);
-  Object.values(mastery).forEach(m => { totalAttrXP.str = (totalAttrXP.str||0) + m.fills * 50; });
+
+  // Mastery XP — +50 per fill, distributed through each session's attr map
+  // Computed incrementally: track cumulative fills per exercise and award XP
+  // when a new fill is crossed, attributed to the session that crossed it.
+  const runningMastery = {}; // name -> { totalReps, totalSecs, totalMinutes, fills }
+  sessionList.forEach(s => {
+    const aMap = getSessionAttrMap(s);
+    const allAttrs = [...(aMap.primary||[]), ...(aMap.minor||[])];
+
+    // Update running mastery totals for this session
+    s.exercises.forEach(ex => {
+      if (!ex.name) return;
+      if (!runningMastery[ex.name]) runningMastery[ex.name] = { totalReps:0, totalSecs:0, fills:0, isTimed: isTimedExercise(ex.name) };
+      const m = runningMastery[ex.name];
+      if (m.isTimed) {
+        m.totalSecs += ex.sets.reduce((a, st) => a + (parseFloat(st.duration)||0), 0);
+        const threshold = getTimedMasteryThreshold(ex.name);
+        const newFills = Math.floor(m.totalSecs / threshold);
+        if (newFills > m.fills) {
+          const masteryXP = (newFills - m.fills) * 50;
+          const perAttr = Math.round(masteryXP / Math.max(1, allAttrs.length));
+          allAttrs.forEach(k => { totalAttrXP[k] = (totalAttrXP[k]||0) + perAttr; });
+          m.fills = newFills;
+        }
+      } else {
+        m.totalReps += ex.sets.reduce((a, st) => a + (parseFloat(st.reps)||0), 0);
+        const threshold = getMasteryThreshold(ex.name);
+        const newFills = Math.floor(m.totalReps / threshold);
+        if (newFills > m.fills) {
+          const masteryXP = (newFills - m.fills) * 50;
+          const perAttr = Math.round(masteryXP / Math.max(1, allAttrs.length));
+          allAttrs.forEach(k => { totalAttrXP[k] = (totalAttrXP[k]||0) + perAttr; });
+          m.fills = newFills;
+        }
+      }
+    });
+
+    // Activity mastery
+    if (s.variationKey === CUSTOM_KEY && s.customName && isActivityByName(s.customName)) {
+      const name = s.customName;
+      if (!runningMastery[name]) runningMastery[name] = { totalMinutes:0, fills:0, isActivity:true };
+      const m = runningMastery[name];
+      m.totalMinutes += parseFloat(s.duration) || 0;
+      const threshold = getActivityMasteryThreshold(name);
+      if (threshold > 0) {
+        const newFills = Math.floor(m.totalMinutes / threshold);
+        if (newFills > m.fills) {
+          const masteryXP = (newFills - m.fills) * 50;
+          const perAttr = Math.round(masteryXP / Math.max(1, allAttrs.length));
+          allAttrs.forEach(k => { totalAttrXP[k] = (totalAttrXP[k]||0) + perAttr; });
+          m.fills = newFills;
+        }
+      }
+    }
+  });
+
+  // Achievement XP — include bonuses that computeAndShowXP also applies
+  // Computed once over the full session list to match what's shown on the overlay
+  const allAchievements = computeAchievements(sessionList, mastery);
+  allAchievements.forEach(a => {
+    if (a.count <= 0) return;
+    const isFirstUnlock = true; // count already reflects total unlocks
+    // Award XP for each unlock: first unlock = ACHIEVEMENT_XP_FIRST, subsequent = repeat rate
+    const firstXP  = ACHIEVEMENT_XP_FIRST || 200;
+    const repeatXP = (ACHIEVEMENT_REPEAT_XP && ACHIEVEMENT_REPEAT_XP[a.id]) || 50;
+    const totalAchXP = firstXP + Math.max(0, a.count - 1) * repeatXP;
+    // Distribute evenly across str/end/agi/dex (no session context at this point)
+    const perAttr = Math.round(totalAchXP / 4);
+    Object.keys(totalAttrXP).forEach(k => { totalAttrXP[k] = (totalAttrXP[k]||0) + perAttr; });
+  });
+
   return { totalAttrXP, mastery };
 }
 
